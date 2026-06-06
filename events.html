@@ -294,19 +294,26 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-  const STORAGE_KEY = 'c17_events';
+  // =========================
+  // SUPABASE CONNECTION
+  // =========================
+  const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+  const SUPABASE_KEY = "PASTE_YOUR_ANON_KEY_HERE";
+
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
   let selectedEmoji = '🔥';
   let activeFilter = 'all';
 
-  function loadEvents() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
-  }
-
-  function saveEvents(events) { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }
-
-  // Emoji picker
+  // =========================
+  // EMOJI PICKER
+  // =========================
   document.querySelectorAll('.emoji-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
@@ -315,7 +322,10 @@
     });
   });
 
-  function addEvent() {
+  // =========================
+  // ADD EVENT (SUPABASE)
+  // =========================
+  async function addEvent() {
     const title    = document.getElementById('eventTitle').value.trim();
     const category = document.getElementById('eventCategory').value;
     const date     = document.getElementById('eventDate').value;
@@ -323,21 +333,28 @@
     const location = document.getElementById('eventLocation').value.trim();
     const desc     = document.getElementById('eventDesc').value.trim();
 
-    if (!title)    return alert('Give the event a name!');
-    if (!date)     return alert('When is it happening?');
+    if (!title) return alert('Give the event a name!');
+    if (!date) return alert('When is it happening?');
     if (!location) return alert('Where is it happening?');
 
-    const events = loadEvents();
-    events.push({
-      id: Date.now(),
-      title, category, date, time, location,
-      desc: desc || 'Chapter 17 hangout.',
-      emoji: selectedEmoji,
-      rsvps: []
-    });
+    const { error } = await supabase
+      .from('events')
+      .insert([{
+        title,
+        category,
+        date,
+        time,
+        location,
+        desc: desc || 'Chapter 17 hangout.',
+        emoji: selectedEmoji,
+        rsvps: []
+      }]);
 
-    events.sort((a, b) => new Date(a.date) - new Date(b.date));
-    saveEvents(events);
+    if (error) {
+      console.log(error);
+      return alert("Failed to save 😭");
+    }
+
     renderEvents();
 
     document.getElementById('eventTitle').value = '';
@@ -347,27 +364,55 @@
     document.getElementById('eventDesc').value = '';
   }
 
-  function rsvp(id) {
+  // =========================
+  // RSVP (LOCAL UPDATE FOR NOW)
+  // =========================
+  async function rsvp(id) {
     const input = document.getElementById(`rsvp-${id}`);
     const name  = input.value.trim();
     if (!name) return;
 
-    const events = loadEvents();
-    const event  = events.find(e => e.id === id);
+    const { data: events } = await supabase
+      .from('events')
+      .select('*');
+
+    const event = events.find(e => e.id === id);
     if (!event) return;
 
-    if (event.rsvps.includes(name)) { input.value = ''; return alert(`${name} already RSVPed!`); }
-    event.rsvps.push(name);
-    saveEvents(events);
+    let rsvps = event.rsvps || [];
+
+    if (rsvps.includes(name)) {
+      input.value = '';
+      return alert(`${name} already RSVPed!`);
+    }
+
+    rsvps.push(name);
+
+    await supabase
+      .from('events')
+      .update({ rsvps })
+      .eq('id', id);
+
     renderEvents();
   }
 
-  function deleteEvent(id) {
+  // =========================
+  // DELETE EVENT
+  // =========================
+  async function deleteEvent(id) {
     if (!confirm('Remove this event?')) return;
-    saveEvents(loadEvents().filter(e => e.id !== id));
+
+    await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+
     renderEvents();
   }
 
+  // =========================
+  // FILTER (UNCHANGED)
+  // =========================
   function setFilter(filter, btn) {
     activeFilter = filter;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -376,56 +421,111 @@
     const up   = document.getElementById('upcomingSection');
     const past = document.getElementById('pastSection');
 
-    if (filter === 'upcoming') { up.style.display = ''; past.style.display = 'none'; }
-    else if (filter === 'past') { up.style.display = 'none'; past.style.display = ''; }
-    else { up.style.display = ''; past.style.display = ''; }
+    if (filter === 'upcoming') {
+      up.style.display = '';
+      past.style.display = 'none';
+    } else if (filter === 'past') {
+      up.style.display = 'none';
+      past.style.display = '';
+    } else {
+      up.style.display = '';
+      past.style.display = '';
+    }
   }
 
+  // =========================
+  // COUNTDOWN (UNCHANGED)
+  // =========================
   function getCountdown(dateStr) {
     const today = new Date(); today.setHours(0,0,0,0);
     const event = new Date(dateStr);
     const diff  = Math.round((event - today) / 86400000);
+
     if (diff < 0)  return { label: 'Past', past: true };
     if (diff === 0) return { label: 'Today! 🔥', past: false };
     if (diff === 1) return { label: 'Tomorrow', past: false };
     return { label: `${diff} days`, past: false };
   }
 
+  // =========================
+  // BUILD CARD (UNCHANGED)
+  // =========================
   function buildCard(ev) {
-    const countdown   = getCountdown(ev.date);
-    const formattedDate = new Date(ev.date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-    const timeStr     = ev.time ? ` · ${ev.time}` : '';
-    const rsvpNames   = ev.rsvps.map(n => `<span class="rsvp-name">${n}</span>`).join('');
+    const countdown = getCountdown(ev.date);
+
+    const formattedDate = new Date(ev.date).toLocaleDateString('en-GB', {
+      weekday:'long',
+      day:'numeric',
+      month:'long',
+      year:'numeric'
+    });
+
+    const timeStr = ev.time ? ` · ${ev.time}` : '';
+    const rsvpNames = (ev.rsvps || []).map(n =>
+      `<span class="rsvp-name">${n}</span>`
+    ).join('');
 
     const card = document.createElement('div');
     card.className = `event-card${countdown.past ? ' past' : ''}`;
+
     card.innerHTML = `
       <div class="event-bar${countdown.past ? ' past-bar' : ''}"></div>
-      <span class="event-countdown${countdown.past ? ' past-badge' : ''}">${countdown.label}</span>
+      <span class="event-countdown${countdown.past ? ' past-badge' : ''}">
+        ${countdown.label}
+      </span>
+
       <div class="event-body">
         <span class="event-emoji">${ev.emoji}</span>
         <p class="event-title">${ev.title}</p>
         <p class="event-date">${formattedDate}${timeStr}</p>
-        <p class="event-location">📍 ${ev.location} &nbsp;·&nbsp; ${ev.category}</p>
+        <p class="event-location">📍 ${ev.location} · ${ev.category}</p>
         <p class="event-desc">${ev.desc}</p>
+
         <div class="rsvp-section">
-          <p class="rsvp-title">Who's Pulling Up — ${ev.rsvps.length}</p>
+          <p class="rsvp-title">Who's Pulling Up — ${(ev.rsvps || []).length}</p>
           <div class="rsvp-names">${rsvpNames}</div>
+
           ${!countdown.past ? `
-          <div class="rsvp-input-row">
-            <input class="rsvp-input" id="rsvp-${ev.id}" placeholder="Your name..." onkeydown="if(event.key==='Enter') rsvp(${ev.id})"/>
-            <button class="rsvp-btn" onclick="rsvp(${ev.id})">I'm In</button>
-          </div>` : ''}
+            <div class="rsvp-input-row">
+              <input class="rsvp-input"
+                id="rsvp-${ev.id}"
+                placeholder="Your name..."
+                onkeydown="if(event.key==='Enter') rsvp(${ev.id})"
+              />
+              <button class="rsvp-btn" onclick="rsvp(${ev.id})">
+                I'm In
+              </button>
+            </div>
+          ` : ''}
         </div>
       </div>
-      <button class="event-delete" onclick="deleteEvent(${ev.id})">✕ remove</button>
+
+      <button class="event-delete" onclick="deleteEvent(${ev.id})">
+        ✕ remove
+      </button>
     `;
+
     return card;
   }
 
-  function renderEvents() {
-    const events   = loadEvents();
-    const today    = new Date(); today.setHours(0,0,0,0);
+  // =========================
+  // LOAD EVENTS FROM SUPABASE
+  // =========================
+  async function renderEvents() {
+
+    const { data: events, error } = await supabase
+      .from('events')
+      .select('*')
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
     const upcoming = events.filter(e => new Date(e.date) >= today);
     const past     = events.filter(e => new Date(e.date) < today);
 
@@ -433,34 +533,34 @@
     const pastGrid = document.getElementById('pastGrid');
 
     upGrid.innerHTML = '';
-    if (upcoming.length === 0) {
-      upGrid.innerHTML = '<div class="empty-state"><span class="empty-icon">📅</span><p>No upcoming events. Plan something! 🔥</p></div>';
-    } else {
-      upcoming.forEach((ev, i) => {
-        const card = buildCard(ev);
-        card.style.transitionDelay = `${i * 0.07}s`;
-        upGrid.appendChild(card);
-      });
-    }
-
     pastGrid.innerHTML = '';
-    if (past.length === 0) {
-      pastGrid.innerHTML = '<div class="empty-state"><span class="empty-icon">📖</span><p>No past events yet.</p></div>';
+
+    if (upcoming.length === 0) {
+      upGrid.innerHTML = '<div class="empty-state">No upcoming events 🔥</div>';
     } else {
-      past.slice().reverse().forEach((ev, i) => {
-        const card = buildCard(ev);
-        card.style.transitionDelay = `${i * 0.07}s`;
-        pastGrid.appendChild(card);
-      });
+      upcoming.forEach(ev => upGrid.appendChild(buildCard(ev)));
     }
 
-    // Scroll animations
+    if (past.length === 0) {
+      pastGrid.innerHTML = '<div class="empty-state">No past events 📖</div>';
+    } else {
+      past.slice().reverse().forEach(ev => pastGrid.appendChild(buildCard(ev)));
+    }
+
+    // animations
     const observer = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+      entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('visible');
+      });
     }, { threshold: 0.1 });
-    document.querySelectorAll('.event-card').forEach(c => observer.observe(c));
+
+    document.querySelectorAll('.event-card')
+      .forEach(c => observer.observe(c));
   }
 
+  // =========================
+  // INIT
+  // =========================
   document.getElementById('eventDate').valueAsDate = new Date();
   renderEvents();
 </script>
