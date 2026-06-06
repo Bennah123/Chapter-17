@@ -514,7 +514,7 @@
   // LOAD EVENTS FROM SUPABASE
   // =========================
   async function renderEvents() {
-
+    if (!supabase) return;
     const { data: events, error } = await supabase
       .from('events')
       .select('*')
