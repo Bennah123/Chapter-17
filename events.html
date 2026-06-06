@@ -326,7 +326,8 @@
   // =========================
   // ADD EVENT (SUPABASE)
   // =========================
-  async function addEvent() {
+  window.addEvent = async function() {
+    alert("clicked 😭");
     if (!supabase) return;
     const title    = document.getElementById('eventTitle').value.trim();
     const category = document.getElementById('eventCategory').value;
