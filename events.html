@@ -326,47 +326,41 @@
   // =========================
   // ADD EVENT (SUPABASE)
   // =========================
-  window.addEvent = async function() {
-    alert("clicked 😭");
-    if (!supabase) return;
-    const title    = document.getElementById('eventTitle').value.trim();
-    const category = document.getElementById('eventCategory').value;
-    const date     = document.getElementById('eventDate').value;
-    const time     = document.getElementById('eventTime').value;
-    const location = document.getElementById('eventLocation').value.trim();
-    const desc     = document.getElementById('eventDesc').value.trim();
+  window.addEvent = async function () {
 
-    if (!title) return alert('Give the event a name!');
-    if (!date) return alert('When is it happening?');
-    if (!location) return alert('Where is it happening?');
+  alert("clicked 😭🔥");
 
-    const { error } = await supabase
-      .from('events')
-      .insert([{
-        title,
-        category,
-        date,
-        time,
-        location,
-        desc: desc || 'Chapter 17 hangout.',
-        emoji: selectedEmoji,
-        rsvps: []
-      }]);
+  const title = document.getElementById('eventTitle').value.trim();
+  const category = document.getElementById('eventCategory').value;
+  const date = document.getElementById('eventDate').value;
+  const time = document.getElementById('eventTime').value;
+  const location = document.getElementById('eventLocation').value.trim();
+  const desc = document.getElementById('eventDesc').value.trim();
 
-    if (error) {
-      console.log(error);
-      return alert("Failed to save 😭");
-    }
+  console.log({ title, category, date, time, location, desc });
 
+  const { data, error } = await supabase
+    .from('events')
+    .insert([{
+      title,
+      category,
+      date,
+      time,
+      location,
+      desc,
+      emoji: selectedEmoji
+    }])
+    .select(); // IMPORTANT 🔥
+
+  if (error) {
+    console.log("INSERT ERROR:", error);
+    alert("Save failed 😭 check console");
+  } else {
+    console.log("SUCCESS:", data);
+    alert("Event saved 🔥");
     renderEvents();
-
-    document.getElementById('eventTitle').value = '';
-    document.getElementById('eventDate').value = '';
-    document.getElementById('eventTime').value = '';
-    document.getElementById('eventLocation').value = '';
-    document.getElementById('eventDesc').value = '';
   }
-
+};
   // =========================
   // RSVP (LOCAL UPDATE FOR NOW)
   // =========================
