@@ -327,10 +327,8 @@
   // ADD EVENT (SUPABASE)
   // =========================
   window.addEvent = async function () {
-    if (!supabase) return;
-
+  if (!supabase) return;
   alert("clicked 😭🔥");
-
   const title = document.getElementById('eventTitle').value.trim();
   const category = document.getElementById('eventCategory').value;
   const date = document.getElementById('eventDate').value;
@@ -341,27 +339,22 @@
   console.log({ title, category, date, time, location, desc });
 
   const { data, error } = await supabase
-    .from('events')
-    .insert([{
-      title,
-      category,
-      date,
-      time,
-      location,
-      desc,
-      emoji: selectedEmoji
-    }])
-    .select(); // IMPORTANT 🔥
+  .from('events')
+  .insert([{
+    title: "TEST EVENT",
+    category: "Test",
+    date: "2026-01-01",
+    time: "12:00",
+    location: "Test",
+    desc: "Testing",
+    emoji: "🔥"
+  }])
+  .select();
 
-  if (error) {
-    console.log("INSERT ERROR:", error);
-    alert("Save failed 😭 check console");
-  } else {
-    console.log("SUCCESS:", data);
-    alert("Event saved 🔥");
+console.log("DATA:", data);
+console.log("ERROR:", error);
     renderEvents();
-  }
-};
+  };
   // =========================
   // RSVP (LOCAL UPDATE FOR NOW)
   // =========================
