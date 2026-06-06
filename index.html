@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chapter 17</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;700&family=Cinzel:wght@400;700&family=Raleway:wght@200;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #080806;
+      --gold: #C9A84C;
+      --gold-bright: #FFD700;
+      --gold-dim: rgba(201,168,76,0.15);
+      --white: #f5f0e8;
+      --muted: rgba(245,240,232,0.45);
+    }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Raleway', sans-serif;
+      overflow-x: hidden;
+    }
+    /* ── Particle canvas ── */
+    #canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    /* ── Noise grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+    }
+    /* ── Radial glow ── */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+      z-index: 0;
+      pointer-events: none;
+      animation: pulse 6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%,-50%) scale(1); }
+      50%       { opacity: 1;   transform: translate(-50%,-50%) scale(1.15); }
+    }
+    /* ── Layout ── */
+    .page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    /* ── Top rule ── */
+    .top-rule {
+      position: absolute;
+      top: 36px; left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      opacity: 0;
+      animation: fadeUp 1s ease 0.2s forwards;
+    }
+    .top-rule span { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 6px; color: var(--gold); text-transform: uppercase; }
+    .top-rule::before, .top-rule::after {
+      content: ''; display: block; width: 60px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+    .top-rule::after { background: linear-gradient(90deg, var(--gold), transparent); }
+
+    /* ── Roman numeral ── */
+    .numeral {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(0.6rem, 1.5vw, 0.75rem);
+      letter-spacing: 10px;
+      color: var(--gold);
+      margin-bottom: 18px;
+      opacity: 0;
+      animation: fadeUp 1s ease 0.5s forwards;
+    }
+
+    /* ── Main title ── */
+    .title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: clamp(4rem, 14vw, 10rem);
+      line-height: 0.9;
+      letter-spacing: -2px;
+      background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 40%, var(--gold) 70%, #7a5c1e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 40px rgba(201,168,76,0.35));
+      opacity: 0;
+      animation: fadeUp 1.2s ease 0.7s forwards;
+      user-select: none;
+    }
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 28px 0 24px;
+      opacity: 0;
+      animation: fadeUp 1s ease 1s forwards;
+    }
+    .divider-line { width: 80px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+    .divider-line.right { background: linear-gradient(90deg, var(--gold), transparent); }
+    .divider-diamond {
+      width: 7px; height: 7px;
+      background: var(--gold);
+      transform: rotate(45deg);
+      box-shadow: 0 0 8px var(--gold);
+    }
+    /* ── Tagline ── */
+    .tagline {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 200;
+      font-size: clamp(0.8rem, 2.5vw, 1rem);
+      letter-spacing: 5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 1s ease 1.1s forwards;
+    }
+    /* ── CTA Button ── */
+    .cta {
+      margin-top: 52px;
+      position: relative;
+      display: inline-block;
+      opacity: 0;
+      animation: fadeUp 1s ease 1.4s forwards;
+    }
+    .cta a {
+      display: inline-block;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      padding: 16px 48px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      box-shadow: 0 0 30px rgba(201,168,76,0.3);
+    }
+    .cta a::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #fff8e7, var(--gold-bright));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .cta a:hover::before { opacity: 1; }
+    .cta a:hover { box-shadow: 0 0 60px rgba(255,215,0,0.5); transform: translateY(-2px); }
+    .cta a span { position: relative; z-index: 1; }
+    /* ── Corner ornaments ── */
+    .corner {
+      position: fixed;
+      width: 50px; height: 50px;
+      z-index: 3;
+      opacity: 0;
+      animation: fadeIn 1.5s ease 1.8s forwards;
+    }
+    .corner svg { width: 100%; height: 100%; }
+    .corner.tl { top: 20px; left: 20px; }
+    .corner.tr { top: 20px; right: 20px; transform: scaleX(-1); }
+    .corner.bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+    .corner.br { bottom: 20px; right: 20px; transform: scale(-1); }
+
+    /* ── Bottom quote ── */
+    .bottom-quote {
+      position: absolute;
+      bottom: 36px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+      animation: fadeUp 1s ease 2s forwards;
+    }
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 0.6; }
+    }
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .top-rule::before, .top-rule::after { width: 30px; }
+      .divider-line { width: 40px; }
+      .bottom-quote { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<!-- Corner ornaments -->
+<div class="corner tl">
+  <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 48 L2 2 L48 2" stroke="#C9A84C" stroke-width="1.5"/>
+    <path d="M2 20 L10 2" stroke="#C9A84C" stroke-width="1"/>
+    <path d="M20 2 L2 10" stroke="#C9A84C" stroke-width="1"/>
+  </svg>
+</div>
+<div class="corner tr">
+  <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 48 L2 2 L48 2" stroke="#C9A84C" stroke-width="1.5"/>
+    <path d="M2 20 L10 2" stroke="#C9A84C" stroke-width="1"/>
+    <path d="M20 2 L2 10" stroke="#C9A84C" stroke-width="1"/>
+  </svg>
+</div>
+<div class="corner bl">
+  <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 48 L2 2 L48 2" stroke="#C9A84C" stroke-width="1.5"/>
+    <path d="M2 20 L10 2" stroke="#C9A84C" stroke-width="1"/>
+    <path d="M20 2 L2 10" stroke="#C9A84C" stroke-width="1"/>
+  </svg>
+</div>
+<div class="corner br">
+  <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 48 L2 2 L48 2" stroke="#C9A84C" stroke-width="1.5"/>
+    <path d="M2 20 L10 2" stroke="#C9A84C" stroke-width="1"/>
+    <path d="M20 2 L2 10" stroke="#C9A84C" stroke-width="1"/>
+  </svg>
+</div>
+<main class="page">
+  <div class="top-rule"><span>Est. 2026</span></div>
+  <p class="numeral">X V I I</p>
+  <h1 class="title">Chapter<br/>17</h1>
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-diamond"></div>
+    <div class="divider-line right"></div>
+  </div>
+
+  <p class="tagline">Our story &nbsp;·&nbsp; Our moments &nbsp;·&nbsp; Our chapter</p>
+
+  <div class="cta">
+    <a href="login.html"><span>Enter the Chapter</span></a>
+  </div>
+
+  <p class="bottom-quote">"Every hangout, a new page."</p>
+
+</main>
+<script>
+  // ── Floating gold particles ──
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  class Particle {
+    constructor() { this.reset(true); }
+    reset(init) {
+      this.x = Math.random() * W;
+      this.y = init ? Math.random() * H : H + 10;
+      this.size = Math.random() * 1.5 + 0.3;
+      this.speed = Math.random() * 0.4 + 0.1;
+      this.opacity = Math.random() * 0.5 + 0.1;
+      this.drift = (Math.random() - 0.5) * 0.3;
+    }
+    update() {
+      this.y -= this.speed;
+      this.x += this.drift;
+      if (this.y < -10) this.reset(false);
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(201,168,76,${this.opacity})`;
+      ctx.fill();
+    }
+  }
+  for (let i = 0; i < 80; i++) particles.push(new Particle());
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(loop);
+  }
+  loop();
+</script>
+</body>
+</html>

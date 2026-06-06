@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chapter 17 — Would You Rather</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080806;
+      --gold: #C9A84C;
+      --gold-bright: #FFD700;
+      --gold-border: rgba(201,168,76,0.25);
+      --gold-dim: rgba(201,168,76,0.08);
+      --white: #f5f0e8;
+      --muted: rgba(245,240,232,0.45);
+      --card-bg: rgba(15,15,12,0.9);
+      --optA: rgba(100,150,255,0.12);
+      --optA-border: rgba(100,150,255,0.4);
+      --optA-color: #9ab5ff;
+      --optB: rgba(255,100,150,0.12);
+      --optB-border: rgba(255,100,150,0.4);
+      --optB-color: #ffb0c8;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--white); font-family: 'Raleway', sans-serif; min-height: 100vh; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.04; pointer-events: none; z-index: 100;
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 68px;
+      background: rgba(8,8,6,0.95); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--gold-border);
+    }
+    .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
+    .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
+    .nav-back:hover { color: var(--gold); }
+
+    .hero { padding: 100px 48px 40px; text-align: center; position: relative; }
+    .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
+    .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 12px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
+    .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2.5rem, 8vw, 5rem); background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 45%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 30px rgba(201,168,76,0.25)); opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards; }
+
+    .content { max-width: 750px; margin: 0 auto; padding: 0 24px 100px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── SETUP ── */
+    .panel {
+      background: var(--card-bg); border: 1px solid var(--gold-border);
+      border-radius: 4px; padding: 36px; margin-bottom: 24px;
+      opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards;
+    }
+    .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
+
+    .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
+
+    input[type="text"], select {
+      background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border);
+      border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px;
+      outline: none; transition: all 0.3s ease; width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
+    input::placeholder { color: var(--muted); font-size: 0.75rem; }
+    select option { background: #0f0f0c; }
+
+    /* players */
+    .players-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; min-height: 36px; }
+    .player-tag { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 2px; padding: 6px 14px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 2px; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+    .player-tag button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; transition: color 0.2s; padding: 0; }
+    .player-tag button:hover { color: var(--gold); }
+    .add-player-row { display: flex; gap: 10px; }
+    .add-player-row input { flex: 1; }
+    .btn-add-player { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 2px; padding: 10px 18px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
+    .btn-add-player:hover { border-color: var(--gold); background: rgba(201,168,76,0.15); }
+
+    /* custom question */
+    .custom-q-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .btn-add-custom { background: var(--gold-dim); border: 1px dashed var(--gold-border); border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px; cursor: pointer; transition: all 0.3s; width: 100%; margin-bottom: 16px; }
+    .btn-add-custom:hover { border-color: var(--gold); background: rgba(201,168,76,0.12); }
+
+    .custom-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 200px; overflow-y: auto; }
+    .custom-item { display: flex; align-items: flex-start; gap: 10px; background: rgba(201,168,76,0.04); border: 1px solid var(--gold-border); border-radius: 3px; padding: 10px 14px; }
+    .custom-item-text { flex: 1; font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
+    .custom-item-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; transition: color 0.2s; flex-shrink: 0; }
+    .custom-item-del:hover { color: var(--gold); }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
+      transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2);
+      position: relative; overflow: hidden; margin-top: 8px;
+    }
+    .btn-start::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
+    .btn-start:hover::before { opacity: 1; }
+    .btn-start:hover { transform: translateY(-1px); }
+    .btn-start span { position: relative; z-index: 1; }
+
+    /* ── GAME ── */
+
+    /* progress */
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-info { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .progress-info span { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); }
+    .progress-bar { height: 3px; background: var(--gold-border); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width 0.4s ease; }
+
+    /* question card */
+    .wyr-card {
+      background: var(--card-bg); border: 1px solid var(--gold-border);
+      border-radius: 4px; padding: 36px 32px; margin-bottom: 20px;
+      text-align: center; animation: cardSlide 0.5s ease;
+    }
+    @keyframes cardSlide { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+    .wyr-label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 16px; }
+    .wyr-question { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(1.1rem, 3vw, 1.6rem); color: var(--white); line-height: 1.4; margin-bottom: 8px; }
+    .wyr-category { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 4px; color: var(--muted); }
+
+    /* vote buttons */
+    .vote-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+    .vote-btn {
+      border-radius: 4px; padding: 28px 20px; cursor: pointer;
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: clamp(0.9rem, 2.5vw, 1.15rem); line-height: 1.5;
+      transition: all 0.3s ease; position: relative; overflow: hidden;
+      text-align: center; border: none;
+    }
+
+    .vote-btn-a {
+      background: var(--optA); border: 1px solid var(--optA-border);
+      color: var(--optA-color);
+      box-shadow: 0 0 20px rgba(100,150,255,0.08);
+    }
+    .vote-btn-a:hover:not(:disabled) { background: rgba(100,150,255,0.2); box-shadow: 0 8px 30px rgba(100,150,255,0.15); transform: translateY(-3px); }
+
+    .vote-btn-b {
+      background: var(--optB); border: 1px solid var(--optB-border);
+      color: var(--optB-color);
+      box-shadow: 0 0 20px rgba(255,100,150,0.08);
+    }
+    .vote-btn-b:hover:not(:disabled) { background: rgba(255,100,150,0.2); box-shadow: 0 8px 30px rgba(255,100,150,0.15); transform: translateY(-3px); }
+
+    .vote-btn:disabled { cursor: default; transform: none !important; }
+    .vote-btn.voted { opacity: 1; }
+    .vote-btn.not-voted { opacity: 0.5; }
+
+    .vote-option-label { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 4px; display: block; margin-bottom: 10px; opacity: 0.7; }
+    .vote-or { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 4px; color: var(--muted); display: none; align-items: center; justify-content: center; align-self: center; }
+
+    /* results bar */
+    .results-bars { display: none; gap: 16px; margin-bottom: 20px; }
+    .results-bars.show { display: grid; grid-template-columns: 1fr 1fr; }
+
+    .result-bar-wrap { border-radius: 3px; padding: 16px; }
+    .result-bar-wrap.a { background: var(--optA); border: 1px solid var(--optA-border); }
+    .result-bar-wrap.b { background: var(--optB); border: 1px solid var(--optB-border); }
+
+    .result-pct { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 2.5rem; display: block; margin-bottom: 4px; }
+    .result-bar-wrap.a .result-pct { color: var(--optA-color); }
+    .result-bar-wrap.b .result-pct { color: var(--optB-color); }
+    .result-voters { font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; }
+    .result-names { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .result-name { font-size: 0.6rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 2px; padding: 2px 8px; color: var(--muted); }
+
+    /* voter name row */
+    .voter-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .voter-input { flex: 1; background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s; }
+    .voter-input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+    .voter-input::placeholder { color: var(--muted); font-size: 0.75rem; }
+
+    /* next btn */
+    .btn-next-q {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
+      transition: all 0.3s; display: none;
+    }
+    .btn-next-q:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* who voted bar */
+    .voted-so-far { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 14px 20px; margin-bottom: 16px; }
+    .voted-title { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); margin-bottom: 10px; }
+    .voted-names { display: flex; flex-wrap: wrap; gap: 6px; }
+    .voted-name-tag { font-size: 0.65rem; background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 2px; padding: 3px 10px; color: var(--gold); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 90px 20px 30px; }
+      .vote-wrap { grid-template-columns: 1fr; }
+      .results-bars.show { grid-template-columns: 1fr; }
+      .custom-q-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">Chapter 17</a>
+  <a class="nav-back" href="dashboard.html">← Dashboard</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <span class="page-tag">X V I I &nbsp;·&nbsp; Games Arena</span>
+  <h1 class="page-title">🔮 Would You Rather</h1>
+</section>
+
+<div class="content">
+
+  <!-- ── SETUP ── -->
+  <div class="screen active" id="setupScreen">
+
+    <div class="panel">
+      <p class="panel-title">Add Players</p>
+      <div class="players-row" id="playersRow"></div>
+      <div class="add-player-row">
+        <input type="text" id="playerInput" placeholder="Enter name..." onkeydown="if(event.key==='Enter') addPlayer()"/>
+        <button class="btn-add-player" onclick="addPlayer()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="panel" style="animation-delay:0.7s">
+      <p class="panel-title">Add Custom Questions 😂</p>
+      <div class="custom-q-row">
+        <input type="text" id="optAInput" placeholder="Option A..."/>
+        <input type="text" id="optBInput" placeholder="Option B..."/>
+      </div>
+      <button class="btn-add-custom" onclick="addCustomQ()">+ Add Question</button>
+      <div class="custom-list" id="customList"></div>
+      <p style="font-size:0.7rem;color:var(--muted);font-family:'Cormorant Garamond',serif;font-style:italic">Make them Chapter 17 specific for maximum chaos 😂</p>
+    </div>
+
+    <button class="btn-start" onclick="startGame()"><span>Start Game 🔮</span></button>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div class="screen" id="gameScreen">
+
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="progressLabel">Question 1</span>
+        <span id="progressFrac">1 / 20</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:5%"></div></div>
+    </div>
+
+    <div class="wyr-card" id="wyrCard">
+      <span class="wyr-label">Would You Rather...</span>
+      <p class="wyr-question" id="wyrQuestion"></p>
+      <p class="wyr-category" id="wyrCategory"></p>
+    </div>
+
+    <!-- Voter name -->
+    <div class="voter-row">
+      <input class="voter-input" id="voterName" placeholder="Your name to vote..."/>
+    </div>
+
+    <!-- Vote buttons -->
+    <div class="vote-wrap" id="voteWrap">
+      <button class="vote-btn vote-btn-a" id="voteA" onclick="castVote('a')">
+        <span class="vote-option-label">Option A</span>
+        <span id="optAText"></span>
+      </button>
+      <button class="vote-btn vote-btn-b" id="voteB" onclick="castVote('b')">
+        <span class="vote-option-label">Option B</span>
+        <span id="optBText"></span>
+      </button>
+    </div>
+
+    <!-- Who voted -->
+    <div class="voted-so-far" id="votedSoFar">
+      <p class="voted-title">Voted So Far</p>
+      <div class="voted-names" id="votedNames"></div>
+    </div>
+
+    <!-- Results (shown after everyone votes or reveal) -->
+    <div class="results-bars" id="resultsBars">
+      <div class="result-bar-wrap a">
+        <span class="result-pct" id="pctA">0%</span>
+        <p class="result-voters" id="countA">0 votes</p>
+        <div class="result-names" id="namesA"></div>
+      </div>
+      <div class="result-bar-wrap b">
+        <span class="result-pct" id="pctB">0%</span>
+        <p class="result-voters" id="countB">0 votes</p>
+        <div class="result-names" id="namesB"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn-next-q" id="btnReveal" style="display:block;flex:1;background:transparent;border:1px solid var(--gold-border);color:var(--muted);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:4px;padding:12px;cursor:pointer;border-radius:3px;transition:all 0.3s" onclick="revealResults()">Reveal Results</button>
+      <button class="btn-next-q" id="btnNext" onclick="nextQuestion()">Next Question →</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const QUESTIONS = [
+    { a: "Know everything about your partner", b: "Have your partner know everything about you", cat: "Relationships 💑" },
+    { a: "Only be able to whisper for the rest of your life", b: "Only be able to shout for the rest of your life", cat: "Random 😂" },
+    { a: "Always arrive 2 hours early", b: "Always arrive 2 hours late", cat: "Life 🕐" },
+    { a: "Have no phone for a month", b: "Have no internet but keep your phone", cat: "Tech 📱" },
+    { a: "Only eat your favourite food forever", b: "Never eat your favourite food again", cat: "Food 🍔" },
+    { a: "Be the funniest person in every room", b: "Be the most attractive person in every room", cat: "Life ✨" },
+    { a: "Know how you die", b: "Know when you die", cat: "Deep 🔮" },
+    { a: "Live in Chapter 17's group chat forever", b: "Never see the group chat again", cat: "Chapter 17 😂" },
+    { a: "Be famous but broke", b: "Be rich but completely unknown", cat: "Life 💰" },
+    { a: "Have every hangout planned to the detail", b: "Every hangout be completely spontaneous", cat: "Chapter 17 🔥" },
+    { a: "Date someone from outside the friend group", b: "Date someone from inside the friend group", cat: "Relationships 👀" },
+    { a: "Have your most embarrassing moment played at a Chapter 17 hangout", b: "Have your most embarrassing text read out loud", cat: "Chapter 17 😭" },
+    { a: "Be able to pause time", b: "Be able to rewind time", cat: "Superpowers ⚡" },
+    { a: "Always know what your partner is thinking", b: "Your partner always knows what you're thinking", cat: "Relationships 💑" },
+    { a: "Live in the city forever", b: "Live in the countryside forever", cat: "Life 🌍" },
+    { a: "Have a best friend who tells you every hard truth", b: "Have a best friend who always makes you feel good", cat: "Friendship 💛" },
+    { a: "Plan every Chapter 17 event for a year", b: "Not be allowed to attend any event for a year", cat: "Chapter 17 😂" },
+    { a: "Speak every language in the world", b: "Play every instrument in the world", cat: "Skills 🎵" },
+    { a: "Always be the one who apologises first", b: "Never have to apologise for anything", cat: "Relationships 💑" },
+    { a: "Have a photographic memory", b: "Be able to forget anything you choose", cat: "Mind 🧠" },
+    { a: "Only listen to one song forever", b: "Never listen to music again", cat: "Music 🎵" },
+    { a: "Be the first to get married in Chapter 17", b: "Be the last to get married in Chapter 17", cat: "Chapter 17 💍" },
+    { a: "Never have to sleep", b: "Never have to eat", cat: "Life ⚡" },
+    { a: "Have the best relationship but no money", b: "Have all the money but be single forever", cat: "Relationships 💰" },
+    { a: "Be able to read minds", b: "Be invisible whenever you want", cat: "Superpowers 👁️" },
+  ];
+
+  let players = [];
+  let customQuestions = [];
+  let currentQ = 0;
+  let allQuestions = [];
+  let votes = { a: [], b: [] };
+  let revealed = false;
+
+  // ── PLAYERS
+  function addPlayer() {
+    const input = document.getElementById('playerInput');
+    const name = input.value.trim();
+    if (!name || players.includes(name)) { input.value = ''; return; }
+    players.push(name);
+    renderPlayerTags();
+    input.value = '';
+  }
+
+  function removePlayer(name) {
+    players = players.filter(p => p !== name);
+    renderPlayerTags();
+  }
+
+  function renderPlayerTags() {
+    const row = document.getElementById('playersRow');
+    row.innerHTML = '';
+    players.forEach(p => {
+      const tag = document.createElement('div');
+      tag.className = 'player-tag';
+      tag.innerHTML = `${p} <button onclick="removePlayer('${p}')">✕</button>`;
+      row.appendChild(tag);
+    });
+  }
+
+  // ── CUSTOM QUESTIONS
+  function addCustomQ() {
+    const a = document.getElementById('optAInput').value.trim();
+    const b = document.getElementById('optBInput').value.trim();
+    if (!a || !b) return alert('Fill in both options!');
+    customQuestions.push({ a, b, cat: 'Custom 🎯' });
+    document.getElementById('optAInput').value = '';
+    document.getElementById('optBInput').value = '';
+    renderCustomList();
+  }
+
+  function removeCustomQ(i) {
+    customQuestions.splice(i, 1);
+    renderCustomList();
+  }
+
+  function renderCustomList() {
+    const list = document.getElementById('customList');
+    list.innerHTML = '';
+    customQuestions.forEach((q, i) => {
+      const el = document.createElement('div');
+      el.className = 'custom-item';
+      el.innerHTML = `
+        <span class="custom-item-text"><strong style="color:var(--optA-color)">A:</strong> ${q.a} &nbsp;·&nbsp; <strong style="color:var(--optB-color)">B:</strong> ${q.b}</span>
+        <button class="custom-item-del" onclick="removeCustomQ(${i})">✕</button>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // ── START GAME
+  function startGame() {
+    allQuestions = [...QUESTIONS, ...customQuestions].sort(() => Math.random() - 0.5);
+    currentQ = 0;
+    showScreen('gameScreen');
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    if (currentQ >= allQuestions.length) { currentQ = 0; } // loop
+    const q = allQuestions[currentQ];
+    votes = { a: [], b: [] };
+    revealed = false;
+
+    const pct = Math.round((currentQ / allQuestions.length) * 100);
+    document.getElementById('progressFill').style.width = Math.max(pct, 3) + '%';
+    document.getElementById('progressLabel').textContent = `Question ${currentQ + 1}`;
+    document.getElementById('progressFrac').textContent = `${currentQ + 1} / ${allQuestions.length}`;
+
+    // Animate card
+    const card = document.getElementById('wyrCard');
+    card.style.animation = 'none';
+    void card.offsetWidth;
+    card.style.animation = 'cardSlide 0.5s ease';
+
+    document.getElementById('wyrQuestion').textContent = `${q.a}  —OR—  ${q.b}`;
+    document.getElementById('wyrCategory').textContent = q.cat;
+    document.getElementById('optAText').textContent = q.a;
+    document.getElementById('optBText').textContent = q.b;
+
+    // Reset UI
+    document.getElementById('voteA').disabled = false;
+    document.getElementById('voteB').disabled = false;
+    document.getElementById('voteA').className = 'vote-btn vote-btn-a';
+    document.getElementById('voteB').className = 'vote-btn vote-btn-b';
+    document.getElementById('resultsBars').className = 'results-bars';
+    document.getElementById('btnNext').style.display = 'none';
+    document.getElementById('btnReveal').style.display = 'block';
+    document.getElementById('votedNames').innerHTML = '';
+    document.getElementById('voterName').value = '';
+  }
+
+  function castVote(option) {
+    const name = document.getElementById('voterName').value.trim();
+    if (!name) return alert('Enter your name to vote!');
+
+    const allVoters = [...votes.a, ...votes.b];
+    if (allVoters.includes(name)) return alert(`${name} already voted!`);
+
+    votes[option].push(name);
+    document.getElementById('voterName').value = '';
+
+    // Update who voted
+    const allV = [...votes.a, ...votes.b];
+    const vNamesEl = document.getElementById('votedNames');
+    vNamesEl.innerHTML = '';
+    allV.forEach(v => {
+      const tag = document.createElement('span');
+      tag.className = 'voted-name-tag';
+      tag.textContent = v;
+      vNamesEl.appendChild(tag);
+    });
+
+    // Auto reveal if all players voted
+    if (players.length > 0 && allV.length >= players.length) {
+      revealResults();
+    }
+  }
+
+  function revealResults() {
+    if (revealed) return;
+    revealed = true;
+    const total = votes.a.length + votes.b.length;
+    const pctA = total > 0 ? Math.round((votes.a.length / total) * 100) : 0;
+    const pctB = total > 0 ? Math.round((votes.b.length / total) * 100) : 0;
+
+    document.getElementById('pctA').textContent = pctA + '%';
+    document.getElementById('pctB').textContent = pctB + '%';
+    document.getElementById('countA').textContent = `${votes.a.length} vote${votes.a.length !== 1 ? 's' : ''}`;
+    document.getElementById('countB').textContent = `${votes.b.length} vote${votes.b.length !== 1 ? 's' : ''}`;
+
+    const namesA = document.getElementById('namesA');
+    const namesB = document.getElementById('namesB');
+    namesA.innerHTML = votes.a.map(n => `<span class="result-name">${n}</span>`).join('');
+    namesB.innerHTML = votes.b.map(n => `<span class="result-name">${n}</span>`).join('');
+
+    document.getElementById('resultsBars').className = 'results-bars show';
+    document.getElementById('voteA').disabled = true;
+    document.getElementById('voteB').disabled = true;
+    document.getElementById('voteA').className = 'vote-btn vote-btn-a' + (pctA >= pctB ? ' voted' : ' not-voted');
+    document.getElementById('voteB').className = 'vote-btn vote-btn-b' + (pctB > pctA ? ' voted' : ' not-voted');
+    document.getElementById('btnReveal').style.display = 'none';
+    document.getElementById('btnNext').style.display = 'block';
+  }
+
+  function nextQuestion() {
+    currentQ++;
+    loadQuestion();
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+
+</body>
+</html>

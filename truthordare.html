@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chapter 17 — Truth or Dare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080806;
+      --gold: #C9A84C;
+      --gold-bright: #FFD700;
+      --gold-border: rgba(201,168,76,0.25);
+      --gold-dim: rgba(201,168,76,0.08);
+      --white: #f5f0e8;
+      --muted: rgba(245,240,232,0.45);
+      --card-bg: rgba(15,15,12,0.9);
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--white); font-family: 'Raleway', sans-serif; min-height: 100vh; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.04; pointer-events: none; z-index: 100;
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 68px;
+      background: rgba(8,8,6,0.95); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--gold-border);
+    }
+    .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
+    .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
+    .nav-back:hover { color: var(--gold); }
+
+    .hero { padding: 100px 48px 40px; text-align: center; position: relative; }
+    .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
+    .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 12px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
+    .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2.5rem, 8vw, 5rem); background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 45%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 30px rgba(201,168,76,0.25)); opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards; }
+
+    .content { max-width: 700px; margin: 0 auto; padding: 0 24px 100px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── SETUP ── */
+    .panel {
+      background: var(--card-bg); border: 1px solid var(--gold-border);
+      border-radius: 4px; padding: 36px; margin-bottom: 24px;
+      opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards;
+    }
+    .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
+
+    .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
+
+    input[type="text"], textarea, select {
+      background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border);
+      border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px;
+      outline: none; transition: all 0.3s ease; width: 100%;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
+    input::placeholder, textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
+    textarea { resize: vertical; min-height: 70px; }
+    select option { background: #0f0f0c; }
+
+    /* player tags */
+    .players-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; min-height: 36px; }
+    .player-tag {
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      border-radius: 2px; padding: 6px 14px;
+      font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 2px;
+      color: var(--gold); display: flex; align-items: center; gap: 8px;
+    }
+    .player-tag button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; transition: color 0.2s; padding: 0; }
+    .player-tag button:hover { color: var(--gold); }
+
+    .add-player-row { display: flex; gap: 10px; }
+    .add-player-row input { flex: 1; }
+    .btn-add-player {
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      border-radius: 3px; color: var(--gold);
+      font-family: 'Cinzel', serif; font-size: 0.6rem;
+      letter-spacing: 2px; padding: 10px 18px; cursor: pointer; transition: all 0.3s; white-space: nowrap;
+    }
+    .btn-add-player:hover { border-color: var(--gold); background: rgba(201,168,76,0.15); }
+
+    /* custom cards */
+    .custom-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .custom-row input { flex: 1; }
+    .custom-row select { width: 120px; flex-shrink: 0; }
+    .btn-add-custom {
+      background: var(--gold-dim); border: 1px dashed var(--gold-border);
+      border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif;
+      font-size: 0.6rem; letter-spacing: 3px; padding: 10px; cursor: pointer;
+      transition: all 0.3s; width: 100%; margin-bottom: 16px;
+    }
+    .btn-add-custom:hover { border-color: var(--gold); background: rgba(201,168,76,0.12); }
+
+    .custom-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 200px; overflow-y: auto; }
+    .custom-card-item {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(201,168,76,0.04); border: 1px solid var(--gold-border);
+      border-radius: 3px; padding: 10px 14px;
+    }
+    .custom-card-type { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 2px; padding: 2px 8px; border-radius: 2px; flex-shrink: 0; }
+    .type-truth { background: rgba(100,150,255,0.2); color: #9ab5ff; border: 1px solid rgba(100,150,255,0.3); }
+    .type-dare  { background: rgba(255,100,100,0.2); color: #ffb0b0; border: 1px solid rgba(255,100,100,0.3); }
+    .custom-card-text { flex: 1; font-size: 0.78rem; color: var(--muted); }
+    .custom-card-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; transition: color 0.2s; }
+    .custom-card-del:hover { color: var(--gold); }
+
+    /* intensity pills */
+    .intensity-pills { display: flex; gap: 10px; flex-wrap: wrap; }
+    .int-pill {
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      border-radius: 2px; padding: 8px 18px; cursor: pointer;
+      font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px;
+      color: var(--muted); transition: all 0.2s; user-select: none;
+    }
+    .int-pill.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
+      transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2);
+      position: relative; overflow: hidden; margin-top: 8px;
+    }
+    .btn-start::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
+    .btn-start:hover::before { opacity: 1; }
+    .btn-start:hover { transform: translateY(-1px); }
+    .btn-start span { position: relative; z-index: 1; }
+
+    /* ── GAME SCREEN ── */
+
+    /* current player */
+    .current-player-bar {
+      background: var(--card-bg); border: 1px solid var(--gold);
+      border-radius: 4px; padding: 18px 28px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 0 24px rgba(201,168,76,0.1);
+    }
+    .cp-label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .cp-name { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.6rem; background: linear-gradient(160deg, #fff8e7, var(--gold-bright), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .round-badge { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); background: var(--gold-dim); border: 1px solid var(--gold-border); padding: 6px 14px; border-radius: 2px; }
+
+    /* choice buttons */
+    .choice-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .choice-btn {
+      border: none; border-radius: 4px; padding: 32px 20px;
+      cursor: pointer; font-family: 'Cinzel', serif; font-size: 0.8rem;
+      letter-spacing: 5px; transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .choice-btn::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s; }
+    .choice-btn:hover::before { opacity: 1; }
+    .choice-btn:hover { transform: translateY(-3px); }
+
+    .btn-truth {
+      background: linear-gradient(135deg, #1a2a4a, #0d1a2e);
+      border: 1px solid rgba(100,150,255,0.4);
+      color: #9ab5ff;
+      box-shadow: 0 0 30px rgba(100,150,255,0.1);}
+    .btn-truth::before { background: linear-gradient(135deg, #1e3060, #122440); }
+    .btn-truth:hover { box-shadow: 0 8px 40px rgba(100,150,255,0.2); border-color: rgba(100,150,255,0.7); }
+
+    .btn-dare {
+      background: linear-gradient(135deg, #3a0a0a, #200505);
+      border: 1px solid rgba(255,100,100,0.4);
+      color: #ffb0b0;
+      box-shadow: 0 0 30px rgba(255,100,100,0.1);
+    }
+    .btn-dare::before { background: linear-gradient(135deg, #5a1010, #3a0808); }
+    .btn-dare:hover { box-shadow: 0 8px 40px rgba(255,100,100,0.2); border-color: rgba(255,100,100,0.7); }
+
+    .choice-emoji { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+    .choice-label { display: block; }
+
+    /* card reveal */
+    .card-reveal {
+      background: var(--card-bg); border-radius: 4px; padding: 40px 32px;
+      text-align: center; margin-bottom: 20px; position: relative;
+      animation: cardFlip 0.4s ease;
+      min-height: 200px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .card-reveal.truth-card { border: 1px solid rgba(100,150,255,0.5); box-shadow: 0 0 40px rgba(100,150,255,0.1); }
+    .card-reveal.dare-card  { border: 1px solid rgba(255,100,100,0.5); box-shadow: 0 0 40px rgba(255,100,100,0.1); }
+
+    @keyframes cardFlip { from { opacity: 0; transform: rotateY(90deg) scale(0.8); } to { opacity: 1; transform: rotateY(0) scale(1); } }
+
+    .card-type-badge {
+      font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 5px;
+      padding: 4px 16px; border-radius: 2px; display: inline-block; margin-bottom: 20px;
+    }
+    .truth-badge { background: rgba(100,150,255,0.2); color: #9ab5ff; border: 1px solid rgba(100,150,255,0.4); }
+    .dare-badge  { background: rgba(255,100,100,0.2); color: #ffb0b0; border: 1px solid rgba(255,100,100,0.4); }
+
+    .card-text {
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: clamp(1.1rem, 3vw, 1.5rem); color: var(--white);
+      line-height: 1.6; letter-spacing: 0.5px;
+    }
+
+    .card-intensity {
+      position: absolute; top: 14px; right: 14px;
+      font-size: 0.75rem; letter-spacing: 2px;
+    }
+
+    /* action buttons */
+    .action-row { display: flex; gap: 12px; margin-bottom: 20px; }
+    .btn-done {
+      flex: 1; background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-done:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-skip {
+      background: transparent; border: 1px solid var(--gold-border);
+      border-radius: 3px; color: var(--muted);
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px 24px; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-skip:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* players queue */
+    .queue-wrap { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 20px 24px; }
+    .queue-title { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); margin-bottom: 14px; }
+    .queue-players { display: flex; flex-wrap: wrap; gap: 8px; }
+    .queue-player {
+      font-family: 'Raleway', sans-serif; font-size: 0.7rem; letter-spacing: 1px;
+      padding: 6px 14px; border-radius: 2px; transition: all 0.3s;
+      border: 1px solid var(--gold-border); color: var(--muted);
+    }
+    .queue-player.current { background: var(--gold); color: #080806; border-color: var(--gold); font-weight: 700; }
+    .queue-player.done { opacity: 0.4; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 60px 24px; }
+    .empty-state .empty-icon { font-size: 3rem; display: block; margin-bottom: 20px; }
+    .empty-state p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--muted); letter-spacing: 2px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 90px 20px 30px; }
+      .choice-wrap { grid-template-columns: 1fr; }
+      .action-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">Chapter 17</a>
+  <a class="nav-back" href="dashboard.html">← Dashboard</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <span class="page-tag">X V I I &nbsp;·&nbsp; Games Arena</span>
+  <h1 class="page-title">🎯 Truth or Dare</h1>
+</section>
+
+<div class="content">
+
+  <!-- ── SETUP ── -->
+  <div class="screen active" id="setupScreen">
+
+    <div class="panel">
+      <p class="panel-title">Add Players</p>
+      <div class="players-row" id="playersRow"></div>
+      <div class="add-player-row">
+        <input type="text" id="playerInput" placeholder="Enter name..." onkeydown="if(event.key==='Enter') addPlayer()"/>
+        <button class="btn-add-player" onclick="addPlayer()">+ Add</button>
+      </div>
+    </div>
+
+    <div class="panel" style="animation-delay:0.7s">
+      <p class="panel-title">Intensity</p>
+      <div class="intensity-pills">
+        <span class="int-pill selected" data-int="mild">Mild 😇</span>
+        <span class="int-pill" data-int="medium">Medium 😏</span>
+        <span class="int-pill" data-int="spicy">Spicy 🌶️</span>
+      </div>
+    </div>
+
+    <div class="panel" style="animation-delay:0.8s">
+      <p class="panel-title">Add Custom Cards 😂</p>
+      <div class="custom-row">
+        <input type="text" id="customCardText" placeholder="Write your own truth or dare..."/>
+        <select id="customCardType">
+          <option value="truth">Truth</option>
+          <option value="dare">Dare</option>
+        </select>
+      </div>
+      <button class="btn-add-custom" onclick="addCustomCard()">+ Add Card</button>
+      <div class="custom-list" id="customList"></div>
+      <p style="font-size:0.7rem;color:var(--muted);font-family:'Cormorant Garamond',serif;font-style:italic">Perfect for Chapter 17 inside jokes 😂</p>
+    </div>
+
+    <button class="btn-start" onclick="startGame()"><span>Start the Game 🎯</span></button>
+
+  </div>
+
+  <!-- ── GAME ── -->
+  <div class="screen" id="gameScreen">
+
+    <div class="current-player-bar">
+      <div>
+        <span class="cp-label">Current Player</span>
+        <span class="cp-name" id="cpName">Player</span>
+      </div>
+      <span class="round-badge" id="roundBadge">Round 1</span>
+    </div>
+
+    <!-- Choice -->
+    <div class="choice-wrap" id="choiceWrap">
+      <button class="choice-btn btn-truth" onclick="pickCard('truth')">
+        <span class="choice-emoji">🤔</span>
+        <span class="choice-label">Truth</span>
+      </button>
+      <button class="choice-btn btn-dare" onclick="pickCard('dare')">
+        <span class="choice-emoji">😈</span>
+        <span class="choice-label">Dare</span>
+      </button>
+    </div>
+
+    <!-- Card reveal (hidden initially) -->
+    <div class="card-reveal" id="cardReveal" style="display:none">
+      <span class="card-intensity" id="cardIntensity"></span>
+      <span class="card-type-badge" id="cardTypeBadge">Truth</span>
+      <p class="card-text" id="cardText">Card text here</p>
+    </div>
+
+    <!-- Actions (hidden initially) -->
+    <div class="action-row" id="actionRow" style="display:none">
+      <button class="btn-done" onclick="nextPlayer()">Done ✓</button>
+      <button class="btn-skip" onclick="skipCard()">Skip 🙈</button>
+    </div>
+
+    <!-- Players queue -->
+    <div class="queue-wrap">
+      <p class="queue-title">Players</p>
+      <div class="queue-players" id="queuePlayers"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // ── DEFAULT CARDS
+  const DEFAULT_CARDS = {
+    mild: {
+      truth: [
+        "What's your most embarrassing moment in Chapter 17?",
+        "Who in the group do you think is the funniest?",
+        "What's a secret talent nobody in the group knows about?",
+        "Have you ever talked about someone in this group behind their back?",
+        "Who in the group would you call at 3am for help?",
+        "What's the most childish thing you still do?",
+        "Have you ever pretended to be busy to avoid a hangout?",
+        "What's your honest opinion of the group's WhatsApp chat? 😂",
+        "Who in the group gives the best advice?",
+        "What's something you've never told anyone in this group?",
+        "Who in the group do you think will get married first?",
+        "What's your most used emoji and why? 😂",
+      ],
+      dare: [
+        "Do your best impression of someone in the group.",
+        "Let the group go through your camera roll for 30 seconds.",
+        "Text your most recent contact a random compliment right now.",
+        "Do 20 pushups.",
+        "Speak in an accent for the next 3 rounds.",
+        "Show the group your most recent Google search.",
+        "Call someone and sing happy birthday to them.",
+        "Let the group pick your profile picture for 24 hours.",
+        "Say something genuinely nice about every person in the group.",
+        "Do your best catwalk across the room.",
+      ]
+    },
+    medium: {
+      truth: [
+        "What's the biggest lie you've ever told someone in this group?",
+        "Have you ever had a crush on someone in Chapter 17? 👀",
+        "What's something you pretend to like just to fit in?",
+        "What's your most controversial opinion about the group?",
+        "Who in the group do you think is most likely to keep a secret?",
+        "Have you ever almost left the group chat? 😂",
+        "What's the pettiest thing you've done to someone in this group?",
+        "Who do you think is the most dramatic person here?",
+        "What's a habit of yours that you're not proud of?",
+        "Have you ever ghosted someone in this group?",
+        "What couple in the group do you think is most compatible? 👀",
+        "Who in the group do you secretly disagree with the most?",
+      ],
+      dare: [
+        "Let the group read your last 10 messages to someone outside the group.",
+        "Do a 60-second stand-up comedy about Chapter 17.",
+        "Roast the person to your left for 30 seconds.",
+        "Let someone in the group post a status from your phone.",
+        "Reveal your screen time for this week.",
+        "Rate everyone in the group's fashion sense out of 10.",
+        "Let the group guess your lock screen password.",
+        "Do your best impression of a couple in the group. 😂",
+        "Share your most embarrassing photo with the group.",
+        "Call your mum and tell her you miss her right now.",
+      ]
+    },
+    spicy: {
+      truth: [
+        "What's the most scandalous thing you know about someone in this group? 👀",
+        "Who in Chapter 17 do you think is the most attractive?",
+        "Have you ever kept a huge secret from the whole group?",
+        "What's the wildest thing you've done that the group doesn't know about?",
+        "If you had to date someone in the group who isn't your partner, who would it be? 😂",
+        "What's something you've said about a couple in this group that you'd never say to their face?",
+        "Have you ever fancied someone who is now dating a friend in the group?",
+        "What's the most toxic thing you've ever done in a relationship?",
+        "Who do you think is most likely to cheat in their relationship? Be honest 😂",
+        "What's a secret you've been keeping that would shock everyone here?",
+      ],
+      dare: [
+        "Let the group read your most recent DMs with your partner. 👀",
+        "Tell your biggest secret to the group right now.",
+        "Recreate your most embarrassing moment in detail.",
+        "Let the group ask you any 3 questions and you MUST answer honestly.",
+        "Call your partner and tell them what you actually think of their friends. 😂",
+        "Rate the couples in the group from most to least likely to last.",
+        "Tell the group the last time you cried and why.",
+        "Show the group the most embarrassing text you've ever sent.",
+        "Tell everyone your honest first impression of each person in the group.",
+        "Let the group vote on one embarrassing thing you have to post on your story.",
+      ]
+    }
+  };
+
+  // ── STATE
+  let players = [];
+  let customCards = [];
+  let selectedIntensity = 'mild';
+  let currentPlayerIndex = 0;
+  let roundNumber = 1;
+  let usedCards = { truth: [], dare: [] };
+
+  // ── INTENSITY PILLS
+  document.querySelectorAll('.int-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.int-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      selectedIntensity = pill.dataset.int;
+    });
+  });
+
+  // ── PLAYERS
+  function addPlayer() {
+    const input = document.getElementById('playerInput');
+    const name = input.value.trim();
+    if (!name || players.includes(name)) { input.value = ''; return; }
+    players.push(name);
+    renderPlayerTags();
+    input.value = '';
+  }
+
+  function removePlayer(name) {
+    players = players.filter(p => p !== name);
+    renderPlayerTags();
+  }
+
+  function renderPlayerTags() {
+    const row = document.getElementById('playersRow');
+    row.innerHTML = '';
+    players.forEach(p => {
+      const tag = document.createElement('div');
+      tag.className = 'player-tag';
+      tag.innerHTML = `${p} <button onclick="removePlayer('${p}')">✕</button>`;
+      row.appendChild(tag);
+    });
+  }
+
+  // ── CUSTOM CARDS
+  function addCustomCard() {
+    const text = document.getElementById('customCardText').value.trim();
+    const type = document.getElementById('customCardType').value;
+    if (!text) return;
+    customCards.push({ text, type, intensity: selectedIntensity });
+    document.getElementById('customCardText').value = '';
+    renderCustomList();
+  }
+
+  function removeCustomCard(i) {
+    customCards.splice(i, 1);
+    renderCustomList();
+  }
+
+  function renderCustomList() {
+    const list = document.getElementById('customList');
+    list.innerHTML = '';
+    customCards.forEach((c, i) => {
+      const el = document.createElement('div');
+      el.className = 'custom-card-item';
+      el.innerHTML = `
+        <span class="custom-card-type type-${c.type}">${c.type}</span>
+        <span class="custom-card-text">${c.text}</span>
+        <button class="custom-card-del" onclick="removeCustomCard(${i})">✕</button>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // ── START GAME
+  function startGame() {
+    if (players.length < 2) return alert('Add at least 2 players!');
+    currentPlayerIndex = 0;
+    roundNumber = 1;
+    usedCards = { truth: [], dare: [] };
+    showScreen('gameScreen');
+    loadPlayer();
+  }
+
+  function loadPlayer() {
+    const player = players[currentPlayerIndex];
+    document.getElementById('cpName').textContent = player;
+    document.getElementById('roundBadge').textContent = `Round ${roundNumber}`;
+
+    // Show choice, hide card
+    document.getElementById('choiceWrap').style.display = 'grid';
+    document.getElementById('cardReveal').style.display = 'none';
+    document.getElementById('actionRow').style.display = 'none';
+
+    // Queue
+    renderQueue();
+  }
+
+  function renderQueue() {
+    const wrap = document.getElementById('queuePlayers');
+    wrap.innerHTML = '';
+    players.forEach((p, i) => {
+      const el = document.createElement('span');
+      el.className = 'queue-player' + (i === currentPlayerIndex ? ' current' : '');
+      el.textContent = p;
+      wrap.appendChild(el);
+    });
+  }
+
+  // ── PICK CARD
+  function pickCard(type) {
+    // Build pool
+    const pool = [
+      ...DEFAULT_CARDS[selectedIntensity][type],
+      ...customCards.filter(c => c.type === type).map(c => c.text)
+    ];
+
+    // Filter used
+    const available = pool.filter(c => !usedCards[type].includes(c));
+    const finalPool = available.length > 0 ? available : pool; // reset if all used
+
+    const card = finalPool[Math.floor(Math.random() * finalPool.length)];
+    usedCards[type].push(card);
+
+    // Replace [name] placeholder with a random other player
+    const others = players.filter(p => p !== players[currentPlayerIndex]);
+    const randomOther = others.length > 0 ? others[Math.floor(Math.random() * others.length)] : 'someone';
+    const finalCard = card.replace(/\[name\]/g, randomOther);
+
+    // Show card
+    const reveal = document.getElementById('cardReveal');
+    reveal.className = `card-reveal ${type}-card`;
+
+    const intensityEmoji = { mild: '😇', medium: '😏', spicy: '🌶️' };
+    document.getElementById('cardIntensity').textContent = intensityEmoji[selectedIntensity];
+    document.getElementById('cardTypeBadge').textContent = type === 'truth' ? 'Truth 🤔' : 'Dare 😈';
+    document.getElementById('cardTypeBadge').className = `card-type-badge ${type}-badge`;
+    document.getElementById('cardText').textContent = finalCard;
+
+    document.getElementById('choiceWrap').style.display = 'none';
+    reveal.style.display = 'flex';
+    document.getElementById('actionRow').style.display = 'flex';
+  }
+
+  function nextPlayer() {
+    currentPlayerIndex++;
+    if (currentPlayerIndex >= players.length) {
+      currentPlayerIndex = 0;
+      roundNumber++;
+    }
+    loadPlayer();
+  }
+
+  function skipCard() {
+    document.getElementById('choiceWrap').style.display = 'grid';
+    document.getElementById('cardReveal').style.display = 'none';
+    document.getElementById('actionRow').style.display = 'none';
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+
+</body>
+</html>

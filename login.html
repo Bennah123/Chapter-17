@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chapter 17 — Enter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;700&family=Cinzel:wght@400;700&family=Raleway:wght@200;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #080806;
+      --gold: #C9A84C;
+      --gold-bright: #FFD700;
+      --gold-dim: rgba(201,168,76,0.15);
+      --gold-border: rgba(201,168,76,0.35);
+      --white: #f5f0e8;
+      --muted: rgba(245,240,232,0.45);
+    }
+    body {
+      font-family: 'Raleway', sans-serif;
+      background-image: url('chapta17.jpeg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+    }
+    /* Dark overlay on background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(8,8,6,0.72);
+      z-index: 0;
+    }
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* ── Page fade out ── */
+    body.fade-out {
+      animation: fadeOutPage 0.8s ease forwards;
+    }
+    @keyframes fadeOutPage {
+      to { opacity: 0; }
+    }
+    /* ── Container ── */
+    .container {
+      position: relative;
+      z-index: 2;
+      background: rgba(8,8,6,0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--gold-border);
+      padding: 44px 40px;
+      border-radius: 4px;
+      width: 360px;
+      box-shadow: 0 0 60px rgba(201,168,76,0.12), inset 0 0 40px rgba(201,168,76,0.03);
+      animation: fadeUp 0.9s ease forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Corner accents ── */
+    .container::before, .container::after {
+      content: '';
+      position: absolute;
+      width: 18px; height: 18px;
+      border-color: var(--gold);
+      border-style: solid;
+    }
+    .container::before {
+      top: -1px; left: -1px;
+      border-width: 2px 0 0 2px;
+    }
+    .container::after {
+      bottom: -1px; right: -1px;
+      border-width: 0 2px 2px 0;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .roman {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 8px;
+      color: var(--gold);
+      display: block;
+      margin-bottom: 10px;
+    }
+    .header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: 2.2rem;
+      letter-spacing: 1px;
+      background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 50%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(201,168,76,0.3));
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px auto 0;
+      width: fit-content;
+    }
+    .divider-line { width: 40px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+    .divider-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
+    .divider-dot { width: 4px; height: 4px; background: var(--gold); transform: rotate(45deg); }
+    /* ── Inputs ── */
+    .input-group {
+      position: relative;
+      margin-top: 16px;
+    }
+    input {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(201,168,76,0.05);
+      border: 1px solid var(--gold-border);
+      border-radius: 3px;
+      color: var(--white);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    input::placeholder {
+      color: var(--muted);
+      font-weight: 200;
+      letter-spacing: 2px;
+      font-size: 0.75rem;
+    }
+    input:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.08);
+      box-shadow: 0 0 16px rgba(201,168,76,0.15);
+    }
+    /* ── Button ── */
+    .btn-wrap {
+      margin-top: 28px;
+      position: relative;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none;
+      border-radius: 3px;
+      color: #080806;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 24px rgba(201,168,76,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #fff8e7, var(--gold-bright));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    button:hover::before { opacity: 1; }
+    button:hover { box-shadow: 0 0 40px rgba(255,215,0,0.4); transform: translateY(-1px); }
+    button span { position: relative; z-index: 1; }
+    /* ── Spinner ── */
+    .spinner-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border-radius: 3px;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .spinner-overlay.active { display: flex; }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(8,8,6,0.3);
+      border-top-color: #080806;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* ── Message ── */
+    #msg {
+      text-align: center;
+      margin-top: 18px;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      color: var(--gold);
+      min-height: 20px;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    #msg.show { opacity: 1; }
+
+    /* ── Responsive ── */
+    @media (max-width: 420px) {
+      .container { width: 92vw; padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="roman">X V I I</span>
+    <h2>Chapter 17</h2>
+    <div class="divider">
+      <div class="divider-line"></div>
+      <div class="divider-dot"></div>
+      <div class="divider-line r"></div>
+    </div>
+  </div>
+  <form id="gameForm">
+    <div class="input-group">
+      <input type="text" name="name" placeholder="Your Name" required/>
+    </div>
+    <div class="input-group">
+      <input type="tel" name="phone" placeholder="Phone Number" required/>
+    </div>
+    <div class="input-group">
+      <input type="email" name="email" placeholder="Email Address" required/>
+    </div>
+    <div class="btn-wrap">
+      <button type="submit"><span id="btn-text">Enter the Chapter</span></button>
+      <div class="spinner-overlay" id="spinner">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </form>
+  <p id="msg"></p>
+</div>
+<script>
+  const form    = document.getElementById("gameForm");
+  const spinner = document.getElementById("spinner");
+  const msg     = document.getElementById("msg");
+  const btnText = document.getElementById("btn-text");
+
+  const SHEET_URL = "https://script.google.com/macros/s/AKfycbzwMfesjc7KoyZUgj8MsmbMaCBtZJ8E6iZxKhA9DNyU7VaViCf3tW8i7cm5_UAUvotH/exec";
+
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    // Show spinner
+    spinner.classList.add("active");
+    btnText.style.visibility = "hidden";
+    const formData = {
+      name:  this.name.value,
+      phone: this.phone.value,
+      email: this.email.value
+    };
+    try {
+      await fetch(SHEET_URL, {
+        method: "POST",
+        body: JSON.stringify(formData)
+      });
+    } catch (err) {
+      // continue regardless
+    }
+    // Show success message
+    msg.textContent = "Aah wazi, once imetosha.";
+    msg.classList.add("show");
+    this.reset();
+    // Wait 1.5s then fade out and redirect
+    setTimeout(() => {
+      document.body.classList.add("fade-out");
+      setTimeout(() => {
+        window.location.href = "dashboard.html";
+      }, 800);
+    }, 1500);
+  });
+</script>
+</body>
+</html>

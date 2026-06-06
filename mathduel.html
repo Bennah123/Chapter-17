@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chapter 17 — Math Duel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080806;
+      --gold: #C9A84C;
+      --gold-bright: #FFD700;
+      --gold-border: rgba(201,168,76,0.25);
+      --gold-dim: rgba(201,168,76,0.08);
+      --white: #f5f0e8;
+      --muted: rgba(245,240,232,0.45);
+      --card-bg: rgba(15,15,12,0.9);
+      --correct: rgba(50,200,100,0.2);
+      --wrong: rgba(200,50,50,0.2);
+      --correct-border: rgba(50,200,100,0.6);
+      --wrong-border: rgba(200,50,50,0.6);
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--white); font-family: 'Raleway', sans-serif; min-height: 100vh; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.04; pointer-events: none; z-index: 100;
+    }
+
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 68px;
+      background: rgba(8,8,6,0.95); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--gold-border);
+    }
+    .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
+    .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
+    .nav-back:hover { color: var(--gold); }
+
+    .hero { padding: 100px 48px 40px; text-align: center; position: relative; }
+    .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
+    .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 12px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
+    .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2.5rem, 8vw, 5rem); background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 45%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 30px rgba(201,168,76,0.25)); opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards; }
+
+    .content { max-width: 700px; margin: 0 auto; padding: 0 24px 100px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── SETUP ── */
+    .panel {
+      background: var(--card-bg); border: 1px solid var(--gold-border);
+      border-radius: 4px; padding: 36px; margin-bottom: 24px;
+      opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards;
+    }
+    .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .input-group { display: flex; flex-direction: column; gap: 8px; }
+    .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
+
+    input[type="text"], select {
+      background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border);
+      border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px;
+      outline: none; transition: all 0.3s ease; width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
+    input::placeholder { color: var(--muted); font-size: 0.75rem; }
+    select option { background: #0f0f0c; }
+
+    /* difficulty pills */
+    .diff-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    .diff-pill {
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      border-radius: 2px; padding: 8px 20px; cursor: pointer;
+      font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px;
+      color: var(--muted); transition: all 0.2s; user-select: none;
+    }
+    .diff-pill.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
+      transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2);
+      position: relative; overflow: hidden;
+    }
+    .btn-start::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
+    .btn-start:hover::before { opacity: 1; }
+    .btn-start:hover { transform: translateY(-1px); }
+    .btn-start span { position: relative; z-index: 1; }
+
+    /* ── COUNTDOWN SPLASH ── */
+    .countdown-splash {
+      text-align: center; padding: 60px 24px;
+    }
+    .splash-num {
+      font-family: 'Cormorant Garamond', serif; font-weight: 700;
+      font-size: 10rem; color: var(--gold-bright);
+      filter: drop-shadow(0 0 40px rgba(255,215,0,0.5));
+      display: block; animation: splashPop 0.4s ease;
+    }
+    .splash-text { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 8px; color: var(--muted); margin-top: 16px; }
+    @keyframes splashPop { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* ── GAME ── */
+    .score-bar {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: 16px;
+      background: var(--card-bg); border: 1px solid var(--gold-border);
+      border-radius: 4px; padding: 20px 28px; margin-bottom: 20px;
+    }
+    .score-player { text-align: center; }
+    .score-player.active-p { border-radius: 3px; background: var(--gold-dim); padding: 8px; border: 1px solid var(--gold-border); }
+    .score-name { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); display: block; margin-bottom: 4px; }
+    .score-num { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 2.5rem; color: var(--gold-bright); filter: drop-shadow(0 0 10px rgba(255,215,0,0.3)); display: block; }
+    .score-vs { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 4px; color: var(--muted); text-align: center; }
+
+    /* progress */
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-info { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .progress-info span { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); }
+    .progress-bar { height: 3px; background: var(--gold-border); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width 0.4s ease; }
+
+    /* question display */
+    .question-wrap {
+      background: var(--card-bg); border: 1px solid var(--gold-border);
+      border-radius: 4px; padding: 36px; margin-bottom: 20px; text-align: center;
+      position: relative;
+    }
+    .q-player-label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 5px; color: var(--gold); display: block; margin-bottom: 16px; }
+    .q-equation {
+      font-family: 'Cormorant Garamond', serif; font-weight: 700;
+      font-size: clamp(2.5rem, 10vw, 5rem);
+      color: var(--white); letter-spacing: 4px;
+      filter: drop-shadow(0 0 20px rgba(201,168,76,0.15));
+    }
+    .q-type-badge {
+      position: absolute; top: 14px; right: 14px;
+      font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 2px;
+      background: var(--gold-dim); border: 1px solid var(--gold-border);
+      color: var(--gold); padding: 3px 10px; border-radius: 2px;
+    }
+
+    /* timer bar */
+    .timer-bar-wrap { margin-bottom: 20px; }
+    .timer-bar-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .timer-bar-row span { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); }
+    .timer-bar-track { height: 6px; background: var(--gold-border); border-radius: 3px; overflow: hidden; }
+    .timer-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-bright), var(--gold)); transition: width 0.1s linear; border-radius: 3px; }
+    .timer-bar-fill.urgent { background: linear-gradient(90deg, #ff6b6b, #ff4444); }
+
+    /* answer input */
+    .answer-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .answer-input {
+      flex: 1; background: rgba(201,168,76,0.05); border: 2px solid var(--gold-border);
+      border-radius: 3px; color: var(--white); font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem; font-weight: 700; letter-spacing: 2px; padding: 16px 20px;
+      outline: none; transition: all 0.3s ease; text-align: center;
+    }
+    .answer-input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 20px rgba(201,168,76,0.15); }
+    .answer-input.correct-input { border-color: var(--correct-border); background: var(--correct); }
+    .answer-input.wrong-input { border-color: var(--wrong-border); background: var(--wrong); }
+
+    .btn-submit {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 3px; padding: 16px 28px; cursor: pointer;
+      transition: all 0.3s; box-shadow: 0 0 20px rgba(201,168,76,0.2);
+      white-space: nowrap;
+    }
+    .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-submit:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+    /* feedback */
+    .feedback {
+      text-align: center; padding: 14px; border-radius: 3px; margin-bottom: 16px;
+      font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic;
+      min-height: 52px; transition: all 0.3s;
+    }
+    .feedback.correct-fb { background: var(--correct); border: 1px solid var(--correct-border); color: #7fff9a; }
+    .feedback.wrong-fb   { background: var(--wrong);   border: 1px solid var(--wrong-border);   color: #ff9a9a; }
+    .feedback.timeout-fb { background: rgba(255,165,0,0.15); border: 1px solid rgba(255,165,0,0.4); color: #ffb347; }
+
+    .btn-next {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
+      transition: all 0.3s; display: none;
+    }
+    .btn-next:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* ── RESULTS ── */
+    .results-card {
+      background: var(--card-bg); border: 1px solid var(--gold);
+      border-radius: 4px; padding: 48px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .results-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,168,76,0.07) 0%, transparent 70%); pointer-events: none; }
+    .result-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 16px; }
+    .result-winner { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2rem, 7vw, 4rem); background: linear-gradient(160deg, #fff8e7, var(--gold-bright), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 20px rgba(201,168,76,0.3)); margin-bottom: 8px; }
+    .result-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--muted); margin-bottom: 32px; }
+
+    .result-scores { display: flex; justify-content: center; gap: 40px; margin-bottom: 32px; }
+    .result-player { text-align: center; }
+    .result-player-name { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 4px; color: var(--gold); display: block; margin-bottom: 6px; }
+    .result-player-score { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: var(--white); display: block; }
+    .result-player-detail { font-family: 'Raleway', sans-serif; font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; display: block; margin-top: 4px; }
+
+    .btn-play-again {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none; border-radius: 3px; color: #080806;
+      font-family: 'Cinzel', serif; font-size: 0.65rem;
+      letter-spacing: 5px; padding: 14px 48px; cursor: pointer; transition: all 0.3s;
+    }
+    .btn-play-again:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      .hero { padding: 90px 20px 30px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .score-bar { padding: 14px; gap: 8px; }
+      .answer-row { flex-direction: column; }
+      .btn-submit { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">Chapter 17</a>
+  <a class="nav-back" href="dashboard.html">← Dashboard</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <span class="page-tag">X V I I &nbsp;·&nbsp; Games Arena</span>
+  <h1 class="page-title">🔢 Math Duel</h1>
+</section>
+
+<div class="content">
+
+  <!-- ── SETUP ── -->
+  <div class="screen active" id="setupScreen">
+    <div class="panel">
+      <p class="panel-title">Set Up The Duel</p>
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Player 1</label>
+          <input type="text" id="p1Name" placeholder="Player 1 name"/>
+        </div>
+        <div class="input-group">
+          <label>Player 2</label>
+          <input type="text" id="p2Name" placeholder="Player 2 name"/>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Rounds</label>
+          <select id="rounds">
+            <option value="5">5 Rounds</option>
+            <option value="10" selected>10 Rounds</option>
+            <option value="15">15 Rounds</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Seconds per question</label>
+          <select id="timeLimit">
+            <option value="10">10 seconds</option>
+            <option value="15" selected>15 seconds</option>
+            <option value="20">20 seconds</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom:20px">
+        <label>Difficulty</label>
+        <div class="diff-pills">
+          <span class="diff-pill selected" data-diff="easy">Easy 😌</span>
+          <span class="diff-pill" data-diff="medium">Medium 😤</span>
+          <span class="diff-pill" data-diff="hard">Hard 😰</span>
+          <span class="diff-pill" data-diff="insane">Insane 💀</span>
+        </div>
+      </div>
+
+      <button class="btn-start" onclick="startGame()"><span>Start Duel 🔢</span></button>
+    </div>
+  </div>
+
+  <!-- ── COUNTDOWN ── -->
+  <div class="screen" id="countdownScreen">
+    <div class="countdown-splash">
+      <span class="splash-num" id="splashNum">3</span>
+      <p class="splash-text" id="splashText">GET READY</p>
+    </div>
+  </div>
+
+  <!-- ── GAME ── -->
+  <div class="screen" id="gameScreen">
+
+    <div class="score-bar">
+      <div class="score-player" id="scoreP1wrap">
+        <span class="score-name" id="scoreP1name">P1</span>
+        <span class="score-num" id="scoreP1">0</span>
+      </div>
+      <div class="score-vs">VS</div>
+      <div class="score-player" id="scoreP2wrap">
+        <span class="score-name" id="scoreP2name">P2</span>
+        <span class="score-num" id="scoreP2">0</span>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="progressLabel">Round 1</span>
+        <span id="progressFrac">1 / 10</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="question-wrap">
+      <span class="q-player-label" id="qPlayerLabel">Player 1's Turn</span>
+      <p class="q-equation" id="qEquation">12 + 7 = ?</p>
+      <span class="q-type-badge" id="qTypeBadge">Addition</span>
+    </div>
+
+    <div class="timer-bar-wrap">
+      <div class="timer-bar-row">
+        <span id="timerLabel">15s</span>
+        <span id="timerPct">100%</span>
+      </div>
+      <div class="timer-bar-track"><div class="timer-bar-fill" id="timerFill" style="width:100%"></div></div>
+    </div>
+
+    <div class="answer-row">
+      <input type="number" class="answer-input" id="answerInput" placeholder="?" autocomplete="off"
+        onkeydown="if(event.key==='Enter') submitAnswer()"/>
+      <button class="btn-submit" id="btnSubmit" onclick="submitAnswer()">Submit</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <button class="btn-next" id="btnNext" onclick="nextRound()">Next Round →</button>
+
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div class="screen" id="resultsScreen">
+    <div class="results-card">
+      <span class="result-tag">X V I I &nbsp;·&nbsp; Math Duel Results</span>
+      <p class="result-winner" id="resultWinner">🏆 Winner!!</p>
+      <p class="result-sub" id="resultSub"></p>
+      <div class="result-scores">
+        <div class="result-player">
+          <span class="result-player-name" id="resP1name">P1</span>
+          <span class="result-player-score" id="resP1score">0</span>
+          <span class="result-player-detail" id="resP1detail"></span>
+        </div>
+        <div class="result-player">
+          <span class="result-player-name" id="resP2name">P2</span>
+          <span class="result-player-score" id="resP2score">0</span>
+          <span class="result-player-detail" id="resP2detail"></span>
+        </div>
+      </div>
+      <button class="btn-play-again" onclick="playAgain()">Play Again</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── STATE
+  let p1, p2, scores, correct, totalRounds, timeLimitSecs, difficulty;
+  let currentRound, currentPlayer, timerInterval, timeLeft;
+  let currentAnswer, stats;
+
+  // ── DIFFICULTY PILLS
+  let selectedDiff = 'easy';
+  document.querySelectorAll('.diff-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.diff-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      selectedDiff = pill.dataset.diff;
+    });
+  });
+
+  // ── QUESTION GENERATOR
+  function generateQuestion(diff) {
+    const ops = {
+      easy:   ['+', '-'],
+      medium: ['+', '-', '×'],
+      hard:   ['+', '-', '×', '÷'],
+      insane: ['+', '-', '×', '÷', '²', '√']
+    };
+    const ranges = {
+      easy:   [1, 20],
+      medium: [1, 50],
+      hard:   [1, 100],
+      insane: [1, 200]
+    };
+
+    const opList = ops[diff];
+    const op = opList[Math.floor(Math.random() * opList.length)];
+    const [min, max] = ranges[diff];
+    let a, b, answer, display, type;
+
+    const rand = (mn, mx) => Math.floor(Math.random() * (mx - mn + 1)) + mn;
+
+    switch(op) {
+      case '+':
+        a = rand(min, max); b = rand(min, max);
+        answer = a + b; display = `${a} + ${b} = ?`; type = 'Addition'; break;
+      case '-':
+        a = rand(min, max); b = rand(min, Math.min(a, max));
+        answer = a - b; display = `${a} − ${b} = ?`; type = 'Subtraction'; break;
+      case '×':
+        a = rand(1, diff === 'hard' || diff === 'insane' ? 20 : 12);
+        b = rand(1, diff === 'hard' || diff === 'insane' ? 20 : 12);
+        answer = a * b; display = `${a} × ${b} = ?`; type = 'Multiplication'; break;
+      case '÷':
+        b = rand(1, 15); answer = rand(1, 15); a = b * answer;
+        display = `${a} ÷ ${b} = ?`; type = 'Division'; break;
+      case '²':
+        a = rand(1, diff === 'insane' ? 20 : 15);
+        answer = a * a; display = `${a}² = ?`; type = 'Squares'; break;
+      case '√':
+        answer = rand(1, diff === 'insane' ? 20 : 12); a = answer * answer;
+        display = `√${a} = ?`; type = 'Square Roots'; break;
+    }
+    return { display, answer, type };
+  }
+
+  // ── START GAME
+  function startGame() {
+    p1 = document.getElementById('p1Name').value.trim() || 'Player 1';
+    p2 = document.getElementById('p2Name').value.trim() || 'Player 2';
+    totalRounds = parseInt(document.getElementById('rounds').value);
+    timeLimitSecs = parseInt(document.getElementById('timeLimit').value);
+    difficulty = selectedDiff;
+
+    scores = { [p1]: 0, [p2]: 0 };
+    stats  = { [p1]: { correct: 0, total: 0, fastest: null }, [p2]: { correct: 0, total: 0, fastest: null } };
+    currentRound = 0;
+    currentPlayer = 0;
+
+    document.getElementById('scoreP1name').textContent = p1;
+    document.getElementById('scoreP2name').textContent = p2;
+    document.getElementById('resP1name').textContent = p1;
+    document.getElementById('resP2name').textContent = p2;
+
+    showScreen('countdownScreen');
+    runCountdown(3);
+  }
+
+  // ── COUNTDOWN SPLASH
+  function runCountdown(n) {
+    const numEl = document.getElementById('splashNum');
+    const txtEl = document.getElementById('splashText');
+    numEl.textContent = n;
+    numEl.style.animation = 'none';
+    void numEl.offsetWidth;
+    numEl.style.animation = 'splashPop 0.4s ease';
+
+    if (n > 0) {
+      setTimeout(() => runCountdown(n - 1), 800);
+    } else {
+      numEl.textContent = 'GO!!';
+      txtEl.textContent = 'NO CALCULATOR ALLOWED 😂';
+      setTimeout(() => {
+        showScreen('gameScreen');
+        loadRound();
+      }, 900);
+    }
+  }
+
+  // ── LOAD ROUND
+  function loadRound() {
+    if (currentRound >= totalRounds * 2) { showResults(); return; }
+
+    const player = currentPlayer === 0 ? p1 : p2;
+    const q = generateQuestion(difficulty);
+    currentAnswer = q.answer;
+
+    stats[player].total++;
+
+    // UI
+    document.getElementById('scoreP1').textContent = scores[p1];
+    document.getElementById('scoreP2').textContent = scores[p2];
+    document.getElementById('scoreP1wrap').classList.toggle('active-p', currentPlayer === 0);
+    document.getElementById('scoreP2wrap').classList.toggle('active-p', currentPlayer === 1);
+
+    const pct = Math.round((currentRound / (totalRounds * 2)) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = `Round ${Math.floor(currentRound / 2) + 1}`;
+    document.getElementById('progressFrac').textContent = `${currentRound + 1} / ${totalRounds * 2}`;
+
+    document.getElementById('qPlayerLabel').textContent = `${player}'s Turn`;
+    document.getElementById('qEquation').textContent = q.display;
+    document.getElementById('qTypeBadge').textContent = q.type;
+
+    const ansInput = document.getElementById('answerInput');
+    ansInput.value = '';
+    ansInput.className = 'answer-input';
+    ansInput.disabled = false;
+    ansInput.focus();
+
+    document.getElementById('btnSubmit').disabled = false;
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('feedback').className = 'feedback';
+    document.getElementById('btnNext').style.display = 'none';
+
+    startTimer(player);
+  }
+
+  let questionStartTime;
+
+  function startTimer(player) {
+    clearInterval(timerInterval);
+    timeLeft = timeLimitSecs;
+    questionStartTime = Date.now();
+    const fill = document.getElementById('timerFill');
+    fill.className = 'timer-bar-fill';
+
+    timerInterval = setInterval(() => {
+      timeLeft -= 0.1;
+      const pct = Math.max(0, (timeLeft / timeLimitSecs) * 100);
+      fill.style.width = pct + '%';
+      document.getElementById('timerLabel').textContent = Math.ceil(timeLeft) + 's';
+      document.getElementById('timerPct').textContent = Math.round(pct) + '%';
+      if (pct < 30) fill.className = 'timer-bar-fill urgent';
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        timeOut(player);
+      }
+    }, 100);
+  }
+
+  function timeOut(player) {
+    document.getElementById('answerInput').disabled = true;
+    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('feedback').textContent = `⏰ Time's up! The answer was ${currentAnswer}`;
+    document.getElementById('feedback').className = 'feedback timeout-fb';
+    document.getElementById('btnNext').style.display = 'block';
+  }
+
+  function submitAnswer() {
+    const val = document.getElementById('answerInput').value.trim();
+    if (val === '') return;
+    clearInterval(timerInterval);
+
+    const player = currentPlayer === 0 ? p1 : p2;
+    const given  = parseFloat(val);
+    const timeTaken = ((Date.now() - questionStartTime) / 1000).toFixed(1);
+    const ansInput  = document.getElementById('answerInput');
+
+    document.getElementById('answerInput').disabled = true;
+    document.getElementById('btnSubmit').disabled = true;
+
+    if (given === currentAnswer) {
+      const bonus = timeLeft > timeLimitSecs * 0.6 ? 2 : 1;
+      scores[player] += bonus;
+      stats[player].correct++;
+      if (!stats[player].fastest || timeTaken < stats[player].fastest) stats[player].fastest = timeTaken;
+      ansInput.className = 'answer-input correct-input';
+      document.getElementById('feedback').textContent = `✅ Correct!! +${bonus} point${bonus > 1 ? 's' : ''} — answered in ${timeTaken}s`;
+      document.getElementById('feedback').className = 'feedback correct-fb';
+    } else {
+      ansInput.className = 'answer-input wrong-input';
+      document.getElementById('feedback').textContent = `❌ Wrong! The answer was ${currentAnswer}. You said ${given}`;
+      document.getElementById('feedback').className = 'feedback wrong-fb';
+    }
+
+    document.getElementById('btnNext').style.display = 'block';
+  }
+
+  function nextRound() {
+    currentRound++;
+    currentPlayer = currentPlayer === 0 ? 1 : 0;
+    loadRound();
+  }
+
+  function showResults() {
+    clearInterval(timerInterval);
+    const s1 = scores[p1], s2 = scores[p2];
+
+    document.getElementById('resP1score').textContent = s1;
+    document.getElementById('resP2score').textContent = s2;
+    document.getElementById('resP1detail').textContent = `${stats[p1].correct}/${stats[p1].total} correct${stats[p1].fastest ? ' · fastest: ' + stats[p1].fastest + 's' : ''}`;
+    document.getElementById('resP2detail').textContent = `${stats[p2].correct}/${stats[p2].total} correct${stats[p2].fastest ? ' · fastest: ' + stats[p2].fastest + 's' : ''}`;
+
+    let winnerText, subText, winner;
+    if (s1 > s2) { winnerText = `🏆 ${p1} Wins!!`; subText = `${s1} - ${s2}. No calculator needed 😂`; winner = p1; }
+    else if (s2 > s1) { winnerText = `🏆 ${p2} Wins!!`; subText = `${s2} - ${s1}. No calculator needed 😂`; winner = p2; }
+    else { winnerText = '🤝 It\'s a Draw!!'; subText = `${s1} - ${s2}. Evenly matched!`; }
+
+    document.getElementById('resultWinner').textContent = winnerText;
+    document.getElementById('resultSub').textContent = subText;
+
+    if (winner) saveScore(winner);
+    showScreen('resultsScreen');
+  }
+
+  function saveScore(winner) {
+    try {
+      const sc = JSON.parse(localStorage.getItem('c17_scores') || '[]');
+      sc.push({ id: Date.now(), game: 'Math Duel', winner, players: [p1, p2], date: new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) });
+      localStorage.setItem('c17_scores', JSON.stringify(sc));
+    } catch(e) {}
+  }
+
+  function playAgain() { showScreen('setupScreen'); }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+</script>
+
+</body>
+</html>
