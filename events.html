@@ -300,10 +300,14 @@
   const SUPABASE_URL = "https://whgxunnlxhcfthkpcbjd.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
 
-  const supabase = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
+  let supabase;
+  window.addEventListener("Load", () => {
+    supabase = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+    renderEvents();
+  });
 
   let selectedEmoji = '🔥';
   let activeFilter = 'all';
@@ -323,6 +327,7 @@
   // ADD EVENT (SUPABASE)
   // =========================
   async function addEvent() {
+    if (!supabase) return;
     const title    = document.getElementById('eventTitle').value.trim();
     const category = document.getElementById('eventCategory').value;
     const date     = document.getElementById('eventDate').value;
