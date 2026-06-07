@@ -124,14 +124,12 @@
 <div class="content">
   <div class="add-panel">
     <p class="panel-title">Add a Member</p>
-    <div class="avatar-upload">
-      <div class="avatar-preview" id="avatarPreview">👤</div>
-      <div>
-        <div class="avatar-btn">Choose Photo<input type="file" id="avatarInput" accept="image/*" onchange="previewAvatar(this)"/></div>
-        <p style="font-size:0.65rem;color:var(--muted);margin-top:8px;letter-spacing:1px;">Optional</p>
+    <div class="avatar-upload" style="justify-content:center;">
+    <div class="avatar-preview" id="editAvatarPreview">👤</div>
       </div>
-    </div>
-    <div class="form-grid">
+      <button class="avatar-btn" style="margin:0 auto 16px;display:block;width:fit-content;" onclick="document.getElementById('editAvatarInput').click()">Change Photo</button>
+      <input type="file" id="editAvatarInput" accept="image/*" style="display:none" onchange="previewEditAvatar(this)"/>
+      <div class="form-grid">
       <div class="input-group"><label>Full Name</label><input type="text" id="memberName" placeholder="Member's name"/></div>
       <div class="input-group"><label>Role / Nickname</label><input type="text" id="memberRole" placeholder="e.g. The Funny One"/></div>
       <div class="input-group"><label>Member Since</label><input type="date" id="memberSince"/></div>
@@ -267,23 +265,23 @@
 
   // Avatar previews
   function previewAvatar(input) {
-    if (!input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      avatarData = e.target.result;
-      document.getElementById('avatarPreview').innerHTML = `<img src="${avatarData}" alt="avatar"/>`;
-    };
-    reader.readAsDataURL(input.files[0]);
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    avatarData = e.target.result;
+    document.getElementById('avatarPreview').innerHTML = `<img src="${avatarData}" alt="avatar"/>`;
+  };
+  reader.readAsDataURL(input.files[0]);
   }
 
   function previewEditAvatar(input) {
-    if (!input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      editAvatarData = e.target.result;
-      document.getElementById('editAvatarPreview').innerHTML = `<img src="${editAvatarData}" alt="avatar"/>`;
-    };
-    reader.readAsDataURL(input.files[0]);
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    editAvatarData = e.target.result;
+    document.getElementById('editAvatarPreview').innerHTML = `<img src="${editAvatarData}" alt="avatar"/>`;
+  };
+  reader.readAsDataURL(input.files[0]);
   }
 
   // Badge selection
