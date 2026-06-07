@@ -243,62 +243,135 @@
     </div>
   </div>
   <form id="gameForm">
-    <div class="input-group">
-      <input type="text" name="name" placeholder="Your Name" required/>
+    <div class="input-group"><input id="email"type="email"placeholder="Email Address"required/></div>
+    <div class="input-group"><input id="password"type="password"placeholder="Password"required/></div>
+    <div class="btn-wrap"><button type="submit"><span id="btn-text">Enter the Chapter</span></button>
+    <div class="spinner-overlay" id="spinner">
+    <div class="spinner"></div>
     </div>
-    <div class="input-group">
-      <input type="tel" name="phone" placeholder="Phone Number" required/>
-    </div>
-    <div class="input-group">
-      <input type="email" name="email" placeholder="Email Address" required/>
-    </div>
-    <div class="btn-wrap">
-      <button type="submit"><span id="btn-text">Enter the Chapter</span></button>
-      <div class="spinner-overlay" id="spinner">
-        <div class="spinner"></div>
-      </div>
     </div>
   </form>
-  <p id="msg"></p>
+<p id="msg"></p>
 </div>
 <script>
-  const form    = document.getElementById("gameForm");
-  const spinner = document.getElementById("spinner");
-  const msg     = document.getElementById("msg");
-  const btnText = document.getElementById("btn-text");
+const supabaseUrl =
+"https://whgxunnlxhcfthkpcbjd.supabase.co";
+const supabaseKey =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
+const supabase =
+window.supabase.createClient(
+supabaseUrl,
+supabaseKey
+);
+const allowedEmails = [
+"giftben593@gmail.com",
+"murangirikelvin100@gmail.com",
+"laprincefx254@gmail.com",
+"markkinoti685@gmail.com",
+"shalynekiiru167@gmail.com",
+"sylviaonginjo19@gmail.com",
+"faridamayuba1@gmail.com",
+"muriithimumbi1@gmail.com",
+"manuelmuia321@gmail.com",
+"cyruswahome871@gmail.com",
+];
+const form =
+document.getElementById(
+"gameForm"
+);
+const spinner =
+document.getElementById(
+"spinner"
+);
+const msg =
+document.getElementById(
+"msg"
+);
+const btnText =
+document.getElementById(
+"btn-text"
+);
+form.addEventListener(
+"submit",
+async function(e){
+e.preventDefault();
+const email =
+document
+.getElementById(
+"email"
+).value;
+const password =
+document
+.getElementById(
+"password"
+).value;
+if(
+!allowedEmails.includes(
+email
+)
+){
 
-  const SHEET_URL = "https://script.google.com/macros/s/AKfycbzwMfesjc7KoyZUgj8MsmbMaCBtZJ8E6iZxKhA9DNyU7VaViCf3tW8i7cm5_UAUvotH/exec";
+msg.textContent =
+"Access Denied";
 
-  form.addEventListener("submit", async function(e) {
-    e.preventDefault();
-    // Show spinner
-    spinner.classList.add("active");
-    btnText.style.visibility = "hidden";
-    const formData = {
-      name:  this.name.value,
-      phone: this.phone.value,
-      email: this.email.value
-    };
-    try {
-      await fetch(SHEET_URL, {
-        method: "POST",
-        body: JSON.stringify(formData)
-      });
-    } catch (err) {
-      // continue regardless
-    }
-    // Show success message
-    msg.textContent = "Aah wazi, once imetosha.";
-    msg.classList.add("show");
-    this.reset();
-    // Wait 1.5s then fade out and redirect
-    setTimeout(() => {
-      document.body.classList.add("fade-out");
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 800);
-    }, 1500);
-  });
+msg.classList.add(
+"show"
+);
+
+return;
+
+}
+
+spinner.classList.add(
+"active"
+);
+
+btnText.style.visibility =
+"hidden";
+
+const {
+error
+}
+
+=
+
+await supabase
+.auth
+.signInWithPassword({
+
+email,
+
+password
+
+});
+
+spinner.classList.remove(
+"active"
+);
+
+btnText.style.visibility =
+"visible";
+
+if(error){
+
+msg.textContent =
+"Invalid Login";
+
+msg.classList.add(
+"show"
+);
+return;
+}
+msg.textContent =
+"Welcome";
+msg.classList.add(
+"show"
+);
+setTimeout(()=>{
+window.location.href =
+"dashboard.html";
+},1000);
+});
 </script>
 </body>
 </html>
