@@ -258,8 +258,7 @@ const supabaseUrl =
 "https://whgxunnlxhcfthkpcbjd.supabase.co";
 const supabaseKey =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
-const supabase =
-window.supabase.createClient(
+const supabase = window.supabase.createClient(
 supabaseUrl,
 supabaseKey
 );
@@ -310,53 +309,30 @@ if(
 email
 )
 ){
-
 msg.textContent =
 "Access Denied";
-
 msg.classList.add(
 "show"
 );
-
 return;
-
 }
-
 spinner.classList.add(
 "active"
 );
-
 btnText.style.visibility =
 "hidden";
-
-const {
-error
-}
-
-=
-
-await supabase
-.auth
-.signInWithPassword({
-
+const {error} = await supabase.auth.signInWithPassword({
 email,
-
 password
-
 });
-
 spinner.classList.remove(
 "active"
 );
-
 btnText.style.visibility =
 "visible";
-
 if(error){
-
 msg.textContent =
 "Invalid Login";
-
 msg.classList.add(
 "show"
 );
