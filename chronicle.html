@@ -5,358 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chapter 17 — The Chronicle</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --bg: #080806;
-      --gold: #C9A84C;
-      --gold-bright: #FFD700;
-      --gold-border: rgba(201,168,76,0.25);
-      --gold-dim: rgba(201,168,76,0.08);
-      --white: #f5f0e8;
-      --muted: rgba(245,240,232,0.45);
-      --card-bg: rgba(15,15,12,0.9);
+      --bg: #080806; --gold: #C9A84C; --gold-bright: #FFD700;
+      --gold-border: rgba(201,168,76,0.25); --gold-dim: rgba(201,168,76,0.08);
+      --white: #f5f0e8; --muted: rgba(245,240,232,0.45); --card-bg: rgba(15,15,12,0.9);
     }
-
     html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--bg);
-      color: var(--white);
-      font-family: 'Raleway', sans-serif;
-      min-height: 100vh;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.04;
-      pointer-events: none;
-      z-index: 100;
-    }
-
-    /* ── NAVBAR ── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 50;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 48px;
-      height: 68px;
-      background: rgba(8,8,6,0.95);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--gold-border);
-    }
-
+    body { background: var(--bg); color: var(--white); font-family: 'Raleway', sans-serif; min-height: 100vh; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E"); opacity: 0.04; pointer-events: none; z-index: 100; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 68px; background: rgba(8,8,6,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--gold-border); }
     .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
     .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
     .nav-back:hover { color: var(--gold); }
-
-    /* ── HERO ── */
-    .hero {
-      padding: 140px 48px 60px;
-      text-align: center;
-      position: relative;
-    }
-
-    .hero-glow {
-      position: absolute;
-      top: 40%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 500px; height: 300px;
-      background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
+    .hero { padding: 140px 48px 60px; text-align: center; position: relative; }
+    .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
     .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 16px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
     .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2.5rem, 8vw, 5.5rem); background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 45%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 30px rgba(201,168,76,0.25)); opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards; }
     .page-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--muted); letter-spacing: 2px; margin-top: 12px; opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards; }
-
-    /* ── CONTENT ── */
-    .content {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 48px 100px;
-    }
-
-    /* ── ADD ENTRY PANEL ── */
-    .add-panel {
-      background: var(--card-bg);
-      border: 1px solid var(--gold-border);
-      border-radius: 4px;
-      padding: 36px;
-      margin-bottom: 70px;
-      opacity: 0;
-      animation: fadeUp 0.8s ease 0.8s forwards;
-    }
-
+    .content { max-width: 900px; margin: 0 auto; padding: 0 48px 100px; }
+    .add-panel { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 36px; margin-bottom: 70px; opacity: 0; animation: fadeUp 0.8s ease 0.8s forwards; }
     .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
-
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
-
-    input[type="text"],
-    input[type="date"],
-    textarea,
-    select {
-      background: rgba(201,168,76,0.05);
-      border: 1px solid var(--gold-border);
-      border-radius: 3px;
-      color: var(--white);
-      font-family: 'Raleway', sans-serif;
-      font-size: 0.82rem;
-      letter-spacing: 1px;
-      padding: 12px 16px;
-      outline: none;
-      transition: all 0.3s ease;
-      width: 100%;
-    }
-
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--gold);
-      background: rgba(201,168,76,0.08);
-      box-shadow: 0 0 16px rgba(201,168,76,0.1);
-    }
-
+    input[type="text"], input[type="date"], textarea, select { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
+    input:focus, textarea:focus, select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
     input::placeholder, textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
     textarea { resize: vertical; min-height: 100px; }
-
     select option { background: #0f0f0c; color: var(--white); }
-
-    /* Emoji picker row */
-    .emoji-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .emoji-btn {
-      background: var(--gold-dim);
-      border: 1px solid var(--gold-border);
-      border-radius: 3px;
-      padding: 8px 12px;
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .emoji-btn:hover,
-    .emoji-btn.selected {
-      border-color: var(--gold);
-      background: rgba(201,168,76,0.15);
-      transform: scale(1.1);
-    }
-
+    .emoji-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .emoji-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; padding: 8px 12px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s; }
+    .emoji-btn:hover, .emoji-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.15); transform: scale(1.1); }
     .emoji-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); align-self: center; }
-
-    .btn-add {
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-      border: none; border-radius: 3px;
-      color: #080806;
-      font-family: 'Cinzel', serif;
-      font-size: 0.65rem;
-      letter-spacing: 5px;
-      padding: 14px 40px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 0 24px rgba(201,168,76,0.2);
-      position: relative; overflow: hidden;
-    }
+    .btn-add { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; }
     .btn-add::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
     .btn-add:hover::before { opacity: 1; }
-    .btn-add:hover { transform: translateY(-1px); box-shadow: 0 0 40px rgba(255,215,0,0.3); }
+    .btn-add:hover { transform: translateY(-1px); }
     .btn-add span { position: relative; z-index: 1; }
-
-    /* ── TIMELINE ── */
     .timeline-wrap { position: relative; }
-
-    /* Center vertical line */
-    .timeline-wrap::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 0; bottom: 0;
-      width: 1px;
-      background: linear-gradient(180deg, var(--gold-border), transparent);
-      transform: translateX(-50%);
-    }
-
-    /* ── YEAR MARKER ── */
-    .year-marker {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 48px 0 32px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .year-badge {
-      font-family: 'Cinzel', serif;
-      font-size: 0.7rem;
-      letter-spacing: 6px;
-      color: var(--bg);
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-      padding: 8px 24px;
-      border-radius: 2px;
-    }
-
-    /* ── TIMELINE ENTRY ── */
-    .entry {
-      display: flex;
-      align-items: flex-start;
-      gap: 0;
-      margin-bottom: 40px;
-      position: relative;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.5s ease;
-    }
-
+    .timeline-wrap::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: linear-gradient(180deg, var(--gold-border), transparent); transform: translateX(-50%); }
+    .year-marker { display: flex; align-items: center; justify-content: center; margin: 48px 0 32px; position: relative; z-index: 2; }
+    .year-badge { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 6px; color: var(--bg); background: linear-gradient(135deg, var(--gold-bright), var(--gold)); padding: 8px 24px; border-radius: 2px; }
+    .entry { display: flex; align-items: flex-start; margin-bottom: 40px; position: relative; opacity: 0; transform: translateY(20px); transition: all 0.5s ease; }
     .entry.visible { opacity: 1; transform: translateY(0); }
-
-    /* Alternating sides */
     .entry.left { flex-direction: row; }
     .entry.right { flex-direction: row-reverse; }
-
-    .entry-content {
-      width: calc(50% - 32px);
-      background: var(--card-bg);
-      border: 1px solid var(--gold-border);
-      border-radius: 4px;
-      padding: 24px 28px;
-      position: relative;
-      transition: all 0.3s ease;
-    }
-
-    .entry-content:hover {
-      border-color: var(--gold);
-      box-shadow: 0 8px 30px rgba(201,168,76,0.1);
-    }
-
-    /* Arrow pointing to center */
-    .entry.left .entry-content::after {
-      content: '';
-      position: absolute;
-      top: 20px; right: -8px;
-      width: 0; height: 0;
-      border-top: 8px solid transparent;
-      border-bottom: 8px solid transparent;
-      border-left: 8px solid var(--gold-border);
-    }
-
-    .entry.right .entry-content::after {
-      content: '';
-      position: absolute;
-      top: 20px; left: -8px;
-      width: 0; height: 0;
-      border-top: 8px solid transparent;
-      border-bottom: 8px solid transparent;
-      border-right: 8px solid var(--gold-border);
-    }
-
-    /* Center dot */
-    .entry-dot {
-      position: absolute;
-      left: 50%;
-      top: 20px;
-      transform: translateX(-50%);
-      width: 14px; height: 14px;
-      background: var(--gold);
-      border-radius: 50%;
-      border: 2px solid var(--bg);
-      box-shadow: 0 0 12px rgba(201,168,76,0.5);
-      z-index: 2;
-      flex-shrink: 0;
-    }
-
+    .entry-content { width: calc(50% - 32px); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 24px 28px; position: relative; transition: all 0.3s ease; }
+    .entry-content:hover { border-color: var(--gold); box-shadow: 0 8px 30px rgba(201,168,76,0.1); }
+    .entry.left .entry-content::after { content: ''; position: absolute; top: 20px; right: -8px; width: 0; height: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-left: 8px solid var(--gold-border); }
+    .entry.right .entry-content::after { content: ''; position: absolute; top: 20px; left: -8px; width: 0; height: 0; border-top: 8px solid transparent; border-bottom: 8px solid transparent; border-right: 8px solid var(--gold-border); }
+    .entry-dot { position: absolute; left: 50%; top: 20px; transform: translateX(-50%); width: 14px; height: 14px; background: var(--gold); border-radius: 50%; border: 2px solid var(--bg); box-shadow: 0 0 12px rgba(201,168,76,0.5); z-index: 2; flex-shrink: 0; }
     .entry-emoji { font-size: 1.5rem; display: block; margin-bottom: 10px; }
-
-    .entry-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-weight: 700;
-      font-size: 1.15rem;
-      color: var(--white);
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
-    }
-
-    .entry-date {
-      font-family: 'Cinzel', serif;
-      font-size: 0.55rem;
-      letter-spacing: 4px;
-      color: var(--gold);
-      margin-bottom: 10px;
-    }
-
-    .entry-story {
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-size: 0.95rem;
-      line-height: 1.7;
-      color: var(--muted);
-    }
-
-    .entry-tag {
-      display: inline-block;
-      margin-top: 12px;
-      font-family: 'Cinzel', serif;
-      font-size: 0.55rem;
-      letter-spacing: 3px;
-      color: var(--bg);
-      background: var(--gold);
-      padding: 3px 10px;
-      border-radius: 2px;
-    }
-
-    .entry-delete {
-      position: absolute;
-      top: 10px; right: 10px;
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 0.7rem;
-      cursor: pointer;
-      transition: color 0.3s;
-      letter-spacing: 1px;
-      font-family: 'Raleway', sans-serif;
-    }
+    .entry-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.15rem; color: var(--white); margin-bottom: 6px; letter-spacing: 0.5px; }
+    .entry-date { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); margin-bottom: 10px; }
+    .entry-story { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem; line-height: 1.7; color: var(--muted); }
+    .entry-tag { display: inline-block; margin-top: 12px; font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--bg); background: var(--gold); padding: 3px 10px; border-radius: 2px; }
+    .entry-delete { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--muted); font-size: 0.7rem; cursor: pointer; transition: color 0.3s; letter-spacing: 1px; font-family: 'Raleway', sans-serif; }
     .entry-delete:hover { color: var(--gold); }
-
-    /* ── EMPTY STATE ── */
-    .empty-state {
-      text-align: center;
-      padding: 80px 24px;
-    }
+    .loading { text-align: center; padding: 60px 24px; }
+    .loading-spinner { width: 40px; height: 40px; border: 2px solid var(--gold-border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--muted); letter-spacing: 2px; }
+    .empty-state { text-align: center; padding: 80px 24px; }
     .empty-state .empty-icon { font-size: 3rem; display: block; margin-bottom: 20px; }
     .empty-state p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--muted); letter-spacing: 2px; }
-
-    /* ── ANIMATIONS ── */
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 12px 28px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 700px) {
-      nav { padding: 0 24px; }
-      .hero { padding: 120px 24px 40px; }
-      .content { padding: 0 20px 80px; }
-      .form-grid { grid-template-columns: 1fr; }
-
-      .timeline-wrap::before { left: 16px; }
-
-      .entry { flex-direction: column !important; padding-left: 44px; }
-      .entry-content { width: 100%; }
-      .entry-dot { left: 16px; top: 4px; }
-      .entry.left .entry-content::after,
-      .entry.right .entry-content::after { display: none; }
-    }
+    @media (max-width: 700px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 20px 80px; } .form-grid { grid-template-columns: 1fr; } .timeline-wrap::before { left: 16px; } .entry { flex-direction: column !important; padding-left: 44px; } .entry-content { width: 100%; } .entry-dot { left: 16px; top: 4px; } .entry.left .entry-content::after, .entry.right .entry-content::after { display: none; } }
   </style>
 </head>
 <body>
@@ -368,17 +87,14 @@
 
 <section class="hero">
   <div class="hero-glow"></div>
-  <span class="page-tag">X V I I &nbsp;·&nbsp; The Chronicle</span>
+  <span class="page-tag">X V I I · The Chronicle</span>
   <h1 class="page-title">The Chronicle</h1>
   <p class="page-sub">"Every chapter of our story, written here."</p>
 </section>
 
 <div class="content">
-
-  <!-- ADD ENTRY -->
   <div class="add-panel">
     <p class="panel-title">Add to The Chronicle</p>
-
     <div class="form-grid">
       <div class="input-group">
         <label>Event Title</label>
@@ -389,7 +105,6 @@
         <input type="date" id="entryDate"/>
       </div>
     </div>
-
     <div class="form-grid" style="margin-bottom:16px">
       <div class="input-group">
         <label>Added By</label>
@@ -406,12 +121,10 @@
         </select>
       </div>
     </div>
-
     <div class="input-group" style="margin-bottom:16px">
       <label>The Story</label>
       <textarea id="entryStory" placeholder="Tell the story of this moment..."></textarea>
     </div>
-
     <div class="emoji-row">
       <span class="emoji-label">Vibe</span>
       <button class="emoji-btn selected" data-emoji="🔥">🔥</button>
@@ -423,34 +136,28 @@
       <button class="emoji-btn" data-emoji="👑">👑</button>
       <button class="emoji-btn" data-emoji="🎵">🎵</button>
     </div>
-
     <button class="btn-add" onclick="addEntry()"><span>Add to Chronicle</span></button>
   </div>
 
-  <!-- TIMELINE -->
   <div class="timeline-wrap" id="timeline">
-    <div class="empty-state" id="emptyState">
-      <span class="empty-icon">📖</span>
-      <p>The Chronicle is empty. Start writing your story.</p>
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading The Chronicle...</p>
     </div>
   </div>
-
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-  const STORAGE_KEY = 'c17_chronicle';
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://whgxunnlxhcfthkpcbjd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
+  );
 
-  function loadEntries() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-    catch { return []; }
-  }
-
-  function saveEntries(entries) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  }
-
-  // Emoji selection
   let selectedEmoji = '🔥';
+
   document.querySelectorAll('.emoji-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
@@ -459,61 +166,50 @@
     });
   });
 
-  function addEntry() {
+  async function addEntry() {
     const title    = document.getElementById('entryTitle').value.trim();
     const date     = document.getElementById('entryDate').value;
     const author   = document.getElementById('entryAuthor').value.trim();
     const category = document.getElementById('entryCategory').value;
     const story    = document.getElementById('entryStory').value.trim();
-
     if (!title)  return alert('Give this moment a title!');
     if (!date)   return alert('When did this happen?');
     if (!author) return alert('Who is adding this?');
     if (!story)  return alert('Tell the story!');
 
-    const entries = loadEntries();
-    entries.push({
-      id: Date.now(),
-      title, date, author, category, story,
-      emoji: selectedEmoji
-    });
-
-    // Sort by date descending
-    entries.sort((a, b) => new Date(b.date) - new Date(a.date));
-    saveEntries(entries);
-    renderTimeline();
+    await sb.from('chronicle').insert({ title, date, author, category, story, emoji: selectedEmoji });
+    showToast('Added to The Chronicle!! 🔥');
 
     document.getElementById('entryTitle').value = '';
     document.getElementById('entryDate').value = '';
     document.getElementById('entryAuthor').value = '';
     document.getElementById('entryStory').value = '';
-    document.getElementById('entryCategory').value = 'Hangout';
+    loadEntries();
   }
 
-  function deleteEntry(id) {
+  async function deleteEntry(id) {
     if (!confirm('Remove this entry from The Chronicle?')) return;
-    const entries = loadEntries().filter(e => e.id !== id);
-    saveEntries(entries);
-    renderTimeline();
+    await sb.from('chronicle').delete().eq('id', id);
+    showToast('Entry removed.');
+    loadEntries();
   }
 
-  function renderTimeline() {
-    const entries  = loadEntries();
-    const timeline = document.getElementById('timeline');
-    const empty    = document.getElementById('emptyState');
+  async function loadEntries() {
+    const { data, error } = await sb.from('chronicle').select('*').order('date', { ascending: false });
+    if (error) { console.error(error); return; }
+    renderTimeline(data || []);
+  }
 
+  function renderTimeline(entries) {
+    const timeline = document.getElementById('timeline');
     if (entries.length === 0) {
-      timeline.innerHTML = '';
-      timeline.appendChild(empty);
+      timeline.innerHTML = `<div class="empty-state"><span class="empty-icon">📖</span><p>The Chronicle is empty. Start writing your story.</p></div>`;
       return;
     }
-
     timeline.innerHTML = '';
     let currentYear = null;
-
     entries.forEach((entry, index) => {
       const year = new Date(entry.date).getFullYear();
-
       if (year !== currentYear) {
         currentYear = year;
         const marker = document.createElement('div');
@@ -521,10 +217,8 @@
         marker.innerHTML = `<span class="year-badge">${year}</span>`;
         timeline.appendChild(marker);
       }
-
       const side = index % 2 === 0 ? 'left' : 'right';
       const formatted = new Date(entry.date).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
-
       const el = document.createElement('div');
       el.className = `entry ${side}`;
       el.innerHTML = `
@@ -540,20 +234,21 @@
       `;
       timeline.appendChild(el);
     });
-
-    // Intersection observer for scroll animations
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.1 });
-
     document.querySelectorAll('.entry').forEach(el => observer.observe(el));
   }
 
-  // Set today's date as default
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
   document.getElementById('entryDate').valueAsDate = new Date();
-
-  renderTimeline();
+  sb.channel('chronicle').on('postgres_changes', { event: '*', schema: 'public', table: 'chronicle' }, () => loadEntries()).subscribe();
+  loadEntries();
 </script>
-
 </body>
 </html>
