@@ -259,10 +259,7 @@ const supabaseUrl =
 "https://whgxunnlxhcfthkpcbjd.supabase.co";
 const supabaseKey =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
-const supabase = window.supabase.createClient(
-supabaseUrl,
-supabaseKey
-);
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 const allowedEmails = [
 "giftben593@gmail.com",
 "murangirikelvin100@gmail.com",
@@ -275,33 +272,19 @@ const allowedEmails = [
 "manuelmuia321@gmail.com",
 "cyruswahome871@gmail.com",
 ];
-const form =
-document.getElementById(
-"gameForm"
-);
-const spinner =
-document.getElementById(
-"spinner"
-);
-const msg =
-document.getElementById(
-"msg"
-);
-const btnText =
-document.getElementById(
-"btn-text"
-);
+const form =document.getElementById("gameForm");
+const spinner =document.getElementById("spinner");
+const msg =document.getElementById("msg");
+const btnText =document.getElementById("btn-text");
 form.addEventListener(
 "submit",
 async function(e){
 e.preventDefault();
-const email =
-document
+const email = document
 .getElementById(
 "email"
 ).value;
-const password =
-document
+const password = document
 .getElementById(
 "password"
 ).value;
@@ -322,10 +305,7 @@ spinner.classList.add(
 );
 btnText.style.visibility =
 "hidden";
-const {error} = await supabase.auth.signInWithPassword({
-email,
-password
-});
+const {error} = await supabaseClient.auth.signInWithPassword({email,password});
 spinner.classList.remove(
 "active"
 );
