@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chapter 17 — Members</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root { --bg: #080806; --gold: #C9A84C; --gold-bright: #FFD700; --gold-border: rgba(201,168,76,0.25); --gold-dim: rgba(201,168,76,0.08); --white: #f5f0e8; --muted: rgba(245,240,232,0.45); --card-bg: rgba(15,15,12,0.9); }
@@ -16,6 +15,9 @@
     .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
     .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
     .nav-back:hover { color: var(--gold); }
+    .admin-toggle { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); background: none; border: 1px solid var(--gold-border); border-radius: 3px; padding: 8px 16px; cursor: pointer; transition: all 0.3s; }
+    .admin-toggle:hover { border-color: var(--gold); color: var(--gold); }
+    .admin-toggle.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
     .hero { padding: 140px 48px 60px; text-align: center; position: relative; }
     .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
     .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 16px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
@@ -70,8 +72,28 @@
     .member-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; }
     .badge { font-size: 0.6rem; letter-spacing: 2px; color: var(--bg); background: var(--gold); padding: 3px 10px; border-radius: 2px; font-family: 'Cinzel', serif; }
     .member-since { font-size: 0.6rem; letter-spacing: 2px; color: var(--muted); font-family: 'Raleway', sans-serif; margin-top: 14px; }
-    .member-delete { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); font-size: 0.65rem; cursor: pointer; opacity: 0; transition: all 0.3s; letter-spacing: 1px; font-family: 'Raleway', sans-serif; }
-    .member-card:hover .member-delete { opacity: 1; color: var(--gold); }
+    .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+    .member-card:hover .card-actions { opacity: 1; }
+    .card-actions button { background: none; border: none; color: var(--muted); font-size: 0.65rem; cursor: pointer; letter-spacing: 1px; font-family: 'Raleway', sans-serif; transition: color 0.2s; padding: 4px 8px; border-radius: 2px; }
+    .card-actions button:hover { color: var(--gold); }
+    .card-actions .btn-edit:hover { background: rgba(201,168,76,0.1); }
+    .card-actions .btn-delete:hover { color: #c94c4c; }
+    /* Edit modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(8,8,6,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; }
+    .modal-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 24px; text-transform: uppercase; }
+    .modal .form-grid { grid-template-columns: 1fr 1fr; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+    .btn-cancel { background: none; border: 1px solid var(--gold-border); border-radius: 3px; color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-cancel:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-save { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 0 16px rgba(201,168,76,0.3); }
+    /* Admin password modal */
+    .admin-modal .modal { max-width: 360px; text-align: center; }
+    .admin-modal .modal-title { margin-bottom: 16px; }
+    .admin-modal p { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .admin-modal input { text-align: center; font-size: 1rem; letter-spacing: 4px; }
     .loading { text-align: center; padding: 60px 24px; }
     .loading-spinner { width: 40px; height: 40px; border: 2px solid var(--gold-border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -82,13 +104,16 @@
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 12px 28px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     .toast.show { opacity: 1; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 768px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 24px 80px; } .form-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 24px 80px; } .form-grid { grid-template-columns: 1fr; } .modal .form-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-<nav>
+<<nav>
   <a class="nav-logo" href="index.html">Chapter 17</a>
-  <a class="nav-back" href="dashboard.html">← Dashboard</a>
+  <div style="display:flex;gap:16px;align-items:center;">
+    <button class="admin-toggle" id="adminBtn" onclick="toggleAdmin()">🔒 Admin</button>
+    <a class="nav-back" href="dashboard.html">← Dashboard</a>
+  </div>
 </nav>
 <section class="hero">
   <div class="hero-glow"></div>
@@ -137,33 +162,157 @@
     <div class="loading"><div class="loading-spinner"></div><p>Loading members...</p></div>
   </div>
 </div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <p class="modal-title">Edit Member</p>
+    <input type="hidden" id="editId"/>
+    <div class="avatar-upload" style="justify-content:center;">
+      <div class="avatar-preview" id="editAvatarPreview">👤</div>
+    </div>
+    <div class="avatar-btn" style="margin:0 auto 16px;display:block;width:fit-content;">Change Photo<input type="file" id="editAvatarInput" accept="image/*" onchange="previewEditAvatar(this)"/></div>
+    <div class="form-grid">
+      <div class="input-group"><label>Name</label><input type="text" id="editName"/></div>
+      <div class="input-group"><label>Role</label><input type="text" id="editRole"/></div>
+      <div class="input-group"><label>Member Since</label><input type="date" id="editSince"/></div>
+      <div class="input-group"><label>Hangouts</label><input type="text" id="editHangouts" inputmode="numeric"/></div>
+      <div class="input-group"><label>Game Wins</label><input type="text" id="editWins" inputmode="numeric"/></div>
+    </div>
+    <div class="input-group" style="margin-bottom:16px"><label>Bio</label><textarea id="editBio"></textarea></div>
+    <div class="badge-selector">
+      <label>Badges</label>
+      <div class="badge-options" id="editBadgeOptions">
+        <span class="badge-opt" data-badge="OG Member">OG Member</span>
+        <span class="badge-opt" data-badge="Chess Champion">Chess Champion</span>
+        <span class="badge-opt" data-badge="Trivia King">Trivia King</span>
+        <span class="badge-opt" data-badge="Most Loyal">Most Loyal</span>
+        <span class="badge-opt" data-badge="Always Late">Always Late 😂</span>
+        <span class="badge-opt" data-badge="Hype Man">Hype Man</span>
+        <span class="badge-opt" data-badge="Photographer">Photographer</span>
+        <span class="badge-opt" data-badge="Event Planner">Event Planner</span>
+        <span class="badge-opt" data-badge="Most Vibes">Most Vibes</span>
+        <span class="badge-opt" data-badge="Math Duel King">Math Duel King</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Password Modal -->
+<div class="modal-overlay admin-modal" id="adminModal">
+  <div class="modal">
+    <p class="modal-title">🔐 Admin Access</p>
+    <p>Enter the admin password to unlock editing.</p>
+    <div class="input-group" style="margin-bottom:20px">
+      <input type="password" id="adminPassword" placeholder="••••••" onkeydown="if(event.key==='Enter')verifyAdmin()"/>
+    </div>
+    <button class="btn-save" onclick="verifyAdmin()">Unlock</button>
+    <button class="btn-cancel" onclick="closeAdminModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
 <script>
-  const { createClient } = supabase;
-  const sb = createClient(
-    'https://whgxunnlxhcfthkpcbjd.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
-  );
+  // ===== CHANGE THIS PASSWORD =====
+  const ADMIN_PASSWORD = 'Chapter17King';
+  // =================================
 
+  const API_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co/functions/v1/members';
+  let isAdmin = false;
+  let allMembers = [];
+  let editAvatarData = null;
+
+  // Admin toggle
+  function toggleAdmin() {
+    if (isAdmin) {
+      isAdmin = false;
+      document.getElementById('adminBtn').classList.remove('active');
+      document.getElementById('adminBtn').textContent = '🔒 Admin';
+      renderMembers(allMembers);
+      showToast('Admin mode off');
+    } else {
+      document.getElementById('adminModal').classList.add('show');
+      document.getElementById('adminPassword').focus();
+    }
+  }
+
+  function verifyAdmin() {
+    const input = document.getElementById('adminPassword').value;
+    if (input === ADMIN_PASSWORD) {
+      isAdmin = true;
+      document.getElementById('adminBtn').classList.add('active');
+      document.getElementById('adminBtn').textContent = '🔓 Admin';
+      document.getElementById('adminPassword').value = '';
+      closeAdminModal();
+      renderMembers(allMembers);
+      showToast('Admin mode unlocked 🔓');
+    } else {
+      showToast('Wrong password ❌');
+      document.getElementById('adminPassword').value = '';
+    }
+  }
+
+  function closeAdminModal() {
+    document.getElementById('adminModal').classList.remove('show');
+  }
+
+  // Avatar previews
   let avatarData = null;
-
   function previewAvatar(input) {
     if (!input.files[0]) return;
     const reader = new FileReader();
     reader.onload = e => {
       avatarData = e.target.result;
-      const preview = document.getElementById('avatarPreview');
-      preview.innerHTML = `<img src="${avatarData}" alt="avatar"/>`;
+      document.getElementById('avatarPreview').innerHTML = `<img src="${avatarData}" alt="avatar"/>`;
     };
     reader.readAsDataURL(input.files[0]);
   }
 
-  document.querySelectorAll('.badge-opt').forEach(opt => {
+  function previewEditAvatar(input) {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      editAvatarData = e.target.result;
+      document.getElementById('editAvatarPreview').innerHTML = `<img src="${editAvatarData}" alt="avatar"/>`;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+
+  // Badge selection
+  document.querySelectorAll('#badgeOptions .badge-opt').forEach(opt => {
     opt.addEventListener('click', () => opt.classList.toggle('selected'));
   });
 
-  function getSelectedBadges() {
-    return [...document.querySelectorAll('.badge-opt.selected')].map(b => b.dataset.badge);
+  function getSelectedBadges(containerId) {
+    return [...document.querySelectorAll(`#${containerId} .badge-opt.selected`)].map(b => b.dataset.badge);
+  }
+
+  function setSelectedBadges(containerId, badges) {
+    document.querySelectorAll(`#${containerId} .badge-opt`).forEach(opt => {
+      opt.classList.toggle('selected', badges.includes(opt.dataset.badge));
+    });
+  }
+
+  // API calls
+  async function api(action, payload = {}) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload })
+    });
+    return res.json();
+  }
+
+  async function loadMembers() {
+    const { data, error } = await api('load');
+    if (error) { console.error(error); return; }
+    allMembers = data || [];
+    renderMembers(allMembers);
   }
 
   async function addMember() {
@@ -174,11 +323,11 @@
     if (!name) return alert('Enter the member\'s name!');
     if (!bio)  return alert('Add a short bio!');
 
-    await sb.from('members').insert({
+    await api('add', {
       name, role: role || 'Chapter 17',
       since: since || new Date().toISOString().split('T')[0],
       bio, avatar: avatarData,
-      badges: getSelectedBadges(),
+      badges: getSelectedBadges('badgeOptions'),
       hangouts: 0, wins: 0
     });
 
@@ -188,43 +337,99 @@
     document.getElementById('memberSince').value = '';
     document.getElementById('memberBio').value = '';
     document.getElementById('avatarPreview').innerHTML = '👤';
-    document.querySelectorAll('.badge-opt').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('#badgeOptions .badge-opt').forEach(b => b.classList.remove('selected'));
     avatarData = null;
     loadMembers();
   }
 
   async function deleteMember(id) {
     if (!confirm('Remove this member?')) return;
-    await sb.from('members').delete().eq('id', id);
+    await api('delete', { id });
     showToast('Member removed.');
     loadMembers();
   }
 
-  async function loadMembers() {
-    const { data, error } = await sb.from('members').select('*').order('created_at', { ascending: true });
-    if (error) { console.error(error); return; }
-    renderMembers(data || []);
+  // Edit functionality
+  function openEditModal(id) {
+    if (!isAdmin) return;
+    const member = allMembers.find(m => m.id === id);
+    if (!member) return;
+
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = member.name || '';
+    document.getElementById('editRole').value = member.role || '';
+    document.getElementById('editSince').value = member.since || '';
+    document.getElementById('editBio').value = member.bio || '';
+    document.getElementById('editHangouts').value = member.hangouts || 0;
+    document.getElementById('editWins').value = member.wins || 0;
+
+    const preview = document.getElementById('editAvatarPreview');
+    if (member.avatar) {
+      preview.innerHTML = `<img src="${member.avatar}" alt="${member.name}"/>`;
+      editAvatarData = member.avatar;
+    } else {
+      preview.innerHTML = '👤';
+      editAvatarData = null;
+    }
+
+    setSelectedBadges('editBadgeOptions', member.badges || []);
+    document.getElementById('editModal').classList.add('show');
   }
 
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editAvatarData = null;
+  }
+
+  async function saveEdit() {
+    const id = parseInt(document.getElementById('editId').value);
+    const updates = {
+      name: document.getElementById('editName').value.trim(),
+      role: document.getElementById('editRole').value.trim(),
+      since: document.getElementById('editSince').value,
+      bio: document.getElementById('editBio').value.trim(),
+      hangouts: parseInt(document.getElementById('editHangouts').value) || 0,
+      wins: parseInt(document.getElementById('editWins').value) || 0,
+      avatar: editAvatarData,
+      badges: getSelectedBadges('editBadgeOptions')
+    };
+
+    await api('edit', { id, ...updates });
+    showToast('Member updated ✨');
+    closeEditModal();
+    loadMembers();
+  }
+
+  // Render
   function renderMembers(members) {
     const grid  = document.getElementById('membersGrid');
     const count = document.getElementById('memberCount');
     count.textContent = `${members.length} member${members.length !== 1 ? 's' : ''}`;
+
     if (members.length === 0) {
       grid.innerHTML = '<div class="empty-state"><span class="empty-icon">👥</span><p>No members yet. Add the squad!</p></div>';
       return;
     }
+
     grid.innerHTML = '';
     members.forEach((m, i) => {
       const sinceFormatted = new Date(m.since).toLocaleDateString('en-GB', { month:'long', year:'numeric' });
       const avatarHTML = m.avatar ? `<img src="${m.avatar}" alt="${m.name}"/>` : `<span style="font-size:2rem">👤</span>`;
       const badgesHTML = (m.badges || []).length ? (m.badges || []).map(b => `<span class="badge">${b}</span>`).join('') : '';
+
+      const actionsHTML = isAdmin
+        ? `<div class="card-actions">
+             <button class="btn-edit" onclick="openEditModal(${m.id})">✎ edit</button>
+             <button class="btn-delete" onclick="deleteMember(${m.id})">✕ remove</button>
+           </div>`
+        : '';
+
       const card = document.createElement('div');
       card.className = 'member-card';
       card.style.transitionDelay = `${i * 0.07}s`;
       card.innerHTML = `
         <div class="card-bar"></div>
-        <button class="member-delete" onclick="deleteMember(${m.id})">✕ remove</button>
+        ${actionsHTML}
         <div class="card-body">
           <div class="member-avatar">${avatarHTML}</div>
           <p class="member-name">${m.name}</p>
@@ -241,6 +446,7 @@
       `;
       grid.appendChild(card);
     });
+
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.1 });
@@ -253,9 +459,12 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
+  // Init
   document.getElementById('memberSince').valueAsDate = new Date();
-  sb.channel('members').on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => loadMembers()).subscribe();
   loadMembers();
+
+  // Poll for updates (since we moved away from realtime with edge functions)
+  setInterval(loadMembers, 10000);
 </script>
 </body>
 </html>
