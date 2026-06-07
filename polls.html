@@ -26,9 +26,10 @@
     .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
     .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
     .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
-    input[type="text"] { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
-    input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
+    input[type="text"], select { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
+    input:focus, select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
     input::placeholder { color: var(--muted); font-size: 0.75rem; }
+    select option { background: #0f0f0c; }
     .options-builder { margin-bottom: 20px; }
     .options-builder label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; display: block; margin-bottom: 10px; }
     .option-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
@@ -47,13 +48,12 @@
     .section-header .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold-border), transparent); }
     .poll-card { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 32px; margin-bottom: 24px; position: relative; transition: all 0.4s ease; opacity: 0; transform: translateY(20px); }
     .poll-card.visible { opacity: 1; transform: translateY(0); }
-    .poll-card:hover { border-color: rgba(201,168,76,0.4); }
     .poll-question { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.3rem; color: var(--white); margin-bottom: 6px; }
     .poll-meta { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--gold); margin-bottom: 20px; }
     .poll-voter-row { display: flex; gap: 10px; margin-bottom: 16px; }
-    .poll-voter-input { flex: 1; background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.78rem; letter-spacing: 1px; padding: 10px 14px; outline: none; transition: all 0.3s; }
-    .poll-voter-input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); }
-    .poll-voter-input::placeholder { color: var(--muted); }
+    .poll-voter-select { flex: 1; background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.78rem; letter-spacing: 1px; padding: 10px 14px; outline: none; transition: all 0.3s; }
+    .poll-voter-select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+    .poll-voter-select option { background: #0f0f0c; }
     .poll-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
     .poll-option { background: rgba(201,168,76,0.04); border: 1px solid var(--gold-border); border-radius: 3px; overflow: hidden; cursor: pointer; transition: all 0.3s ease; position: relative; }
     .poll-option:hover { border-color: var(--gold); }
@@ -97,7 +97,7 @@
   <div class="add-panel">
     <p class="panel-title">Create a Poll</p>
     <div class="input-group"><label>Question</label><input type="text" id="pollQuestion" placeholder="e.g. Where should we hang next?"/></div>
-    <div class="input-group"><label>Your Name</label><input type="text" id="pollCreator" placeholder="Who's asking?"/></div>
+    <div class="input-group"><label>Your Name</label><select id="pollCreator"><option value="">Select your name...</option></select></div>
     <div class="options-builder">
       <label>Options</label>
       <div id="optionsList">
@@ -121,7 +121,34 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
   );
 
+  let memberNames = [];
   let optionCount = 2;
+
+  async function loadMembers() {
+    const { data } = await sb.from('members').select('name').order('name');
+    memberNames = (data || []).map(m => m.name);
+    const sel = document.getElementById('pollCreator');
+    sel.innerHTML = '<option value="">Select your name...</option>';
+    memberNames.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function buildVoterSelect(pollId, voters) {
+    const sel = document.createElement('select');
+    sel.className = 'poll-voter-select';
+    sel.id = `voter-${pollId}`;
+    sel.innerHTML = '<option value="">Select your name to vote...</option>';
+    memberNames.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      if ((voters || []).includes(name)) { opt.disabled = true; opt.textContent += ' ✓'; }
+      sel.appendChild(opt);
+    });
+    return sel;
+  }
 
   function addOption() {
     optionCount++;
@@ -138,20 +165,13 @@
 
   async function createPoll() {
     const question = document.getElementById('pollQuestion').value.trim();
-    const creator  = document.getElementById('pollCreator').value.trim();
-    const optInputs = document.querySelectorAll('.poll-opt-input');
-    const options  = [...optInputs].map(i => i.value.trim()).filter(Boolean);
+    const creator  = document.getElementById('pollCreator').value;
+    const options  = [...document.querySelectorAll('.poll-opt-input')].map(i => i.value.trim()).filter(Boolean);
     if (!question) return alert('Enter a question!');
-    if (!creator)  return alert('Enter your name!');
+    if (!creator)  return alert('Select your name!');
     if (options.length < 2) return alert('Add at least 2 options!');
-
     const date = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
-    await sb.from('polls').insert({
-      question, creator, date,
-      options: options.map(text => ({ text, votes: [], voters: [] })),
-      voters: []
-    });
-
+    await sb.from('polls').insert({ question, creator, date, options: options.map(text => ({ text, votes: [], voters: [] })), voters: [] });
     showToast('Poll created!! 🗳️');
     document.getElementById('pollQuestion').value = '';
     document.getElementById('pollCreator').value = '';
@@ -160,7 +180,7 @@
   }
 
   async function vote(pollId, optionIndex, voterName) {
-    if (!voterName) return alert('Enter your name to vote!');
+    if (!voterName) return alert('Select your name to vote!');
     const { data } = await sb.from('polls').select('*').eq('id', pollId).single();
     if (!data) return;
     if ((data.voters || []).includes(voterName)) return alert(`${voterName} already voted!`);
@@ -181,17 +201,13 @@
   }
 
   async function loadPolls() {
-    const { data, error } = await sb.from('polls').select('*').order('created_at', { ascending: false });
-    if (error) { console.error(error); return; }
+    const { data } = await sb.from('polls').select('*').order('created_at', { ascending: false });
     renderPolls(data || []);
   }
 
   function renderPolls(polls) {
     const list = document.getElementById('pollsList');
-    if (polls.length === 0) {
-      list.innerHTML = '<div class="empty-state"><span class="empty-icon">🗳️</span><p>No polls yet. Start one!</p></div>';
-      return;
-    }
+    if (polls.length === 0) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">🗳️</span><p>No polls yet. Start one!</p></div>'; return; }
     list.innerHTML = '';
     polls.forEach((poll, pi) => {
       const totalVotes = (poll.voters || []).length;
@@ -200,9 +216,9 @@
         const count   = (opt.votes || []).length;
         const pct     = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
         const isWinner = count === maxVotes && count > 0;
-        const votersHTML = (opt.voters || []).length ? (opt.voters || []).map(v => `<span class="voter-tag">${v}</span>`).join('') : '';
+        const votersHTML = (opt.voters || []).map(v => `<span class="voter-tag">${v}</span>`).join('');
         return `
-          <div class="poll-option${isWinner ? ' winner' : ''}" onclick="handleOptionClick(${poll.id}, ${oi}, this)">
+          <div class="poll-option${isWinner ? ' winner' : ''}" onclick="handleOptionClick(${poll.id}, ${oi})">
             <div class="option-bar" style="width:${pct}%"></div>
             <div class="option-content">
               <span class="option-text">${opt.text}</span>
@@ -223,13 +239,12 @@
         <button class="poll-delete" onclick="deletePoll(${poll.id})">✕ delete</button>
         <p class="poll-question">${poll.question}</p>
         <p class="poll-meta">By ${poll.creator} · ${poll.date} · ${totalVotes} vote${totalVotes !== 1 ? 's' : ''}</p>
-        <div class="poll-voter-row">
-          <input class="poll-voter-input" id="voter-${poll.id}" placeholder="Your name to vote..."/>
-        </div>
+        <div class="poll-voter-row" id="voterRow-${poll.id}"></div>
         <div class="poll-options">${optionsHTML}</div>
-        <p class="poll-total">${totalVotes} total vote${totalVotes !== 1 ? 's' : ''} · ${(poll.voters || []).length > 0 ? poll.voters.join(', ') : 'No votes yet'}</p>
+        <p class="poll-total">${totalVotes} total · ${(poll.voters || []).join(', ') || 'No votes yet'}</p>
       `;
       list.appendChild(card);
+      document.getElementById(`voterRow-${poll.id}`).appendChild(buildVoterSelect(poll.id, poll.voters));
     });
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -237,9 +252,9 @@
     document.querySelectorAll('.poll-card').forEach(c => observer.observe(c));
   }
 
-  function handleOptionClick(pollId, optionIndex, el) {
-    const voterInput = document.getElementById(`voter-${pollId}`);
-    const name = voterInput ? voterInput.value.trim() : '';
+  function handleOptionClick(pollId, optionIndex) {
+    const sel  = document.getElementById(`voter-${pollId}`);
+    const name = sel ? sel.value : '';
     vote(pollId, optionIndex, name);
   }
 
@@ -250,7 +265,7 @@
   }
 
   sb.channel('polls').on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => loadPolls()).subscribe();
-  loadPolls();
+  loadMembers().then(() => loadPolls());
 </script>
 </body>
 </html>

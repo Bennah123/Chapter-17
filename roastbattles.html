@@ -27,10 +27,11 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
-    input[type="text"], textarea { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
-    input:focus, textarea:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
-    input::placeholder, textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
+    select, textarea { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
+    select:focus, textarea:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
+    select option { background: #0f0f0c; }
     textarea { resize: vertical; min-height: 100px; }
+    textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
     .btn-post { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; }
     .btn-post::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
     .btn-post:hover::before { opacity: 1; }
@@ -39,7 +40,6 @@
     .section-header { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
     .section-header h3 { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 6px; color: var(--gold); white-space: nowrap; }
     .section-header .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold-border), transparent); }
-    /* roast card */
     .roast-card { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 28px 32px; margin-bottom: 16px; position: relative; transition: all 0.3s; opacity: 0; transform: translateY(10px); }
     .roast-card.visible { opacity: 1; transform: translateY(0); }
     .roast-card:hover { border-color: var(--gold); box-shadow: 0 8px 30px rgba(201,168,76,0.1); }
@@ -50,17 +50,16 @@
     .roast-target { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 2px 10px; background: rgba(255,100,100,0.15); border: 1px solid rgba(255,100,100,0.3); color: #ffb0b0; border-radius: 2px; }
     .roast-date { font-family: 'Raleway', sans-serif; font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; }
     .roast-text { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.05rem; color: var(--white); line-height: 1.7; margin-bottom: 16px; }
-    /* vote bar */
     .vote-section { border-top: 1px solid var(--gold-border); padding-top: 14px; }
     .vote-label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); margin-bottom: 10px; display: block; }
     .vote-bar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .fire-count { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; color: var(--gold-bright); min-width: 30px; }
     .vote-progress { flex: 1; height: 6px; background: var(--gold-border); border-radius: 3px; overflow: hidden; }
     .vote-fill { height: 100%; background: linear-gradient(90deg, var(--gold-bright), var(--gold)); transition: width 0.5s ease; border-radius: 3px; }
-    .vote-footer { display: flex; align-items: center; gap: 10px; }
-    .vote-input { flex: 1; background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.75rem; letter-spacing: 1px; padding: 8px 12px; outline: none; transition: all 0.3s; }
-    .vote-input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); }
-    .vote-input::placeholder { color: var(--muted); }
+    .vote-footer { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .vote-select { flex: 1; background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.75rem; letter-spacing: 1px; padding: 8px 12px; outline: none; transition: all 0.3s; }
+    .vote-select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+    .vote-select option { background: #0f0f0c; }
     .vote-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 2px; padding: 8px 14px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
     .vote-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.15); }
     .roast-delete { position: absolute; top: 14px; right: 14px; background: none; border: none; color: var(--muted); font-size: 0.65rem; cursor: pointer; opacity: 0; transition: all 0.3s; letter-spacing: 1px; font-family: 'Raleway', sans-serif; }
@@ -95,8 +94,8 @@
   <div class="add-panel">
     <p class="panel-title">Drop a Roast 🔥</p>
     <div class="form-grid">
-      <div class="input-group"><label>Roasting (From)</label><input type="text" id="roastBy" placeholder="Your name"/></div>
-      <div class="input-group"><label>Target 🎯</label><input type="text" id="roastTarget" placeholder="Who are you roasting?"/></div>
+      <div class="input-group"><label>Roasting (From)</label><select id="roastBy"><option value="">Select your name...</option></select></div>
+      <div class="input-group"><label>Target 🎯</label><select id="roastTarget"><option value="">Who are you roasting?</option></select></div>
     </div>
     <div class="input-group" style="margin-bottom:20px">
       <label>The Roast 😂</label>
@@ -117,12 +116,44 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
   );
 
+  let memberNames = [];
+
+  async function loadMembers() {
+    const { data } = await sb.from('members').select('name').order('name');
+    memberNames = (data || []).map(m => m.name);
+    ['roastBy', 'roastTarget'].forEach((id, idx) => {
+      const sel = document.getElementById(id);
+      const placeholder = idx === 0 ? 'Select your name...' : 'Who are you roasting?';
+      sel.innerHTML = `<option value="">${placeholder}</option>`;
+      memberNames.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  function buildVoterSelect(roastId, voters) {
+    const sel = document.createElement('select');
+    sel.className = 'vote-select';
+    sel.id = `voter-${roastId}`;
+    sel.innerHTML = '<option value="">Your name to vote...</option>';
+    memberNames.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      if ((voters || []).includes(name)) opt.disabled = true;
+      sel.appendChild(opt);
+    });
+    return sel;
+  }
+
   async function postRoast() {
-    const by     = document.getElementById('roastBy').value.trim();
-    const target = document.getElementById('roastTarget').value.trim();
+    const by     = document.getElementById('roastBy').value;
+    const target = document.getElementById('roastTarget').value;
     const text   = document.getElementById('roastText').value.trim();
-    if (!by)     return alert('Enter your name!');
-    if (!target) return alert('Who are you roasting?');
+    if (!by)     return alert('Select your name!');
+    if (!target) return alert('Select who you are roasting!');
+    if (by === target) return alert('You cannot roast yourself! 😂');
     if (!text)   return alert('Write the roast!');
     const date = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     await sb.from('roasts').insert({ by_name: by, target_name: target, roast_text: text, date, fires: 0, voters: [] });
@@ -134,9 +165,9 @@
   }
 
   async function fireRoast(id, currentFires, voters) {
-    const input = document.getElementById(`voter-${id}`);
-    const name  = input ? input.value.trim() : '';
-    if (!name) return alert('Enter your name to vote!');
+    const sel  = document.getElementById(`voter-${id}`);
+    const name = sel ? sel.value : '';
+    if (!name) return alert('Select your name to vote!');
     if ((voters || []).includes(name)) return alert(`${name} already voted!`);
     const newVoters = [...(voters || []), name];
     await sb.from('roasts').update({ fires: currentFires + 1, voters: newVoters }).eq('id', id);
@@ -152,17 +183,13 @@
   }
 
   async function loadRoasts() {
-    const { data, error } = await sb.from('roasts').select('*').order('fires', { ascending: false });
-    if (error) { console.error(error); return; }
+    const { data } = await sb.from('roasts').select('*').order('fires', { ascending: false });
     renderRoasts(data || []);
   }
 
   function renderRoasts(roasts) {
     const list = document.getElementById('roastList');
-    if (roasts.length === 0) {
-      list.innerHTML = '<div class="empty-state"><span class="empty-icon">🎭</span><p>No roasts yet. Someone start it 😂</p></div>';
-      return;
-    }
+    if (roasts.length === 0) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">🎭</span><p>No roasts yet. Someone start it 😂</p></div>'; return; }
     const maxFires = Math.max(...roasts.map(r => r.fires || 0), 1);
     list.innerHTML = '';
     roasts.forEach((r, i) => {
@@ -189,13 +216,18 @@
             <div class="vote-progress"><div class="vote-fill" style="width:${pct}%"></div></div>
           </div>
           ${votersHTML ? `<div class="voters-wrap">${votersHTML}</div>` : ''}
-          <div class="vote-footer" style="margin-top:10px">
-            <input class="vote-input" id="voter-${r.id}" placeholder="Your name to rate..."/>
-            <button class="vote-btn" onclick="fireRoast(${r.id}, ${r.fires || 0}, ${JSON.stringify(r.voters || [])})">🔥 Fire!</button>
-          </div>
+          <div class="vote-footer" id="voteFooter-${r.id}"></div>
         </div>
       `;
       list.appendChild(card);
+      // inject voter select
+      const footer = document.getElementById(`voteFooter-${r.id}`);
+      footer.appendChild(buildVoterSelect(r.id, r.voters));
+      const voteBtn = document.createElement('button');
+      voteBtn.className = 'vote-btn';
+      voteBtn.textContent = '🔥 Fire!';
+      voteBtn.onclick = () => fireRoast(r.id, r.fires || 0, r.voters || []);
+      footer.appendChild(voteBtn);
     });
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -210,7 +242,7 @@
   }
 
   sb.channel('roasts').on('postgres_changes', { event: '*', schema: 'public', table: 'roasts' }, () => loadRoasts()).subscribe();
-  loadRoasts();
+  loadMembers().then(() => loadRoasts());
 </script>
 </body>
 </html>

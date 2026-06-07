@@ -27,11 +27,11 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
-    input[type="text"], textarea { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
-    input:focus, textarea:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
-    input::placeholder, textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
+    select, textarea { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
+    select:focus, textarea:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
+    select option { background: #0f0f0c; }
     textarea { resize: vertical; min-height: 100px; }
-    /* emoji vibe */
+    textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
     .vibe-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
     .vibe-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); }
     .vibe-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; padding: 7px 11px; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
@@ -41,11 +41,9 @@
     .btn-post:hover::before { opacity: 1; }
     .btn-post:hover { transform: translateY(-1px); }
     .btn-post span { position: relative; z-index: 1; }
-    /* section header */
     .section-header { display: flex; align-items: center; gap: 20px; margin-bottom: 28px; }
     .section-header h3 { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 6px; color: var(--gold); white-space: nowrap; }
     .section-header .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold-border), transparent); }
-    /* shoutout card */
     .shoutout-card { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 28px 32px; margin-bottom: 16px; position: relative; transition: all 0.3s; opacity: 0; transform: translateY(10px); }
     .shoutout-card.visible { opacity: 1; transform: translateY(0); }
     .shoutout-card:hover { border-color: var(--gold); box-shadow: 0 8px 30px rgba(201,168,76,0.1); }
@@ -53,11 +51,10 @@
     .shoutout-from-to { display: flex; align-items: center; gap: 10px; }
     .shoutout-from { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); }
     .shoutout-arrow { color: var(--muted); font-size: 0.8rem; }
-    .shoutout-to { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--white); background: var(--gold); padding: 2px 10px; border-radius: 2px; }
+    .shoutout-to { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--bg); background: var(--gold); padding: 2px 10px; border-radius: 2px; }
     .shoutout-time { font-family: 'Raleway', sans-serif; font-size: 0.6rem; color: var(--muted); letter-spacing: 1px; }
     .shoutout-vibe { font-size: 1.4rem; margin-bottom: 8px; display: block; }
     .shoutout-msg { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.05rem; color: var(--white); line-height: 1.7; }
-    /* likes */
     .shoutout-footer { display: flex; align-items: center; gap: 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--gold-border); }
     .like-btn { background: none; border: 1px solid var(--gold-border); border-radius: 2px; color: var(--muted); font-family: 'Raleway', sans-serif; font-size: 0.7rem; letter-spacing: 1px; padding: 5px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
     .like-btn:hover { border-color: var(--gold); color: var(--gold); }
@@ -92,8 +89,8 @@
   <div class="add-panel">
     <p class="panel-title">Drop a Shoutout</p>
     <div class="form-grid">
-      <div class="input-group"><label>From</label><input type="text" id="fromName" placeholder="Your name"/></div>
-      <div class="input-group"><label>To</label><input type="text" id="toName" placeholder="Who's it for?"/></div>
+      <div class="input-group"><label>From</label><select id="fromName"><option value="">Select your name...</option></select></div>
+      <div class="input-group"><label>To</label><select id="toName"><option value="">Who's it for?</option></select></div>
     </div>
     <div class="input-group" style="margin-bottom:16px">
       <label>Message</label>
@@ -125,8 +122,8 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
   );
 
-  // need a shoutouts table — we'll use localStorage key to track likes per device
   let selectedVibe = '💛';
+
   document.querySelectorAll('.vibe-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.vibe-btn').forEach(b => b.classList.remove('selected'));
@@ -135,12 +132,27 @@
     });
   });
 
+  async function loadMembers() {
+    const { data } = await sb.from('members').select('name').order('name');
+    const members = data || [];
+    ['fromName', 'toName'].forEach(id => {
+      const sel = document.getElementById(id);
+      const placeholder = id === 'fromName' ? 'Select your name...' : "Who's it for?";
+      sel.innerHTML = `<option value="">${placeholder}</option>`;
+      members.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.name; opt.textContent = m.name;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
   async function postShoutout() {
-    const from = document.getElementById('fromName').value.trim();
-    const to   = document.getElementById('toName').value.trim();
+    const from = document.getElementById('fromName').value;
+    const to   = document.getElementById('toName').value;
     const msg  = document.getElementById('shoutMsg').value.trim();
-    if (!from) return alert('Enter your name!');
-    if (!to)   return alert('Who is this for?');
+    if (!from) return alert('Select your name!');
+    if (!to)   return alert('Select who this is for!');
     if (!msg)  return alert('Write your message!');
     const date = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     const time = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
@@ -154,8 +166,7 @@
 
   async function likeShoutout(id, current) {
     const likedKey = `liked_shoutout_${id}`;
-    const alreadyLiked = localStorage.getItem(likedKey);
-    if (alreadyLiked) { showToast('You already liked this! 😄'); return; }
+    if (localStorage.getItem(likedKey)) { showToast('You already liked this! 😄'); return; }
     await sb.from('shoutouts').update({ likes: current + 1 }).eq('id', id);
     localStorage.setItem(likedKey, '1');
     loadShoutouts();
@@ -169,17 +180,13 @@
   }
 
   async function loadShoutouts() {
-    const { data, error } = await sb.from('shoutouts').select('*').order('created_at', { ascending: false });
-    if (error) { console.error(error); return; }
+    const { data } = await sb.from('shoutouts').select('*').order('created_at', { ascending: false });
     renderShoutouts(data || []);
   }
 
   function renderShoutouts(shoutouts) {
     const list = document.getElementById('shoutoutsList');
-    if (shoutouts.length === 0) {
-      list.innerHTML = '<div class="empty-state"><span class="empty-icon">💬</span><p>No shoutouts yet. Be the first! 💛</p></div>';
-      return;
-    }
+    if (shoutouts.length === 0) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">💬</span><p>No shoutouts yet. Be the first! 💛</p></div>'; return; }
     list.innerHTML = '';
     shoutouts.forEach((s, i) => {
       const liked = localStorage.getItem(`liked_shoutout_${s.id}`);
@@ -198,9 +205,7 @@
         <span class="shoutout-vibe">${s.vibe}</span>
         <p class="shoutout-msg">"${s.message}"</p>
         <div class="shoutout-footer">
-          <button class="like-btn${liked ? ' liked' : ''}" onclick="likeShoutout(${s.id}, ${s.likes})">
-            ${liked ? '💛' : '🤍'} ${s.likes} ${s.likes === 1 ? 'like' : 'likes'}
-          </button>
+          <button class="like-btn${liked ? ' liked' : ''}" onclick="likeShoutout(${s.id}, ${s.likes})">${liked ? '💛' : '🤍'} ${s.likes} ${s.likes === 1 ? 'like' : 'likes'}</button>
           <button class="shoutout-delete" onclick="deleteShoutout(${s.id})">✕ delete</button>
         </div>
       `;
@@ -219,6 +224,7 @@
   }
 
   sb.channel('shoutouts').on('postgres_changes', { event: '*', schema: 'public', table: 'shoutouts' }, () => loadShoutouts()).subscribe();
+  loadMembers();
   loadShoutouts();
 </script>
 </body>
