@@ -218,14 +218,18 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ===== CHANGE THIS PASSWORD =====
-  const ADMIN_PASSWORD = 'Chapter17King';
-  // =================================
+  const ADMIN_PASSWORD = 'justbenn46';
 
-  const API_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co/functions/v1/members';
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://whgxunnlxhcfthkpcbjd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
+  );
+
   let isAdmin = false;
   let allMembers = [];
   let editAvatarData = null;
+  let avatarData = null;
 
   // Admin toggle
   function toggleAdmin() {
@@ -262,7 +266,6 @@
   }
 
   // Avatar previews
-  let avatarData = null;
   function previewAvatar(input) {
     if (!input.files[0]) return;
     const reader = new FileReader();
@@ -298,18 +301,8 @@
     });
   }
 
-  // API calls
-  async function api(action, payload = {}) {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...payload })
-    });
-    return res.json();
-  }
-
   async function loadMembers() {
-    const { data, error } = await api('load');
+    const { data, error } = await sb.from('members').select('*').order('created_at', { ascending: true });
     if (error) { console.error(error); return; }
     allMembers = data || [];
     renderMembers(allMembers);
@@ -323,7 +316,7 @@
     if (!name) return alert('Enter the member\'s name!');
     if (!bio)  return alert('Add a short bio!');
 
-    await api('add', {
+    await sb.from('members').insert({
       name, role: role || 'Chapter 17',
       since: since || new Date().toISOString().split('T')[0],
       bio, avatar: avatarData,
@@ -344,7 +337,7 @@
 
   async function deleteMember(id) {
     if (!confirm('Remove this member?')) return;
-    await api('delete', { id });
+    await sb.from('members').delete().eq('id', id);
     showToast('Member removed.');
     loadMembers();
   }
@@ -394,7 +387,7 @@
       badges: getSelectedBadges('editBadgeOptions')
     };
 
-    await api('edit', { id, ...updates });
+    await sb.from('members').update(updates).eq('id', id);
     showToast('Member updated ✨');
     closeEditModal();
     loadMembers();
@@ -461,10 +454,8 @@
 
   // Init
   document.getElementById('memberSince').valueAsDate = new Date();
+  sb.channel('members').on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, () => loadMembers()).subscribe();
   loadMembers();
-
-  // Poll for updates (since we moved away from realtime with edge functions)
-  setInterval(loadMembers, 10000);
 </script>
 </body>
 </html>
