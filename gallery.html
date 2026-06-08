@@ -126,7 +126,7 @@
     <div class="drop-zone" id="dropZone">
       <input type="file" id="fileInput" accept="image/*" multiple/>
       <span class="drop-icon">📸</span>
-      <p class="drop-text">Drop photos here or <span>browse</span></p>
+      <p class="drop-text">Wahome angusha hizo pics😂 <span>browse</span></p>
     </div>
     <div class="preview-strip" id="previewStrip"></div>
     <button class="btn-upload" id="uploadBtn" onclick="uploadPhotos()">
@@ -182,7 +182,6 @@
     selectedFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
     renderPreviews();
   });
-
   function renderPreviews() {
     previewStrip.innerHTML = '';
     selectedFiles.forEach(file => {
@@ -195,7 +194,6 @@
       previewStrip.appendChild(img);
     });
   }
-
   async function uploadPhotos() {
     const name    = document.getElementById('uploaderName').value.trim();
     const event   = document.getElementById('eventName').value.trim();
@@ -328,7 +326,6 @@
     showToast('Memory removed.');
     loadMemories();
   }
-
   function openLightbox(id) {
     const memory = allMemories.find(m => m.id === id);
     if (!memory) return;
@@ -338,25 +335,20 @@
     document.getElementById('lightbox').classList.add('open');
     document.body.style.overflow = 'hidden';
   }
-
   function closeLightbox(e) {
     if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('lightbox-close')) return;
     document.getElementById('lightbox').classList.remove('open');
     document.body.style.overflow = '';
   }
-
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { document.getElementById('lightbox').classList.remove('open'); document.body.style.overflow = ''; }
   });
-
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
-
   sb.channel('memories').on('postgres_changes', { event: '*', schema: 'public', table: 'memories' }, () => loadMemories()).subscribe();
-
   loadMemories();
 </script>
 </body>
