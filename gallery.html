@@ -43,12 +43,15 @@
     .drop-text span { color: var(--gold); }
     .preview-strip { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
     .preview-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 3px; border: 1px solid var(--gold-border); }
-    .btn-upload { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; }
+    .btn-upload { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; }
     .btn-upload::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
     .btn-upload:hover::before { opacity: 1; }
     .btn-upload:hover { transform: translateY(-1px); }
     .btn-upload span { position: relative; z-index: 1; }
     .btn-upload:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-spinner { width: 14px; height: 14px; border: 2px solid #080806; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+    .btn-upload:disabled .btn-spinner { display: inline-block; }
+    .btn-upload:disabled span { position: relative; z-index: 1; }
     .filter-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 40px; }
     .filter-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 4px; color: var(--gold); text-transform: uppercase; }
     .filter-btn { background: transparent; border: 1px solid var(--gold-border); border-radius: 2px; color: var(--muted); font-family: 'Raleway', sans-serif; font-size: 0.7rem; letter-spacing: 2px; padding: 7px 18px; cursor: pointer; transition: all 0.3s ease; }
@@ -91,7 +94,7 @@
 </head>
 <body>
 
-<nav>
+<<nav>
   <a class="nav-logo" href="index.html">Chapter 17</a>
   <a class="nav-back" href="dashboard.html">← Dashboard</a>
 </nav>
@@ -126,7 +129,10 @@
       <p class="drop-text">Drop photos here or <span>browse</span></p>
     </div>
     <div class="preview-strip" id="previewStrip"></div>
-    <button class="btn-upload" id="uploadBtn" onclick="uploadPhotos()"><span>Save to Memory Wall</span></button>
+    <button class="btn-upload" id="uploadBtn" onclick="uploadPhotos()">
+      <div class="btn-spinner"></div>
+      <span>Save to Memory Wall</span>
+    </button>
   </div>
 
   <div class="filter-bar" id="filterBar">
@@ -184,6 +190,7 @@
       img.className = 'preview-thumb';
       const reader = new FileReader();
       reader.onload = e => img.src = e.target.result;
+      reader.onerror = () => console.error('Failed to read file:', file.name);
       reader.readAsDataURL(file);
       previewStrip.appendChild(img);
     });
@@ -198,24 +205,49 @@
     if (selectedFiles.length === 0) return alert('Please select at least one photo!');
 
     const btn = document.getElementById('uploadBtn');
+    const btnSpan = btn.querySelector('span');
     btn.disabled = true;
-    btn.querySelector('span').textContent = 'Saving...';
+    btnSpan.textContent = 'Saving...';
 
     const date = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    let successCount = 0;
+    let failCount = 0;
 
     for (const file of selectedFiles) {
-      const src = await toBase64(file);
-      await sb.from('memories').insert({ src, caption: caption || 'A Chapter 17 moment.', event, uploader: name, date });
+      try {
+        const src = await toBase64(file);
+        const { error } = await sb.from('memories').insert({ 
+          src, 
+          caption: caption || 'A Chapter 17 moment.', 
+          event, 
+          uploader: name, 
+          date 
+        });
+        if (error) {
+          console.error('Insert error:', error);
+          failCount++;
+        } else {
+          successCount++;
+        }
+      } catch (err) {
+        console.error('File read error:', err);
+        failCount++;
+      }
     }
 
-    showToast('Memories saved!! 🔥');
     btn.disabled = false;
-    btn.querySelector('span').textContent = 'Save to Memory Wall';
-    document.getElementById('uploaderName').value = '';
-    document.getElementById('eventName').value = '';
-    document.getElementById('photoCaption').value = '';
-    selectedFiles = []; previewStrip.innerHTML = ''; fileInput.value = '';
-    loadMemories();
+    btnSpan.textContent = 'Save to Memory Wall';
+
+    if (successCount > 0) {
+      showToast(`${successCount} memory${successCount !== 1 ? 'ies' : 'y'} saved!! 🔥`);
+      document.getElementById('uploaderName').value = '';
+      document.getElementById('eventName').value = '';
+      document.getElementById('photoCaption').value = '';
+      selectedFiles = []; previewStrip.innerHTML = ''; fileInput.value = '';
+      loadMemories();
+    } else {
+      showToast('Failed to save. Check console for errors ❌');
+    }
   }
 
   function toBase64(file) {
@@ -229,7 +261,7 @@
 
   async function loadMemories() {
     const { data, error } = await sb.from('memories').select('*').order('created_at', { ascending: false });
-    if (error) { console.error(error); return; }
+    if (error) { console.error('Load error:', error); return; }
     allMemories = data || [];
     renderGallery();
   }
@@ -291,7 +323,8 @@
   async function deletePhoto(e, id) {
     e.stopPropagation();
     if (!confirm('Remove this memory?')) return;
-    await sb.from('memories').delete().eq('id', id);
+    const { error } = await sb.from('memories').delete().eq('id', id);
+    if (error) { console.error('Delete error:', error); showToast('Failed to delete ❌'); return; }
     showToast('Memory removed.');
     loadMemories();
   }
