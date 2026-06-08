@@ -218,7 +218,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const ADMIN_PASSWORD = 'Chapter17King';
+  const ADMIN_PASSWORD = '@Sylvia261005.';
 
   const { createClient } = supabase;
   const sb = createClient(
@@ -306,30 +306,32 @@
   }
 
   async function addMember() {
-    const name  = document.getElementById('memberName').value.trim();
-    const role  = document.getElementById('memberRole').value.trim();
-    const since = document.getElementById('memberSince').value;
-    const bio   = document.getElementById('memberBio').value.trim();
-    if (!name) return alert('Enter the member\'s name!');
-    if (!bio)  return alert('Add a short bio!');
+  const name  = document.getElementById('memberName').value.trim();
+  const role  = document.getElementById('memberRole').value.trim();
+  const since = document.getElementById('memberSince').value;
+  const bio   = document.getElementById('memberBio').value.trim();
+  if (!name) return alert('Enter the member\'s name!');
+  if (!bio)  return alert('Add a short bio!');
 
-    await sb.from('members').insert({
-      name, role: role || 'Chapter 17',
-      since: since || new Date().toISOString().split('T')[0],
-      bio, avatar: avatarData,
-      badges: getSelectedBadges('badgeOptions'),
-      hangouts: 0, wins: 0
-    });
+  console.log('Adding member:', { name, role, since, bio, avatar: avatarData ? 'has image' : 'no image', badges: getSelectedBadges('badgeOptions') });
 
-    showToast(`${name} added to the squad!! 🔥`);
-    document.getElementById('memberName').value = '';
-    document.getElementById('memberRole').value = '';
-    document.getElementById('memberSince').value = '';
-    document.getElementById('memberBio').value = '';
-    document.getElementById('avatarPreview').innerHTML = '👤';
-    document.querySelectorAll('#badgeOptions .badge-opt').forEach(b => b.classList.remove('selected'));
-    avatarData = null;
-    loadMembers();
+  const { data, error } = await sb.from('members').insert({
+    name, role: role || 'Chapter 17',
+    since: since || new Date().toISOString().split('T')[0],
+    bio, avatar: avatarData,
+    badges: getSelectedBadges('badgeOptions'),
+    hangouts: 0, wins: 0
+  });
+
+  if (error) {
+    console.error('SUPABASE ERROR:', error);
+    alert('Error: ' + error.message);
+    return;
+  }
+
+  console.log('Added successfully:', data);
+  showToast(`${name} added to the squad!! 🔥`);
+  // ... rest of cleanup
   }
 
   async function deleteMember(id) {
