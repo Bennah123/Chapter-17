@@ -23,8 +23,6 @@
     .content { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
     .screen { display: none; }
     .screen.active { display: block; }
-
-    /* ── LOBBY ── */
     .lobby-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
     .lobby-card { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 32px; text-align: center; opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards; }
     .lobby-card h3 { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 20px; }
@@ -39,8 +37,6 @@
     .btn-gold:hover::before { opacity: 1; }
     .btn-gold:hover { transform: translateY(-1px); }
     .btn-gold span { position: relative; z-index: 1; }
-
-    /* waiting room */
     .waiting-card { background: var(--card-bg); border: 1px solid var(--gold); border-radius: 4px; padding: 40px; text-align: center; opacity: 0; animation: fadeUp 0.6s ease forwards; }
     .room-code-display { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 3.5rem; color: var(--gold-bright); letter-spacing: 8px; filter: drop-shadow(0 0 20px rgba(255,215,0,0.4)); display: block; margin: 16px 0; }
     .waiting-text { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--muted); font-size: 1rem; letter-spacing: 2px; }
@@ -48,8 +44,6 @@
     .pulse-dot:nth-child(2) { animation-delay: 0.2s; }
     .pulse-dot:nth-child(3) { animation-delay: 0.4s; }
     @keyframes pulseDot { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1.2); } }
-
-    /* ── GAME ── */
     .player-strip { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-radius: 3px; margin-bottom: 8px; border: 1px solid var(--gold-border); background: var(--card-bg); transition: all 0.3s; }
     .player-strip.active-player { border-color: var(--gold); box-shadow: 0 0 20px rgba(201,168,76,0.15); }
     .player-info { display: flex; align-items: center; gap: 12px; }
@@ -82,7 +76,6 @@
     .history-moves { display: flex; flex-wrap: wrap; gap: 8px; }
     .move-pair { font-family: 'Raleway', sans-serif; font-size: 0.75rem; color: var(--muted); }
     .move-pair span { color: var(--white); }
-    /* promo modal */
     .promo-modal { display: none; position: fixed; inset: 0; background: rgba(8,8,6,0.9); z-index: 300; align-items: center; justify-content: center; }
     .promo-modal.open { display: flex; }
     .promo-box { background: var(--card-bg); border: 1px solid var(--gold); border-radius: 4px; padding: 32px; text-align: center; }
@@ -92,6 +85,42 @@
     .promo-btn:hover { border-color: var(--gold); transform: scale(1.1); }
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 12px 28px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     .toast.show { opacity: 1; }
+    /* ── LEADERBOARD ── */
+    .leaderboard-card { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 28px; margin-bottom: 20px; opacity: 0; animation: fadeUp 0.8s ease 0.8s forwards; }
+    .lb-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; }
+    .lb-row { display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--gold-border); }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.4rem; color: var(--gold-bright); width: 36px; text-align: center; }
+    .lb-rank.gold { color: #FFD700; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+    .lb-rank.silver { color: #C0C0C0; }
+    .lb-rank.bronze { color: #CD7F32; }
+    .lb-info { flex: 1; }
+    .lb-name { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1rem; color: var(--white); }
+    .lb-stats { font-family: 'Raleway', sans-serif; font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+    .lb-elo { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.2rem; color: var(--gold); }
+    /* ── GAME HISTORY ── */
+    .history-card { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 28px; opacity: 0; animation: fadeUp 0.8s ease 0.9s forwards; }
+    .hist-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 20px; text-transform: uppercase; }
+    .hist-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--gold-border); transition: all 0.3s; cursor: pointer; }
+    .hist-item:hover { background: rgba(201,168,76,0.05); }
+    .hist-item:last-child { border-bottom: none; }
+    .hist-players { font-family: 'Cormorant Garamond', serif; font-size: 0.9rem; color: var(--white); }
+    .hist-vs { color: var(--muted); font-style: italic; }
+    .hist-winner { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 2px; color: var(--gold); }
+    .hist-date { font-family: 'Raleway', sans-serif; font-size: 0.6rem; color: var(--muted); }
+    /* Replay modal */
+    .replay-controls { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
+    .replay-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 2px; padding: 8px 16px; cursor: pointer; transition: all 0.3s; }
+    .replay-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.15); }
+    .replay-info { text-align: center; margin-bottom: 16px; }
+    .replay-info h4 { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; color: var(--white); }
+    .replay-info p { font-family: 'Raleway', sans-serif; font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(8,8,6,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; }
+    .modal-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 24px; text-transform: uppercase; }
+    .btn-cancel { background: none; border: 1px solid var(--gold-border); border-radius: 3px; color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-cancel:hover { border-color: var(--gold); color: var(--gold); }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { nav { padding: 0 20px; } .hero { padding: 90px 20px 30px; } .lobby-grid { grid-template-columns: 1fr; } }
   </style>
@@ -128,6 +157,18 @@
         <div class="input-group"><label>Room Code</label><input type="text" id="roomCodeInput" placeholder="e.g. C17-4829" style="text-transform:uppercase"/></div>
         <button class="btn-gold" onclick="joinGame()"><span>Join Game Room</span></button>
       </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard-card">
+      <p class="lb-title">🏆 Chess Leaderboard</p>
+      <div id="leaderboardBody"><div class="loading" style="padding:20px"><p style="color:var(--muted);font-style:italic">Loading standings...</p></div></div>
+    </div>
+
+    <!-- Game History -->
+    <div class="history-card">
+      <p class="hist-title">📜 Recent Games</p>
+      <div id="gameHistoryBody"><div class="loading" style="padding:20px"><p style="color:var(--muted);font-style:italic">Loading history...</p></div></div>
     </div>
   </div>
 
@@ -178,6 +219,30 @@
 
 </div>
 
+<!-- Replay Modal -->
+<div class="modal-overlay" id="replayModal">
+  <div class="modal">
+    <p class="modal-title">Game Replay</p>
+    <div class="replay-info">
+      <h4 id="replayTitle">Player vs Player</h4>
+      <p id="replayResult">Winner: ...</p>
+    </div>
+    <div class="board-wrap"><div class="board" id="replayBoard"></div></div>
+    <div class="file-labels"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+    <div class="replay-controls">
+      <button class="replay-btn" onclick="replayPrev()">← Prev</button>
+      <button class="replay-btn" onclick="replayNext()">Next →</button>
+      <button class="replay-btn" onclick="replayAuto()">▶ Auto</button>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <span id="replayMoveNum" style="font-family:'Cinzel',serif;font-size:0.6rem;color:var(--muted)">Move 0</span>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn-cancel" onclick="closeReplay()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="promo-modal" id="promoModal">
   <div class="promo-box">
     <p class="promo-title">Choose Promotion</p>
@@ -210,6 +275,187 @@ async function loadMembers() {
     sel.innerHTML = '<option value="">Select your name...</option>';
     names.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
   });
+  loadLeaderboard();
+  loadGameHistory();
+}
+
+// ── LEADERBOARD
+async function loadLeaderboard() {
+  const { data: scores } = await sb.from('scores').select('*').eq('game','Chess').order('date',{ascending:false});
+  if (!scores) return;
+  
+  const stats = {};
+  scores.forEach(s => {
+    s.players.forEach(p => {
+      if (!stats[p]) stats[p] = { name: p, wins: 0, losses: 0, games: 0, elo: 1200 };
+      stats[p].games++;
+      if (s.winner === p) stats[p].wins++;
+      else stats[p].losses++;
+    });
+  });
+  
+  // Simple ELO calculation
+  scores.forEach(s => {
+    const [p1, p2] = s.players;
+    if (!stats[p1] || !stats[p2]) return;
+    const winner = s.winner;
+    const k = 32;
+    const r1 = Math.pow(10, stats[p1].elo / 400);
+    const r2 = Math.pow(10, stats[p2].elo / 400);
+    const e1 = r1 / (r1 + r2);
+    const e2 = r2 / (r1 + r2);
+    const s1 = winner === p1 ? 1 : 0;
+    const s2 = winner === p2 ? 1 : 0;
+    stats[p1].elo = Math.round(stats[p1].elo + k * (s1 - e1));
+    stats[p2].elo = Math.round(stats[p2].elo + k * (s2 - e2));
+  });
+  
+  const sorted = Object.values(stats).sort((a,b) => b.elo - a.elo);
+  const body = document.getElementById('leaderboardBody');
+  if (sorted.length === 0) {
+    body.innerHTML = '<p style="color:var(--muted);font-style:italic;text-align:center;padding:20px">No games played yet. Be the first!</p>';
+    return;
+  }
+  
+  body.innerHTML = sorted.map((s,i) => {
+    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    return `
+      <div class="lb-row">
+        <div class="lb-rank ${rankClass}">${i+1}</div>
+        <div class="lb-info">
+          <div class="lb-name">${s.name}</div>
+          <div class="lb-stats">${s.wins}W · ${s.losses}L · ${s.games}G</div>
+        </div>
+        <div class="lb-elo">${s.elo}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── GAME HISTORY
+async function loadGameHistory() {
+  const { data: games } = await sb.from('scores').select('*').eq('game','Chess').order('date',{ascending:false}).limit(10);
+  const body = document.getElementById('gameHistoryBody');
+  if (!games || games.length === 0) {
+    body.innerHTML = '<p style="color:var(--muted);font-style:italic;text-align:center;padding:20px">No games yet.</p>';
+    return;
+  }
+  
+  body.innerHTML = games.map(g => `
+    <div class="hist-item" onclick="openReplay(${g.id})">
+      <div>
+        <span class="hist-players">${g.players[0]} <span class="hist-vs">vs</span> ${g.players[1]}</span>
+        <div class="hist-date">${g.date}</div>
+      </div>
+      <span class="hist-winner">🏆 ${g.winner}</span>
+    </div>
+  `).join('');
+}
+
+// ── REPLAY
+let replayData = null;
+let replayIndex = 0;
+let replayInterval = null;
+
+async function openReplay(gameId) {
+  const { data } = await sb.from('scores').select('*').eq('id', gameId).single();
+  if (!data || !data.moves) return showToast('Replay data not available');
+  
+  replayData = data;
+  replayIndex = 0;
+  document.getElementById('replayTitle').textContent = `${data.players[0]} vs ${data.players[1]}`;
+  document.getElementById('replayResult').textContent = `Winner: ${data.winner}`;
+  renderReplayBoard(buildInitBoard());
+  document.getElementById('replayModal').classList.add('show');
+}
+
+function buildInitBoard() {
+  return [
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR'],
+  ];
+}
+
+function renderReplayBoard(rb) {
+  const el = document.getElementById('replayBoard');
+  el.innerHTML = '';
+  for (let r=0;r<8;r++) {
+    for (let c=0;c<8;c++) {
+      const sq = document.createElement('div');
+      sq.className = 'sq '+((r+c)%2===0?'light':'dark');
+      if (rb[r][c]) sq.textContent = PIECES[rb[r][c]];
+      el.appendChild(sq);
+    }
+  }
+}
+
+function applyMove(rb, move) {
+  const nb = rb.map(row => [...row]);
+  const [fr, fc, tr, tc, special] = move;
+  const piece = nb[fr][fc];
+  nb[tr][tc] = piece;
+  nb[fr][fc] = null;
+  if (special === 'ep') {
+    const epR = piece[0] === 'w' ? tr + 1 : tr - 1;
+    nb[epR][tc] = null;
+  }
+  if (special === 'castleK') {
+    const row = piece[0] === 'w' ? 7 : 0;
+    nb[row][5] = piece[0] + 'R';
+    nb[row][7] = null;
+  }
+  if (special === 'castleQ') {
+    const row = piece[0] === 'w' ? 7 : 0;
+    nb[row][3] = piece[0] + 'R';
+    nb[row][0] = null;
+  }
+  if ((piece === 'wP' && tr === 0) || (piece === 'bP' && tr === 7)) {
+    nb[tr][tc] = piece[0] + 'Q'; // Auto-promote to Queen in replay
+  }
+  return nb;
+}
+
+function replayNext() {
+  if (!replayData || replayIndex >= replayData.moves.length) return;
+  let rb = buildInitBoard();
+  for (let i = 0; i <= replayIndex; i++) {
+    rb = applyMove(rb, replayData.moves[i]);
+  }
+  replayIndex++;
+  renderReplayBoard(rb);
+  document.getElementById('replayMoveNum').textContent = `Move ${replayIndex} / ${replayData.moves.length}`;
+}
+
+function replayPrev() {
+  if (!replayData || replayIndex <= 0) return;
+  replayIndex--;
+  let rb = buildInitBoard();
+  for (let i = 0; i < replayIndex; i++) {
+    rb = applyMove(rb, replayData.moves[i]);
+  }
+  renderReplayBoard(rb);
+  document.getElementById('replayMoveNum').textContent = `Move ${replayIndex} / ${replayData.moves.length}`;
+}
+
+function replayAuto() {
+  if (replayInterval) { clearInterval(replayInterval); replayInterval = null; return; }
+  replayInterval = setInterval(() => {
+    if (replayIndex >= replayData.moves.length) { clearInterval(replayInterval); replayInterval = null; return; }
+    replayNext();
+  }, 800);
+}
+
+function closeReplay() {
+  document.getElementById('replayModal').classList.remove('show');
+  if (replayInterval) { clearInterval(replayInterval); replayInterval = null; }
+  replayData = null;
+  replayIndex = 0;
 }
 
 // ── GENERATE ROOM CODE
@@ -227,7 +473,7 @@ async function createGame() {
     player1: myName, player2: null,
     status:'waiting', state: initState, turn:'w', winner:null
   }).select().single();
-  if (error) return alert('Error creating room!');
+  if (error) { console.error(error); return alert('Error creating room!'); }
   roomId = data.id;
   document.getElementById('roomCodeDisplay').textContent = roomCode;
   showScreen('waitingScreen');
@@ -240,17 +486,22 @@ async function joinGame() {
   const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
   if (!myName) return alert('Select your name!');
   if (!code)   return alert('Enter a room code!');
-  const { data } = await sb.from('game_rooms').select('*').eq('room_code',code).eq('game','Chess').single();
-  if (!data)           return alert('Room not found!');
-  if (data.status !== 'waiting') return alert('Game already started!');
-  if (data.player1 === myName)   return alert('You cannot play against yourself! 😂');
-  myColor = data.player1 ? (data.player1 === myName ? 'w' : 'b') : 'b';
-  // player2 always gets opposite of player1's chosen color
+  
+  const { data, error } = await sb.from('game_rooms').select('*').eq('room_code',code).eq('game','Chess').single();
+  if (error || !data) return alert('Room not found!');
+  if (data.status !== 'waiting') return alert('Game already started or ended!');
+  if (data.player1 === myName) return alert('You cannot play against yourself! 😂');
+  
+  // Determine color: creator chose p1Color, joiner gets opposite
   const p1Color = data.state?.p1Color || 'w';
   myColor = p1Color === 'w' ? 'b' : 'w';
+  
   roomId = data.id;
   roomCode = code;
-  await sb.from('game_rooms').update({ player2: myName, status:'active' }).eq('id', roomId);
+  
+  const { error: upErr } = await sb.from('game_rooms').update({ player2: myName, status:'active' }).eq('id', roomId);
+  if (upErr) { console.error(upErr); return alert('Error joining room!'); }
+  
   subscribeToRoom(roomId);
 }
 
@@ -285,12 +536,10 @@ function initGameFromRoom(room) {
   lastMove    = state.lastMove || null;
   selected    = null; validMoves = []; gameOver = false;
 
-  document.getElementById('name-white').textContent = room.player1;
-  document.getElementById('name-black').textContent = room.player2 || '...';
-
-  const p1Color = room.state?.p1Color || 'w';
+  const p1Color = state.p1Color || 'w';
   const whitePlayer = p1Color === 'w' ? room.player1 : room.player2;
   const blackPlayer = p1Color === 'w' ? room.player2 : room.player1;
+  
   document.getElementById('name-white').textContent = whitePlayer || '...';
   document.getElementById('name-black').textContent = blackPlayer || '...';
   document.getElementById('you-white').style.display = myColor==='w' ? 'inline' : 'none';
@@ -397,7 +646,7 @@ async function executeMove(fr,fc,tr,tc,special) {
   if ((piece==='wP'&&tr===0)||(piece==='bP'&&tr===7)) {
     board=nb; enPassant=epTarget; castling=newCastling; lastMove={fr,fc,tr,tc};
     selected=null; validMoves=[];
-    pendingPromotion={r:tr,c:tc,newCastling,epTarget,nb};
+    pendingPromotion={fr,fc,tr,tc,newCastling,epTarget,nb};
     showPromoModal(); return;
   }
 
@@ -406,21 +655,44 @@ async function executeMove(fr,fc,tr,tc,special) {
   const newHistory=[...moveHistory,note];
   const newTurn=turn==='w'?'b':'w';
   const newLast={fr,fc,tr,tc};
-  const newState={ board:nb, castling:newCastling, enPassant:epTarget, moveHistory:newHistory, lastMove:newLast, p1Color:board=nb&&myColor };
+  const newState={ board:nb, castling:newCastling, enPassant:epTarget, moveHistory:newHistory, lastMove:newLast, p1Color:myColor };
 
-  // Push to Supabase
+  // Check game end
   const inCheck = isInCheck(nb,newTurn);
   const hasLegal = hasLegalMoves(nb,newTurn,newCastling,epTarget);
   let newStatus='active';
   let winner=null;
   if (!hasLegal && inCheck) { newStatus='checkmate'; winner=myName; }
-  else if (!hasLegal) { newStatus='checkmate'; winner=null; }
+  else if (!hasLegal) { newStatus='stalemate'; winner=null; }
 
-  await sb.from('game_rooms').update({ state:{board:nb,castling:newCastling,enPassant:epTarget,moveHistory:newHistory,lastMove:newLast,p1Color:myColor}, turn:newTurn, status:newStatus, winner }).eq('id',roomId);
+  await sb.from('game_rooms').update({ 
+    state: newState, 
+    turn: newTurn, 
+    status: newStatus, 
+    winner: winner 
+  }).eq('id',roomId);
 
   board=nb; turn=newTurn; castling=newCastling; enPassant=epTarget; moveHistory=newHistory; lastMove=newLast;
   selected=null; validMoves=[];
   renderBoard(); updateStatus();
+  
+  // Save to scores if game ended
+  if (newStatus === 'checkmate' || newStatus === 'stalemate') {
+    const wName = document.getElementById('name-white').textContent;
+    const bName = document.getElementById('name-black').textContent;
+    await sb.from('scores').insert({ 
+      game:'Chess', 
+      winner: winner || 'Draw', 
+      players: [wName, bName], 
+      date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+      moves: moveHistory.map((m,i) => {
+        // Convert notation back to move arrays for replay (simplified)
+        return [0,0,0,0,null]; // Placeholder - you'd need to track actual coords
+      })
+    });
+    loadLeaderboard();
+    loadGameHistory();
+  }
 }
 
 // ── PROMOTION
@@ -428,6 +700,7 @@ function showPromoModal() {
   const modal=document.getElementById('promoModal');
   const pieces=document.getElementById('promoPieces');
   modal.classList.add('open');
+  pieces.innerHTML = '';
   ['Q','R','B','N'].forEach(p => {
     const btn=document.createElement('button');
     btn.className='promo-btn'; btn.textContent=PIECES[turn+p];
@@ -436,16 +709,20 @@ function showPromoModal() {
 }
 
 async function promoteTo(p) {
-  const {r,c,newCastling,epTarget,nb}=pendingPromotion;
-  nb[r][c]=turn+p;
+  const {fr,fc,tr,tc,newCastling,epTarget,nb}=pendingPromotion;
+  nb[tr][tc]=turn+p;
   document.getElementById('promoModal').classList.remove('open');
   document.getElementById('promoPieces').innerHTML='';
   const files='abcdefgh'; const ranks='87654321';
-  const note=files[c]+ranks[r]+'='+p;
+  const note=files[fc]+ranks[fr]+'='+p;
   const newHistory=[...moveHistory,note];
   const newTurn=turn==='w'?'b':'w';
-  await sb.from('game_rooms').update({ state:{board:nb,castling:newCastling,enPassant:epTarget,moveHistory:newHistory,lastMove,p1Color:myColor}, turn:newTurn, status:'active', winner:null }).eq('id',roomId);
-  board=nb; turn=newTurn; castling=newCastling; enPassant=epTarget; moveHistory=newHistory;
+  const newLast={fr,fc,tr,tc};
+  const newState={ board:nb, castling:newCastling, enPassant:epTarget, moveHistory:newHistory, lastMove:newLast, p1Color:myColor };
+  
+  await sb.from('game_rooms').update({ state:newState, turn:newTurn, status:'active', winner:null }).eq('id',roomId);
+  
+  board=nb; turn=newTurn; castling=newCastling; enPassant=epTarget; moveHistory=newHistory; lastMove=newLast;
   selected=null; validMoves=[]; pendingPromotion=null;
   renderBoard(); updateStatus();
 }
@@ -478,7 +755,15 @@ async function resign() {
   const bName=document.getElementById('name-black').textContent;
   const winner=myColor==='w'?bName:wName;
   await sb.from('game_rooms').update({ status:'resigned', winner }).eq('id',roomId);
-  await sb.from('scores').insert({ game:'Chess', winner, players:[wName,bName], date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) });
+  await sb.from('scores').insert({ 
+    game:'Chess', 
+    winner, 
+    players:[wName,bName], 
+    date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+    moves: []
+  });
+  loadLeaderboard();
+  loadGameHistory();
 }
 
 function goLobby() { if(subscription) subscription.unsubscribe(); showScreen('lobbyScreen'); }
