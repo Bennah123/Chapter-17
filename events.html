@@ -20,6 +20,9 @@
     .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
     .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
     .nav-back:hover { color: var(--gold); }
+    .admin-toggle { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); background: none; border: 1px solid var(--gold-border); border-radius: 3px; padding: 8px 16px; cursor: pointer; transition: all 0.3s; }
+    .admin-toggle:hover { border-color: var(--gold); color: var(--gold); }
+    .admin-toggle.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
     .hero { padding: 140px 48px 60px; text-align: center; position: relative; }
     .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
     .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 16px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
@@ -27,12 +30,14 @@
     .page-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--muted); letter-spacing: 2px; margin-top: 12px; opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards; }
     .content { max-width: 1100px; margin: 0 auto; padding: 0 48px 100px; }
     .add-panel { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 36px; margin-bottom: 60px; opacity: 0; animation: fadeUp 0.8s ease 0.8s forwards; }
+    .add-panel.locked { position: relative; }
+    .add-panel.locked::after { content: '🔒 Admin Only'; position: absolute; inset: 0; background: rgba(8,8,6,0.92); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: 0.8rem; letter-spacing: 5px; color: var(--gold); border-radius: 4px; }
     .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
-    input[type="text"], input[type="date"], input[type="time"], textarea, select { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
+    input[type="text"], input[type="date"], input[type="time"], input[type="number"], textarea, select { background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px; outline: none; transition: all 0.3s ease; width: 100%; }
     input:focus, textarea:focus, select:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 16px rgba(201,168,76,0.1); }
     input::placeholder, textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
     textarea { resize: vertical; min-height: 80px; }
@@ -41,11 +46,14 @@
     .emoji-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); }
     .emoji-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; padding: 8px 12px; font-size: 1.1rem; cursor: pointer; transition: all 0.2s; }
     .emoji-btn:hover, .emoji-btn.selected { border-color: var(--gold); background: rgba(201,168,76,0.15); transform: scale(1.1); }
-    .btn-add { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; }
+    .btn-add { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; }
     .btn-add::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
     .btn-add:hover::before { opacity: 1; }
     .btn-add:hover { transform: translateY(-1px); }
     .btn-add span { position: relative; z-index: 1; }
+    .btn-add:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-spinner { width: 14px; height: 14px; border: 2px solid #080806; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: none; }
+    .btn-add:disabled .btn-spinner { display: inline-block; }
     .filter-bar { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
     .filter-btn { background: transparent; border: 1px solid var(--gold-border); border-radius: 2px; color: var(--muted); font-family: 'Raleway', sans-serif; font-size: 0.7rem; letter-spacing: 2px; padding: 8px 20px; cursor: pointer; transition: all 0.3s; }
     .filter-btn:hover, .filter-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
@@ -64,22 +72,46 @@
     .event-emoji { font-size: 1.8rem; display: block; margin-bottom: 12px; }
     .event-countdown { position: absolute; top: 16px; right: 16px; font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 2px; color: var(--bg); background: linear-gradient(135deg, var(--gold-bright), var(--gold)); padding: 4px 10px; border-radius: 2px; }
     .event-countdown.past-badge { background: var(--muted); color: var(--bg); }
+    .event-countdown.urgent { background: linear-gradient(135deg, #ff6b6b, #c94c4c); animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
     .event-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.2rem; color: var(--white); margin-bottom: 6px; }
     .event-date { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); margin-bottom: 6px; }
     .event-location { font-size: 0.75rem; color: var(--muted); letter-spacing: 1px; margin-bottom: 10px; }
     .event-desc { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.9rem; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+    .event-cost { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 2px; color: var(--gold); margin-bottom: 10px; }
     .rsvp-section { border-top: 1px solid var(--gold-border); padding-top: 14px; }
     .rsvp-title { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 4px; color: var(--gold); margin-bottom: 10px; }
     .rsvp-names { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 24px; }
-    .rsvp-name { font-size: 0.65rem; letter-spacing: 1px; color: var(--bg); background: var(--gold); padding: 3px 10px; border-radius: 2px; font-family: 'Raleway', sans-serif; }
+    .rsvp-name { font-size: 0.65rem; letter-spacing: 1px; color: var(--bg); background: var(--gold); padding: 3px 10px; border-radius: 2px; font-family: 'Raleway', sans-serif; position: relative; }
+    .rsvp-name .remove-rsvp { margin-left: 6px; cursor: pointer; opacity: 0.6; }
+    .rsvp-name .remove-rsvp:hover { opacity: 1; }
     .rsvp-input-row { display: flex; gap: 8px; }
     .rsvp-input { flex: 1; background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif; font-size: 0.75rem; letter-spacing: 1px; padding: 8px 12px; outline: none; transition: all 0.3s; }
     .rsvp-input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); }
     .rsvp-input::placeholder { color: var(--muted); }
     .rsvp-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 2px; padding: 8px 14px; cursor: pointer; transition: all 0.3s; white-space: nowrap; }
     .rsvp-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.15); }
-    .event-delete { position: absolute; bottom: 14px; right: 14px; background: none; border: none; color: var(--muted); font-size: 0.65rem; cursor: pointer; opacity: 0; transition: all 0.3s; letter-spacing: 1px; font-family: 'Raleway', sans-serif; }
-    .event-card:hover .event-delete { opacity: 1; color: var(--gold); }
+    .event-actions-card { position: absolute; bottom: 14px; right: 14px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+    .event-card:hover .event-actions-card { opacity: 1; }
+    .event-actions-card button { background: none; border: none; color: var(--muted); font-size: 0.65rem; cursor: pointer; letter-spacing: 1px; font-family: 'Raleway', sans-serif; transition: color 0.2s; padding: 4px 8px; border-radius: 2px; }
+    .event-actions-card button:hover { color: var(--gold); }
+    .event-actions-card .btn-edit:hover { background: rgba(201,168,76,0.1); }
+    .event-actions-card .btn-delete:hover { color: #c94c4c; }
+    /* Poll styles */
+    .poll-section { border-top: 1px solid var(--gold-border); padding-top: 14px; margin-top: 12px; }
+    .poll-title { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--gold); margin-bottom: 10px; }
+    .poll-option { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; }
+    .poll-bar-bg { flex: 1; height: 6px; background: var(--gold-dim); border-radius: 3px; overflow: hidden; }
+    .poll-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius: 3px; transition: width 0.5s ease; }
+    .poll-count { font-family: 'Cinzel', serif; font-size: 0.5rem; color: var(--muted); min-width: 24px; text-align: right; }
+    /* Weather widget */
+    .weather-widget { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; font-size: 0.7rem; color: var(--muted); }
+    .weather-widget span { color: var(--gold); }
+    /* Stats strip */
+    .stats-strip { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 20px 28px; margin-bottom: 40px; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; opacity: 0; animation: fadeUp 0.8s ease 0.7s forwards; }
+    .stat-box { text-align: center; }
+    .stat-num { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.8rem; color: var(--gold-bright); }
+    .stat-label { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 3px; color: var(--muted); margin-top: 4px; }
     .loading { text-align: center; padding: 60px 24px; }
     .loading-spinner { width: 40px; height: 40px; border: 2px solid var(--gold-border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -89,15 +121,27 @@
     .empty-state p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--muted); letter-spacing: 2px; }
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 12px 28px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     .toast.show { opacity: 1; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(8,8,6,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; }
+    .modal-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 24px; text-transform: uppercase; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+    .btn-cancel { background: none; border: 1px solid var(--gold-border); border-radius: 3px; color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-cancel:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-save { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-save:hover { transform: translateY(-1px); box-shadow: 0 0 16px rgba(201,168,76,0.3); }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 768px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 24px 80px; } .form-grid, .form-grid-3 { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 24px 80px; } .form-grid, .form-grid-3 { grid-template-columns: 1fr; } .stats-strip { gap: 16px; } }
   </style>
 </head>
 <body>
 
-<nav>
+<<nav>
   <a class="nav-logo" href="index.html">Chapter 17</a>
-  <a class="nav-back" href="dashboard.html">← Dashboard</a>
+  <div style="display:flex;gap:16px;align-items:center;">
+    <button class="admin-toggle" id="adminBtn" onclick="toggleAdmin()">🔒 Admin</button>
+    <a class="nav-back" href="dashboard.html">← Dashboard</a>
+  </div>
 </nav>
 
 <section class="hero">
@@ -108,7 +152,28 @@
 </section>
 
 <div class="content">
-  <div class="add-panel">
+  <!-- Stats Strip -->
+  <div class="stats-strip" id="statsStrip">
+    <div class="stat-box">
+      <div class="stat-num" id="statUpcoming">0</div>
+      <div class="stat-label">UPCOMING</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">TOTAL</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statRSVPs">0</div>
+      <div class="stat-label">RSVPs</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statNext">--</div>
+      <div class="stat-label">DAYS TO NEXT</div>
+    </div>
+  </div>
+
+  <!-- Add Panel - Admin Only -->
+  <div class="add-panel locked" id="addPanel">
     <p class="panel-title">Plan a Hangout</p>
     <div class="form-grid">
       <div class="input-group">
@@ -141,6 +206,16 @@
         <input type="text" id="eventLocation" placeholder="e.g. Nairobi CBD"/>
       </div>
     </div>
+    <div class="form-grid">
+      <div class="input-group">
+        <label>Estimated Cost (per person)</label>
+        <input type="number" id="eventCost" placeholder="0" min="0"/>
+      </div>
+      <div class="input-group">
+        <label>Max Attendees (0 = unlimited)</label>
+        <input type="number" id="eventMax" placeholder="0" min="0"/>
+      </div>
+    </div>
     <div class="input-group" style="margin-bottom:16px">
       <label>Details</label>
       <textarea id="eventDesc" placeholder="What's the plan?"></textarea>
@@ -156,13 +231,17 @@
       <button class="emoji-btn" data-emoji="🎵">🎵</button>
       <button class="emoji-btn" data-emoji="🏆">🏆</button>
     </div>
-    <button class="btn-add" onclick="addEvent()"><span>Add to Events</span></button>
+    <button class="btn-add" id="addBtn" onclick="addEvent()">
+      <div class="btn-spinner"></div>
+      <span>Add to Events</span>
+    </button>
   </div>
 
   <div class="filter-bar">
     <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
     <button class="filter-btn" onclick="setFilter('upcoming', this)">Upcoming</button>
     <button class="filter-btn" onclick="setFilter('past', this)">Past</button>
+    <button class="filter-btn" onclick="setFilter('today', this)">Today</button>
   </div>
 
   <div id="upcomingSection">
@@ -178,9 +257,55 @@
   </div>
 </div>
 
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <p class="modal-title">Edit Event</p>
+    <input type="hidden" id="editId"/>
+    <div class="form-grid">
+      <div class="input-group"><label>Event Name</label><input type="text" id="editTitle"/></div>
+      <div class="input-group"><label>Category</label>
+        <select id="editCategory">
+          <option value="Hangout">Hangout</option>
+          <option value="Trip">Trip</option>
+          <option value="Celebration">Celebration</option>
+          <option value="Game Night">Game Night</option>
+          <option value="Food Run">Food Run</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid-3">
+      <div class="input-group"><label>Date</label><input type="date" id="editDate"/></div>
+      <div class="input-group"><label>Time</label><input type="time" id="editTime"/></div>
+      <div class="input-group"><label>Location</label><input type="text" id="editLocation"/></div>
+    </div>
+    <div class="input-group" style="margin-bottom:16px"><label>Details</label><textarea id="editDesc"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Password Modal -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <p class="modal-title">🔐 Admin Access</p>
+    <p style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--muted);font-size:0.9rem;margin-bottom:20px;">Enter the admin password to manage events.</p>
+    <div class="input-group" style="margin-bottom:20px">
+      <input type="password" id="adminPassword" placeholder="••••••" style="text-align:center;font-size:1rem;letter-spacing:4px;" onkeydown="if(event.key==='Enter')verifyAdmin()"/>
+    </div>
+    <button class="btn-save" onclick="verifyAdmin()">Unlock</button>
+    <button class="btn-cancel" onclick="closeAdminModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+  const ADMIN_PASSWORD = 'Chapter17King';
+
   const { createClient } = supabase;
   const sb = createClient(
     'https://whgxunnlxhcfthkpcbjd.supabase.co',
@@ -190,7 +315,45 @@
   let selectedEmoji = '🔥';
   let activeFilter = 'all';
   let allEvents = [];
+  let isAdmin = false;
 
+  // Admin
+  function toggleAdmin() {
+    if (isAdmin) {
+      isAdmin = false;
+      document.getElementById('adminBtn').classList.remove('active');
+      document.getElementById('adminBtn').textContent = '🔒 Admin';
+      document.getElementById('addPanel').classList.add('locked');
+      renderEvents();
+      showToast('Admin mode off');
+    } else {
+      document.getElementById('adminModal').classList.add('show');
+      document.getElementById('adminPassword').focus();
+    }
+  }
+
+  function verifyAdmin() {
+    const input = document.getElementById('adminPassword').value;
+    if (input === ADMIN_PASSWORD) {
+      isAdmin = true;
+      document.getElementById('adminBtn').classList.add('active');
+      document.getElementById('adminBtn').textContent = '🔓 Admin';
+      document.getElementById('adminPassword').value = '';
+      closeAdminModal();
+      document.getElementById('addPanel').classList.remove('locked');
+      renderEvents();
+      showToast('Admin mode unlocked 🔓');
+    } else {
+      showToast('Wrong password ❌');
+      document.getElementById('adminPassword').value = '';
+    }
+  }
+
+  function closeAdminModal() {
+    document.getElementById('adminModal').classList.remove('show');
+  }
+
+  // Emoji selection
   document.querySelectorAll('.emoji-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
@@ -200,43 +363,52 @@
   });
 
   async function addEvent() {
+    if (!isAdmin) return showToast('Admin only 🔒');
+    
     const title    = document.getElementById('eventTitle').value.trim();
     const category = document.getElementById('eventCategory').value;
     const date     = document.getElementById('eventDate').value;
     const time     = document.getElementById('eventTime').value;
     const location = document.getElementById('eventLocation').value.trim();
     const desc     = document.getElementById('eventDesc').value.trim();
+    const cost     = parseInt(document.getElementById('eventCost').value) || 0;
+    const max      = parseInt(document.getElementById('eventMax').value) || 0;
+    
     if (!title)    return alert('Give the event a name!');
     if (!date)     return alert('When is it happening?');
     if (!location) return alert('Where is it happening?');
-    const {
-data:{user}
-}
-=
-await supabase.auth.getUser();
-if(!user){
-alert(
-"Only Admin Can Add Events"
-);
-return;
-}
-if(
-user.email !==
-"YOUR_EMAIL@gmail.com"
-){
-alert(
-"Unauthorized"
-);
-return;
-}
-    await sb.from('events').insert({ title, category, date, time, location, description: desc || 'Chapter 17 hangout.', emoji: selectedEmoji, rsvps: [] });
-    showToast('Event added!! 🔥');
 
+    const btn = document.getElementById('addBtn');
+    const btnSpan = btn.querySelector('span');
+    btn.disabled = true;
+    btnSpan.textContent = 'Adding...';
+
+    const { error } = await sb.from('events').insert({ 
+      title, category, date, time, location, 
+      description: desc || 'Chapter 17 hangout.', 
+      emoji: selectedEmoji, 
+      rsvps: [],
+      cost,
+      max_attendees: max
+    });
+    
+    btn.disabled = false;
+    btnSpan.textContent = 'Add to Events';
+
+    if (error) {
+      console.error('Add error:', error);
+      showToast('Failed to add event ❌');
+      return;
+    }
+
+    showToast('Event added!! 🔥');
     document.getElementById('eventTitle').value = '';
     document.getElementById('eventDate').value = '';
     document.getElementById('eventTime').value = '';
     document.getElementById('eventLocation').value = '';
     document.getElementById('eventDesc').value = '';
+    document.getElementById('eventCost').value = '';
+    document.getElementById('eventMax').value = '';
     loadEvents();
   }
 
@@ -248,17 +420,71 @@ return;
     const ev = allEvents.find(e => e.id === id);
     if (!ev) return;
     if ((ev.rsvps || []).includes(name)) { input.value = ''; return alert(`${name} already RSVPed!`); }
+    
+    if (ev.max_attendees > 0 && (ev.rsvps || []).length >= ev.max_attendees) {
+      return alert('Sorry, this event is full! 😢');
+    }
 
     const updated = [...(ev.rsvps || []), name];
-    await sb.from('events').update({ rsvps: updated }).eq('id', id);
+    const { error } = await sb.from('events').update({ rsvps: updated }).eq('id', id);
+    if (error) { console.error('RSVP error:', error); showToast('Failed to RSVP ❌'); return; }
+    
     showToast(`${name} is in!! 🔥`);
+    input.value = '';
+    loadEvents();
+  }
+
+  async function unrsvp(eventId, name) {
+    const ev = allEvents.find(e => e.id === eventId);
+    if (!ev) return;
+    const updated = (ev.rsvps || []).filter(n => n !== name);
+    const { error } = await sb.from('events').update({ rsvps: updated }).eq('id', eventId);
+    if (error) { console.error('UnRSVP error:', error); return; }
     loadEvents();
   }
 
   async function deleteEvent(id) {
+    if (!isAdmin) return showToast('Admin only 🔒');
     if (!confirm('Remove this event?')) return;
-    await sb.from('events').delete().eq('id', id);
+    const { error } = await sb.from('events').delete().eq('id', id);
+    if (error) { console.error('Delete error:', error); showToast('Failed to delete ❌'); return; }
     showToast('Event removed.');
+    loadEvents();
+  }
+
+  // Edit
+  function openEditModal(id) {
+    if (!isAdmin) return;
+    const ev = allEvents.find(e => e.id === id);
+    if (!ev) return;
+    document.getElementById('editId').value = id;
+    document.getElementById('editTitle').value = ev.title;
+    document.getElementById('editCategory').value = ev.category;
+    document.getElementById('editDate').value = ev.date;
+    document.getElementById('editTime').value = ev.time || '';
+    document.getElementById('editLocation').value = ev.location;
+    document.getElementById('editDesc').value = ev.description || '';
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+  }
+
+  async function saveEdit() {
+    const id = parseInt(document.getElementById('editId').value);
+    const updates = {
+      title: document.getElementById('editTitle').value.trim(),
+      category: document.getElementById('editCategory').value,
+      date: document.getElementById('editDate').value,
+      time: document.getElementById('editTime').value,
+      location: document.getElementById('editLocation').value.trim(),
+      description: document.getElementById('editDesc').value.trim()
+    };
+    const { error } = await sb.from('events').update(updates).eq('id', id);
+    if (error) { console.error('Edit error:', error); showToast('Failed to save ❌'); return; }
+    showToast('Event updated ✨');
+    closeEditModal();
     loadEvents();
   }
 
@@ -266,88 +492,130 @@ return;
     activeFilter = filter;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const up   = document.getElementById('upcomingSection');
-    const past = document.getElementById('pastSection');
-    if (filter === 'upcoming') { up.style.display = ''; past.style.display = 'none'; }
-    else if (filter === 'past') { up.style.display = 'none'; past.style.display = ''; }
-    else { up.style.display = ''; past.style.display = ''; }
+    renderEvents();
   }
 
   function getCountdown(dateStr) {
     const today = new Date(); today.setHours(0,0,0,0);
     const event = new Date(dateStr);
     const diff  = Math.round((event - today) / 86400000);
-    if (diff < 0)   return { label: 'Past', past: true };
-    if (diff === 0) return { label: 'Today! 🔥', past: false };
-    if (diff === 1) return { label: 'Tomorrow', past: false };
-    return { label: `${diff} days`, past: false };
+    if (diff < 0)   return { label: 'Past', past: true, urgent: false };
+    if (diff === 0) return { label: 'Today! 🔥', past: false, urgent: true };
+    if (diff === 1) return { label: 'Tomorrow', past: false, urgent: true };
+    if (diff <= 3)  return { label: `${diff} days`, past: false, urgent: true };
+    return { label: `${diff} days`, past: false, urgent: false };
+  }
+
+  function updateStats() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const upcoming = allEvents.filter(e => new Date(e.date) >= today);
+    const past = allEvents.filter(e => new Date(e.date) < today);
+    const totalRSVPs = allEvents.reduce((sum, e) => sum + (e.rsvps || []).length, 0);
+    const nextEvent = upcoming[0];
+    const daysToNext = nextEvent ? Math.round((new Date(nextEvent.date) - today) / 86400000) : '--';
+    
+    document.getElementById('statUpcoming').textContent = upcoming.length;
+    document.getElementById('statTotal').textContent = allEvents.length;
+    document.getElementById('statRSVPs').textContent = totalRSVPs;
+    document.getElementById('statNext').textContent = daysToNext;
   }
 
   function buildCard(ev) {
     const countdown = getCountdown(ev.date);
     const formattedDate = new Date(ev.date).toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     const timeStr = ev.time ? ` · ${ev.time}` : '';
-    const rsvpNames = (ev.rsvps || []).map(n => `<span class="rsvp-name">${n}</span>`).join('');
+    const costStr = ev.cost ? `💰 KES ${ev.cost}` : '';
+    const maxStr = ev.max_attendees > 0 ? ` · ${(ev.rsvps || []).length}/${ev.max_attendees} spots` : ` · ${(ev.rsvps || []).length} going`;
+    const fullBadge = ev.max_attendees > 0 && (ev.rsvps || []).length >= ev.max_attendees ? '<span style="color:#c94c4c;font-size:0.6rem;">FULL</span>' : '';
+    
+    const rsvpNames = (ev.rsvps || []).map(n => 
+      `<span class="rsvp-name">${n}${isAdmin ? `<span class="remove-rsvp" onclick="unrsvp(${ev.id}, '${n}')">✕</span>` : ''}</span>`
+    ).join('');
+    
     const card = document.createElement('div');
     card.className = `event-card${countdown.past ? ' past' : ''}`;
     card.innerHTML = `
       <div class="event-bar${countdown.past ? ' past-bar' : ''}"></div>
-      <span class="event-countdown${countdown.past ? ' past-badge' : ''}">${countdown.label}</span>
+      <span class="event-countdown${countdown.past ? ' past-badge' : ''}${countdown.urgent && !countdown.past ? ' urgent' : ''}">${countdown.label}</span>
       <div class="event-body">
         <span class="event-emoji">${ev.emoji}</span>
         <p class="event-title">${ev.title}</p>
         <p class="event-date">${formattedDate}${timeStr}</p>
         <p class="event-location">📍 ${ev.location} · ${ev.category}</p>
+        ${costStr ? `<p class="event-cost">${costStr}${maxStr} ${fullBadge}</p>` : `<p class="event-cost">${maxStr} ${fullBadge}</p>`}
         <p class="event-desc">${ev.description || ''}</p>
         <div class="rsvp-section">
           <p class="rsvp-title">Who's Pulling Up — ${(ev.rsvps || []).length}</p>
           <div class="rsvp-names">${rsvpNames}</div>
-          ${!countdown.past ? `
+          ${!countdown.past && (!ev.max_attendees || (ev.rsvps || []).length < ev.max_attendees) ? `
           <div class="rsvp-input-row">
             <input class="rsvp-input" id="rsvp-${ev.id}" placeholder="Your name..." onkeydown="if(event.key==='Enter') rsvp(${ev.id})"/>
             <button class="rsvp-btn" onclick="rsvp(${ev.id})">I'm In</button>
-          </div>` : ''}
+          </div>` : countdown.past ? '' : '<p style="font-size:0.7rem;color:#c94c4c;margin-top:8px;">Event is full 😢</p>'}
         </div>
       </div>
-      <button class="event-delete" onclick="deleteEvent(${ev.id})">✕ remove</button>
+      ${isAdmin ? `
+      <div class="event-actions-card">
+        <button class="btn-edit" onclick="openEditModal(${ev.id})">✎ edit</button>
+        <button class="btn-delete" onclick="deleteEvent(${ev.id})">✕ remove</button>
+      </div>` : ''}
     `;
     return card;
   }
 
   async function loadEvents() {
     const { data, error } = await sb.from('events').select('*').order('date', { ascending: true });
-    if (error) { console.error(error); return; }
+    if (error) { console.error('Load error:', error); return; }
     allEvents = data || [];
     renderEvents();
+    updateStats();
   }
 
   function renderEvents() {
     const today    = new Date(); today.setHours(0,0,0,0);
-    const upcoming = allEvents.filter(e => new Date(e.date) >= today);
-    const past     = allEvents.filter(e => new Date(e.date) < today);
+    let upcoming = allEvents.filter(e => new Date(e.date) >= today);
+    let past     = allEvents.filter(e => new Date(e.date) < today);
+    
+    // Filter logic
+    if (activeFilter === 'upcoming') { upcoming = upcoming; past = []; }
+    else if (activeFilter === 'past') { upcoming = []; }
+    else if (activeFilter === 'today') { 
+      upcoming = upcoming.filter(e => {
+        const d = new Date(e.date);
+        return d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+      });
+      past = [];
+    }
+
     const upGrid   = document.getElementById('upcomingGrid');
     const pastGrid = document.getElementById('pastGrid');
+    const upSec    = document.getElementById('upcomingSection');
+    const pastSec  = document.getElementById('pastSection');
 
     upGrid.innerHTML = '';
     if (upcoming.length === 0) {
       upGrid.innerHTML = '<div class="empty-state"><span class="empty-icon">📅</span><p>No upcoming events. Plan something! 🔥</p></div>';
+      upSec.style.display = activeFilter === 'past' ? 'none' : '';
     } else {
       upcoming.forEach((ev, i) => {
         const card = buildCard(ev);
         card.style.transitionDelay = `${i * 0.07}s`;
         upGrid.appendChild(card);
       });
+      upSec.style.display = '';
     }
 
     pastGrid.innerHTML = '';
     if (past.length === 0) {
       pastGrid.innerHTML = '<div class="empty-state"><span class="empty-icon">📖</span><p>No past events yet.</p></div>';
+      pastSec.style.display = activeFilter === 'upcoming' || activeFilter === 'today' ? 'none' : '';
     } else {
       past.slice().reverse().forEach((ev, i) => {
         const card = buildCard(ev);
         card.style.transitionDelay = `${i * 0.07}s`;
         pastGrid.appendChild(card);
       });
+      pastSec.style.display = '';
     }
 
     const observer = new IntersectionObserver(entries => {
