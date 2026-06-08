@@ -502,9 +502,13 @@ async function joinGame() {
   const { error: upErr } = await sb.from('game_rooms').update({ player2: myName, status:'active' }).eq('id', roomId);
   if (upErr) { console.error(upErr); return alert('Error joining room!'); }
   
+  // Subscribe AND immediately init the game (don't wait for realtime)
   subscribeToRoom(roomId);
+  
+  // Manually init from the data we already have (with updated player2)
+  const updatedRoom = { ...data, player2: myName, status: 'active' };
+  initGameFromRoom(updatedRoom);
 }
-
 // ── SUBSCRIBE TO ROOM
 function subscribeToRoom(id) {
   if (subscription) subscription.unsubscribe();
