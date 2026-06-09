@@ -18,6 +18,8 @@
       --white: #f5f0e8;
       --muted: rgba(245,240,232,0.45);
       --card-bg: rgba(15,15,12,0.85);
+      --page-bg: #0c0c09;
+      --leather: #1a1510;
     }
 
     html { scroll-behavior: smooth; }
@@ -28,6 +30,9 @@
       font-family: 'Raleway', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     /* Grain */
@@ -195,11 +200,96 @@
       animation: fadeUp 0.8s ease 1s forwards;
     }
 
-    /* ── SECTION ── */
-    .section {
-      padding: 80px 48px;
+    /* ── BOOK CONTAINER ── */
+    .book-wrapper {
+      width: 100%;
       max-width: 1200px;
       margin: 0 auto;
+      padding: 0 24px 80px;
+      perspective: 2000px;
+      position: relative;
+    }
+
+    .book-spine {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, transparent, var(--gold-border), transparent);
+      transform: translateX(-50%);
+      z-index: 10;
+      opacity: 0.6;
+    }
+
+    .book-page {
+      position: relative;
+      width: 100%;
+      min-height: 600px;
+      background: var(--page-bg);
+      border: 1px solid var(--gold-border);
+      border-radius: 2px;
+      margin-bottom: 40px;
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease;
+      opacity: 0;
+      transform: rotateY(-90deg);
+      transform-origin: left center;
+      overflow: hidden;
+    }
+
+    .book-page.active {
+      opacity: 1;
+      transform: rotateY(0deg);
+    }
+
+    .book-page.turning-next {
+      transform: rotateY(-90deg);
+      opacity: 0;
+    }
+
+    .book-page.turning-prev {
+      transform: rotateY(90deg);
+      opacity: 0;
+    }
+
+    /* Page texture overlay */
+    .book-page::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5'/%3E%3CfeDiffuseLighting lighting-color='%23f5f0e8' surfaceScale='1'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)' opacity='0.015'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Page corner fold effect */
+    .page-corner {
+      position: absolute;
+      top: 0; right: 0;
+      width: 40px; height: 40px;
+      background: linear-gradient(225deg, var(--gold-dim) 0%, transparent 50%);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Page number */
+    .page-number {
+      position: absolute;
+      bottom: 20px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+      z-index: 2;
+    }
+    .page-number.left { left: 30px; }
+    .page-number.right { right: 30px; }
+
+    /* ── PAGE CONTENT ── */
+    .page-content {
+      padding: 60px 48px;
+      position: relative;
+      z-index: 3;
     }
 
     .section-header {
@@ -245,6 +335,9 @@
       display: block;
       opacity: 0;
       transform: translateY(20px);
+    }
+
+    .card.visible {
       animation: fadeUp 0.7s ease forwards;
     }
 
@@ -322,6 +415,77 @@
       transform: translateX(0);
     }
 
+    /* ── PAGE NAVIGATION ── */
+    .page-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      padding: 40px 0 80px;
+      position: relative;
+      z-index: 20;
+    }
+
+    .page-nav-btn {
+      background: transparent;
+      border: 1px solid var(--gold-border);
+      color: var(--gold);
+      padding: 12px 24px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-nav-btn:hover {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(201,168,76,0.2);
+    }
+
+    .page-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-nav-btn .arrow {
+      font-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .page-nav-btn:hover .arrow-left { transform: translateX(-4px); }
+    .page-nav-btn:hover .arrow-right { transform: translateX(4px); }
+
+    .page-dots {
+      display: flex;
+      gap: 10px;
+    }
+
+    .page-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1px solid var(--gold-border);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .page-dot.active {
+      background: var(--gold);
+      border-color: var(--gold);
+      box-shadow: 0 0 10px rgba(201,168,76,0.5);
+    }
+
+    .page-dot:hover {
+      border-color: var(--gold);
+    }
+
     /* ── STATS BAR ── */
     .stats {
       display: grid;
@@ -331,7 +495,7 @@
       border: 1px solid var(--gold-border);
       border-radius: 4px;
       overflow: hidden;
-      margin-bottom: 80px;
+      margin-bottom: 0;
     }
 
     .stat {
@@ -369,6 +533,9 @@
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
     footer .logo {
@@ -391,7 +558,7 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── MOBILE NAV ── */
+    /* ── MOBILE ── */
     @media (max-width: 768px) {
       nav { padding: 0 24px; }
       .nav-links {
@@ -409,8 +576,27 @@
       .nav-links li { width: 100%; text-align: center; }
       .nav-links a { display: block; padding: 14px; }
       .nav-burger { display: flex; }
-      .section { padding: 60px 24px; }
+      
+      .book-wrapper { padding: 0 12px 40px; }
+      .page-content { padding: 40px 20px; }
+      .book-page { min-height: auto; }
+      
+      .page-nav { flex-wrap: wrap; padding: 20px 0 40px; }
+      
       footer { padding: 28px 24px; justify-content: center; text-align: center; }
+    }
+
+    /* Swipe hint */
+    .swipe-hint {
+      display: none;
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+    }
+    @media (max-width: 768px) {
+      .swipe-hint { display: block; }
     }
   </style>
 </head>
@@ -444,147 +630,187 @@
   <p class="hero-sub">"Every hangout, a new page."</p>
 </section>
 
-<!-- STATS -->
-<div class="section" style="padding-top:0">
-  <div class="stats">
-    <div class="stat">
-      <span class="stat-num">10</span>
-      <span class="stat-label">Members</span>
+<!-- BOOK CONTAINER -->
+<div class="book-wrapper">
+  <div class="book-spine"></div>
+
+  <!-- PAGE 1: STATS + EXPLORE -->
+  <div class="book-page active" data-page="0">
+    <div class="page-corner"></div>
+    <div class="page-number left">i</div>
+    
+    <div class="page-content">
+      <!-- STATS -->
+      <div class="stats" style="margin-bottom: 60px;">
+        <div class="stat">
+          <span class="stat-num" id="memberCount">10</span>
+          <span class="stat-label">Members</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">17</span>
+          <span class="stat-label">The Chapter</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">∞</span>
+          <span class="stat-label">Memories</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">1</span>
+          <span class="stat-label">Squad</span>
+        </div>
+      </div>
+
+      <!-- EXPLORE -->
+      <div class="section-header">
+        <h3>Explore</h3>
+        <div class="rule"></div>
+      </div>
+      <div class="cards">
+        <a class="card" href="gallery.html">
+          <span class="card-icon">📸</span>
+          <p class="card-title">Memory Wall</p>
+          <p class="card-desc">Every photo from every hangout. Our moments, preserved forever.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="chronicle.html">
+          <span class="card-icon">📖</span>
+          <p class="card-title">The Chronicle</p>
+          <p class="card-desc">A timeline of every Chapter 17 moment since day one.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="members.html">
+          <span class="card-icon">👥</span>
+          <p class="card-title">Members</p>
+          <p class="card-desc">The squad. Every member, their stats, and their badges.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="events.html">
+          <span class="card-icon">📅</span>
+          <p class="card-title">Events</p>
+          <p class="card-desc">Upcoming hangouts, locations, and who's pulling up.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="birthdays.html">
+          <span class="card-icon">🎂</span>
+          <p class="card-title">Birthdays</p>
+          <p class="card-desc">Never miss a birthday in the squad. Ever.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="polls.html">
+          <span class="card-icon">🗳️</span>
+          <p class="card-title">Polls</p>
+          <p class="card-desc">Vote on next hangout spots, activities, and more.</p>
+          <span class="card-arrow">→</span>
+        </a>
+      </div>
     </div>
-    <div class="stat">
-      <span class="stat-num">17</span>
-      <span class="stat-label">The Chapter</span>
+  </div>
+
+  <!-- PAGE 2: GAMES ARENA -->
+  <div class="book-page" data-page="1">
+    <div class="page-corner"></div>
+    <div class="page-number right">ii</div>
+    
+    <div class="page-content">
+      <div class="section-header">
+        <h3>Games Arena</h3>
+        <div class="rule"></div>
+      </div>
+      <div class="cards">
+        <a class="card" href="chess.html">
+          <span class="card-icon">♟️</span>
+          <p class="card-title">Chess</p>
+          <p class="card-desc">1v1 battles. Prove who the real IQ king of Chapter 17 is.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="trivia.html">
+          <span class="card-icon">🧠</span>
+          <p class="card-title">Trivia Duel</p>
+          <p class="card-desc">Who knows who best? Custom group questions only.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="mathduel.html">
+          <span class="card-icon">🔢</span>
+          <p class="card-title">Math Duel</p>
+          <p class="card-desc">Solve equations faster than your opponent. No calculator allowed.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="truthordare.html">
+          <span class="card-icon">🎯</span>
+          <p class="card-title">Truth or Dare</p>
+          <p class="card-desc">Digital cards. Chapter 17 edition. Things will get interesting.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="wouldyourather.html">
+          <span class="card-icon">🔮</span>
+          <p class="card-title">Would You Rather</p>
+          <p class="card-desc">Custom scenarios made for the squad. No easy answers.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="scoreboard.html">
+          <span class="card-icon">🏆</span>
+          <p class="card-title">Scoreboard</p>
+          <p class="card-desc">Overall rankings, win streaks, and champion of the week.</p>
+          <span class="card-arrow">→</span>
+        </a>
+      </div>
     </div>
-    <div class="stat">
-      <span class="stat-num">∞</span>
-      <span class="stat-label">Memories</span>
-    </div>
-    <div class="stat">
-      <span class="stat-num">1</span>
-      <span class="stat-label">Squad</span>
+  </div>
+
+  <!-- PAGE 3: SQUAD FEED -->
+  <div class="book-page" data-page="2">
+    <div class="page-corner"></div>
+    <div class="page-number left">iii</div>
+    
+    <div class="page-content">
+      <div class="section-header">
+        <h3>Squad Feed</h3>
+        <div class="rule"></div>
+      </div>
+      <div class="cards">
+        <a class="card" href="shoutouts.html">
+          <span class="card-icon">💬</span>
+          <p class="card-title">Shoutouts</p>
+          <p class="card-desc">Leave public messages for your people. Good vibes only.</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="roastbattle.html">
+          <span class="card-icon">🎭</span>
+          <p class="card-title">Roast Battle</p>
+          <p class="card-desc">Submit your roasts. The squad votes. No mercy. 😂</p>
+          <span class="card-arrow">→</span>
+        </a>
+        <a class="card" href="badges.html">
+          <span class="card-icon">🏅</span>
+          <p class="card-title">Badges</p>
+          <p class="card-desc">Earn titles like Chess Champion, Trivia King, Most Loyal.</p>
+          <span class="card-arrow">→</span>
+        </a>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- FEATURES -->
-<div class="section" id="features">
-  <div class="section-header">
-    <h3>Explore</h3>
-    <div class="rule"></div>
+<!-- PAGE NAVIGATION -->
+<div class="page-nav">
+  <button class="page-nav-btn" id="prevBtn" disabled>
+    <span class="arrow arrow-left">‹</span>
+    <span>Previous Chapter</span>
+  </button>
+  
+  <div class="page-dots">
+    <div class="page-dot active" data-page="0"></div>
+    <div class="page-dot" data-page="1"></div>
+    <div class="page-dot" data-page="2"></div>
   </div>
-  <div class="cards">
-    <a class="card" href="gallery.html">
-      <span class="card-icon">📸</span>
-      <p class="card-title">Memory Wall</p>
-      <p class="card-desc">Every photo from every hangout. Our moments, preserved forever.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="chronicle.html">
-      <span class="card-icon">📖</span>
-      <p class="card-title">The Chronicle</p>
-      <p class="card-desc">A timeline of every Chapter 17 moment since day one.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="members.html">
-      <span class="card-icon">👥</span>
-      <p class="card-title">Members</p>
-      <p class="card-desc">The squad. Every member, their stats, and their badges.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="events.html">
-      <span class="card-icon">📅</span>
-      <p class="card-title">Events</p>
-      <p class="card-desc">Upcoming hangouts, locations, and who's pulling up.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="birthdays.html">
-      <span class="card-icon">🎂</span>
-      <p class="card-title">Birthdays</p>
-      <p class="card-desc">Never miss a birthday in the squad. Ever.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="polls.html">
-      <span class="card-icon">🗳️</span>
-      <p class="card-title">Polls</p>
-      <p class="card-desc">Vote on next hangout spots, activities, and more.</p>
-      <span class="card-arrow">→</span>
-    </a>
-  </div>
+  
+  <button class="page-nav-btn" id="nextBtn">
+    <span>Next Chapter</span>
+    <span class="arrow arrow-right">›</span>
+  </button>
 </div>
 
-<!-- GAMES -->
-<div class="section" id="games">
-  <div class="section-header">
-    <h3>Games Arena</h3>
-    <div class="rule"></div>
-  </div>
-  <div class="cards">
-    <a class="card" href="chess.html">
-      <span class="card-icon">♟️</span>
-      <p class="card-title">Chess</p>
-      <p class="card-desc">1v1 battles. Prove who the real IQ king of Chapter 17 is.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="trivia.html">
-      <span class="card-icon">🧠</span>
-      <p class="card-title">Trivia Duel</p>
-      <p class="card-desc">Who knows who best? Custom group questions only.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="mathduel.html">
-      <span class="card-icon">🔢</span>
-      <p class="card-title">Math Duel</p>
-      <p class="card-desc">Solve equations faster than your opponent. No calculator allowed.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="truthordare.html">
-      <span class="card-icon">🎯</span>
-      <p class="card-title">Truth or Dare</p>
-      <p class="card-desc">Digital cards. Chapter 17 edition. Things will get interesting.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="wouldyourather.html">
-      <span class="card-icon">🔮</span>
-      <p class="card-title">Would You Rather</p>
-      <p class="card-desc">Custom scenarios made for the squad. No easy answers.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="scoreboard.html">
-      <span class="card-icon">🏆</span>
-      <p class="card-title">Scoreboard</p>
-      <p class="card-desc">Overall rankings, win streaks, and champion of the week.</p>
-      <span class="card-arrow">→</span>
-    </a>
-  </div>
-</div>
-
-<!-- SOCIAL -->
-<div class="section" id="social">
-  <div class="section-header">
-    <h3>Squad Feed</h3>
-    <div class="rule"></div>
-  </div>
-  <div class="cards">
-    <a class="card" href="shoutouts.html">
-      <span class="card-icon">💬</span>
-      <p class="card-title">Shoutouts</p>
-      <p class="card-desc">Leave public messages for your people. Good vibes only.</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="roastbattle.html">
-      <span class="card-icon">🎭</span>
-      <p class="card-title">Roast Battle</p>
-      <p class="card-desc">Submit your roasts. The squad votes. No mercy. 😂</p>
-      <span class="card-arrow">→</span>
-    </a>
-    <a class="card" href="badges.html">
-      <span class="card-icon">🏅</span>
-      <p class="card-title">Badges</p>
-      <p class="card-desc">Earn titles like Chess Champion, Trivia King, Most Loyal.</p>
-      <span class="card-arrow">→</span>
-    </a>
-  </div>
-</div>
+<div class="swipe-hint">← Swipe to turn pages →</div>
 
 <!-- FOOTER -->
 <footer>
@@ -593,18 +819,105 @@
 </footer>
 
 <script>
-  // Mobile nav toggle
+  // ── MOBILE NAV ──
   const burger = document.getElementById('burger');
   const navLinks = document.getElementById('navLinks');
   burger.addEventListener('click', () => navLinks.classList.toggle('open'));
 
-  // Greet by name from localStorage or sessionStorage
+  // ── GREETING ──
   const savedName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name');
   if (savedName) {
     document.getElementById('heroName').textContent = savedName.split(' ')[0];
   }
 
-  // Animate stat numbers
+  // ── BOOK PAGE SYSTEM ──
+  const pages = document.querySelectorAll('.book-page');
+  const dots = document.querySelectorAll('.page-dot');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  let currentPage = 0;
+  const totalPages = pages.length;
+
+  function showPage(index) {
+    if (index < 0 || index >= totalPages) return;
+    
+    // Determine direction for animation
+    const direction = index > currentPage ? 'next' : 'prev';
+    
+    // Animate out current page
+    if (index !== currentPage) {
+      pages[currentPage].classList.remove('active');
+      pages[currentPage].classList.add(direction === 'next' ? 'turning-next' : 'turning-prev');
+      
+      setTimeout(() => {
+        pages[currentPage].classList.remove('turning-next', 'turning-prev');
+      }, 800);
+    }
+    
+    // Animate in new page
+    currentPage = index;
+    pages[currentPage].classList.add('active');
+    
+    // Update dots
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentPage);
+    });
+    
+    // Update buttons
+    prevBtn.disabled = currentPage === 0;
+    nextBtn.disabled = currentPage === totalPages - 1;
+    
+    // Animate cards in the new page
+    const newCards = pages[currentPage].querySelectorAll('.card');
+    newCards.forEach(card => {
+      card.classList.remove('visible');
+      void card.offsetWidth; // Trigger reflow
+    });
+    
+    setTimeout(() => {
+      newCards.forEach((card, i) => {
+        setTimeout(() => card.classList.add('visible'), i * 100);
+      });
+    }, 400);
+  }
+
+  prevBtn.addEventListener('click', () => showPage(currentPage - 1));
+  nextBtn.addEventListener('click', () => showPage(currentPage + 1));
+
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const pageIndex = parseInt(dot.dataset.page);
+      showPage(pageIndex);
+    });
+  });
+
+  // ── SWIPE SUPPORT ──
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  document.querySelector('.book-wrapper').addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  document.querySelector('.book-wrapper').addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+  });
+
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0 && currentPage < totalPages - 1) {
+        showPage(currentPage + 1); // Swipe left = next page
+      } else if (diff < 0 && currentPage > 0) {
+        showPage(currentPage - 1); // Swipe right = prev page
+      }
+    }
+  }
+
+  // ── STAT COUNTER ANIMATION ──
   function animateCount(el, target, duration = 1500) {
     if (isNaN(target)) return;
     let start = 0;
@@ -616,23 +929,17 @@
     }, 16);
   }
 
-  // Intersection observer for card animations
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.animationPlayState = 'running';
-      }
-    });
-  }, { threshold: 0.1 });
-
-  document.querySelectorAll('.card').forEach(card => {
-    card.style.animationPlayState = 'paused';
-    observer.observe(card);
-  });
-
   // Animate member count on load
   const memberEl = document.getElementById('memberCount');
   setTimeout(() => animateCount(memberEl, 17, 1200), 800);
+
+  // ── INITIAL CARD ANIMATION ──
+  setTimeout(() => {
+    const firstCards = pages[0].querySelectorAll('.card');
+    firstCards.forEach((card, i) => {
+      setTimeout(() => card.classList.add('visible'), i * 100);
+    });
+  }, 500);
 </script>
 
 </body>
