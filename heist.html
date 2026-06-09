@@ -1625,9 +1625,10 @@ function setupChatRealtime() {
         (payload) => {
           console.log('Received:', payload);
           const { player, message } = payload.new;
+          //Temporary: Show all messages for testing, but in production we would filter by room_id
+          addMessage(player || 'Unknown', message || 'No message');
           const myName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
-  
-          // Always show the message, but mark your own differently
+
           if (player !== myName) {
            addMessage(player, message);
           } else {
