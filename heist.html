@@ -1612,26 +1612,33 @@ function setupChatRealtime() {
     )
     .subscribe();
 }
-function setupRealtime() {
+function setupChatRealtime() {
   try {
     supabaseClient
-      .channel('heist_updates')
+      .channel('chat_messages')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'game_rooms' },
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'heist_messages'
+          // NO FILTER — listen to ALL inserts for testing
+        },
         (payload) => {
-          if (payload.new && payload.new.state) {
-            gameState = payload.new.state;
-            renderChambers();
-            updateStatus();
+          console.log('Received:', payload); // Debug log
+          const { player, message } = payload.new;
+          const myName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
+          if (player !== myName) {
+            addMessage(player, message);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Chat subscription:', status);
+      });
   } catch (e) {
-    console.log('Realtime not available');
+    console.log('Chat realtime not available:', e);
   }
 }
-
 async function saveHeistScore(timeUsed) {
   const playerName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Anonymous';
   
