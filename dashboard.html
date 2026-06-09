@@ -210,18 +210,6 @@
       position: relative;
     }
 
-    .book-spine {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: linear-gradient(180deg, transparent, var(--gold-border), transparent);
-      transform: translateX(-50%);
-      z-index: 10;
-      opacity: 0.6;
-    }
-
     /* ── DESKTOP BOOK PAGES ── */
     .book-page {
       position: relative;
@@ -293,8 +281,6 @@
         padding: 0 0 40px;
         overflow: hidden;
       }
-
-      .book-spine { display: none; }
 
       .book-page {
         position: absolute;
@@ -967,10 +953,7 @@ function showPage(index, shouldScroll = true) {
       });
     }, isMobile ? 200 : 400);
     
-    // Scroll to top of book on mobile (only on button clicks, not swipe)
-    if (isMobile && shouldScroll) {
-      document.querySelector('.book-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // No auto-scroll on page switch to preserve user position, especially on mobile
   }
   prevBtn.addEventListener('click', () => showPage(currentPage - 1, true));
   nextBtn.addEventListener('click', () => showPage(currentPage + 1, true));
