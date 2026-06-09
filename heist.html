@@ -1093,6 +1093,7 @@ function init() {
   loadGameState();
   setupRealtime();
   setupTeamChat();
+  setupChatRealtime();
 }
 
 /* CHANGED: New function to setup start button */
@@ -1514,7 +1515,7 @@ function sendMessage() {
   input.value = '';
   
   // Sync to Supabase
-  // syncMessage(name, text);
+  syncMessage(name, text);
 }
 
 function addMessage(name, text) {
@@ -1562,7 +1563,16 @@ async function loadGameState() {
     console.log('Using local game state');
   }
 }
-
+async function syncMessage(name, text) {
+  await supabaseClient
+    .from('heist_messages')
+    .insert({
+      room_id: 'heist_room_1',   // Or generate a unique room ID
+      player: name,
+      message: text,
+      created_at: new Date().toISOString()
+    });
+}
 async function syncGameState() {
   try {
     await supabaseClient
@@ -1576,7 +1586,27 @@ async function syncGameState() {
     console.log('State saved locally');
   }
 }
-
+function setupChatRealtime() {
+  supabaseClient
+    .channel('chat_messages')
+    .on('postgres_changes', 
+      { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'heist_messages',
+        filter: 'room_id=eq.heist_room_1'   // Only messages for this room
+      },
+      (payload) => {
+        const { player, message } = payload.new;
+        // Don't re-display your own messages (already shown locally)
+        const myName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
+        if (player !== myName) {
+          addMessage(player, message);
+        }
+      }
+    )
+    .subscribe();
+}
 function setupRealtime() {
   try {
     supabaseClient
