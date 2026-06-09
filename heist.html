@@ -156,6 +156,40 @@
       max-width: 500px;
     }
 
+    /* ── START BUTTON ── */
+    /* CHANGED: Added start button styles */
+    .start-btn {
+      margin-top: 32px;
+      padding: 16px 48px;
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 30px rgba(201,168,76,0.3);
+    }
+
+    .start-btn:hover {
+      background: var(--gold-bright);
+      box-shadow: 0 0 40px rgba(201,168,76,0.5);
+      transform: translateY(-2px);
+    }
+
+    .start-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .start-btn.hidden {
+      display: none;
+    }
+
     /* ── TIMER BAR ── */
     .timer-bar {
       position: fixed;
@@ -286,6 +320,13 @@
       position: absolute;
       top: 16px; right: 16px;
       font-size: 1.2rem;
+    }
+
+    /* CHANGED: Added waiting state for before game starts */
+    .chamber.waiting {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: rgba(201,168,76,0.1);
     }
 
     .chamber.solved {
@@ -878,6 +919,9 @@
   <p class="hero-tag">Classified Operation</p>
   <h1 class="hero-title">HEIST MODE</h1>
   <p class="hero-sub">"The vault won't crack itself. Every specialist has a role. Work together or fail together."</p>
+  
+  <!-- CHANGED: Added start button -->
+  <button class="start-btn" id="startHeistBtn">ENTER THE HEIST</button>
 </section>
 
 <!-- STATUS PANEL -->
@@ -966,9 +1010,12 @@
 
 <script>
 // ── SUPABASE SETUP ──
+/* CHANGED: Fixed supabase client initialization */
 const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'; // Replace with your actual anon key
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'; // Replace with your actual anon key
+
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── GAME STATE ──
 const HEIST_DURATION = 20 * 60; // 20 minutes in seconds
@@ -1042,29 +1089,36 @@ const roles = [
 // ── INIT ──
 function init() {
   renderChambers();
-  startTimer();
+  setupStartButton(); /* CHANGED: Setup start button instead of auto-starting timer */
   loadGameState();
   setupRealtime();
   setupTeamChat();
-  
-  // Assign role to current player
-  const playerName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
-  const roleIndex = Math.floor(Math.random() * roles.length);
-  const role = roles[roleIndex];
-  
-  addSystemMessage(`${playerName} has joined as ${role}.`);
+}
+
+/* CHANGED: New function to setup start button */
+function setupStartButton() {
+  const btn = document.getElementById('startHeistBtn');
+  btn.addEventListener('click', () => {
+    gameState.started = true;
+    btn.classList.add('hidden');
+    addSystemMessage('The heist has begun! All specialists to your stations.');
+    startTimer(); /* CHANGED: Start timer only when button clicked */
+    syncGameState();
+    renderChambers(); /* Refresh chambers to unlock them */
+  });
 }
 
 // ── RENDER CHAMBERS ──
+/* CHANGED: Added waiting state and gameState.started check */
 function renderChambers() {
   const container = document.getElementById('chamberSelect');
   container.innerHTML = chambers.map((c, i) => {
-    const isLocked = i > 0 && !gameState.chambers[i-1];
+    const isLocked = !gameState.started || (i > 0 && !gameState.chambers[i-1]);
     const isSolved = gameState.chambers[i];
-    const progress = isSolved ? 100 : (c.players.length / 3 * 100); // Need 3 players to unlock
+    const progress = isSolved ? 100 : (c.players.length / 3 * 100);
     
     return `
-      <div class="chamber ${isLocked ? 'locked' : ''} ${isSolved ? 'solved' : ''}" 
+      <div class="chamber ${!gameState.started ? 'waiting' : ''} ${isLocked ? 'locked' : ''} ${isSolved ? 'solved' : ''}" 
            data-chamber="${i}" ${isLocked ? '' : `onclick="openChamber(${i})"`}>
         <div class="chamber-num">CHAMBER ${c.num}</div>
         <div class="chamber-title">${c.icon} ${c.title}</div>
@@ -1084,6 +1138,7 @@ function renderChambers() {
 }
 
 // ── TIMER ──
+/* CHANGED: Timer now starts only when called from start button */
 function startTimer() {
   timerInterval = setInterval(() => {
     timeRemaining--;
@@ -1480,10 +1535,19 @@ function addSystemMessage(text) {
   container.scrollTop = container.scrollHeight;
 }
 
+/* CHANGED: Added missing updateStatus function */
+function updateStatus() {
+  document.getElementById('statusChambersVal').textContent = 
+    `${gameState.chambers.filter(c => c).length} / 4`;
+  document.getElementById('statusCluesVal').textContent = `${gameState.clues} / 8`;
+  document.getElementById('statusPlayersVal').textContent = `${gameState.players.length} / 11`;
+}
+
 // ── SUPABASE INTEGRATION ──
+/* CHANGED: All supabase. changed to supabaseClient. */
 async function loadGameState() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('game_rooms')
       .select('*')
       .eq('game_type', 'heist')
@@ -1501,7 +1565,7 @@ async function loadGameState() {
 
 async function syncGameState() {
   try {
-    await supabase
+    await supabaseClient
       .from('game_rooms')
       .upsert({
         game_type: 'heist',
@@ -1515,7 +1579,7 @@ async function syncGameState() {
 
 function setupRealtime() {
   try {
-    supabase
+    supabaseClient
       .channel('heist_updates')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'game_rooms' },
@@ -1537,7 +1601,7 @@ async function saveHeistScore(timeUsed) {
   const playerName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Anonymous';
   
   try {
-    await supabase.from('scores').insert({
+    await supabaseClient.from('scores').insert({
       game: 'heist',
       player: playerName,
       score: timeRemaining, // Higher score = more time left
