@@ -19,7 +19,6 @@
       --white: #f5f0e8;
       --muted: rgba(245,240,232,0.45);
       --ghost: rgba(201,168,76,0.08);
-      --fog: rgba(8,8,6,0.7);
     }
 
     html { scroll-behavior: smooth; }
@@ -33,7 +32,7 @@
       position: relative;
     }
 
-    /* Animated fog background */
+    /* Animated fog */
     body::before {
       content: '';
       position: fixed;
@@ -297,18 +296,14 @@
       transform: translateY(-2px);
     }
 
-    .whisper-submit::after {
-      content: '';
-      position: absolute;
-      top: -50%; left: -50%;
-      width: 200%; height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-      transform: rotate(45deg);
-      transition: all 0.5s;
+    .whisper-submit:active {
+      transform: translateY(0);
     }
 
-    .whisper-submit:hover::after {
-      left: 100%;
+    .whisper-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
     }
 
     /* ── FILTERS ── */
@@ -444,6 +439,7 @@
       color: var(--white);
       margin-bottom: 16px;
       position: relative;
+      padding-left: 16px;
     }
 
     .whisper-body::before {
@@ -571,7 +567,20 @@
     /* ── MOBILE ── */
     @media (max-width: 768px) {
       nav { padding: 0 24px; }
-      .nav-links { display: none; }
+      .nav-links {
+        display: none;
+        position: fixed;
+        top: 68px; left: 0; right: 0;
+        background: rgba(8,8,6,0.98);
+        border-bottom: 1px solid var(--gold-border);
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        padding: 20px 0;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links li { width: 100%; text-align: center; }
+      .nav-links a { display: block; padding: 14px; }
       .nav-burger { display: flex; }
       .hero { min-height: 40vh; padding-top: 80px; }
       .whisper-box { padding: 24px; }
@@ -579,14 +588,39 @@
       .whisper-submit { width: 100%; }
       footer { padding: 28px 24px; justify-content: center; text-align: center; }
     }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      color: var(--gold);
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      z-index: 200;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<<nav>
+<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
-  <ul class="nav-links">
+  <ul class="nav-links" id="navLinks">
     <li><a href="dashboard.html">Dashboard</a></li>
     <li><a href="shoutouts.html">Shoutouts</a></li>
   </ul>
@@ -629,8 +663,11 @@
   <!-- Whispers injected by JS -->
 </div>
 
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <!-- FOOTER -->
-<<footer>
+<footer>
   <span class="logo">Chapter 17</span>
   <p>"Some truths are better spoken in shadows."</p>
 </footer>
@@ -638,115 +675,145 @@
 <script>
 // ── SUPABASE SETUP ──
 const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'; // Replace with your actual anon key
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY_HERE'; // ← REPLACE THIS
+
+// Use a different variable name to avoid conflict with the module
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── STATE ──
 let whispers = [];
 let currentFilter = 'all';
 
-// ── DEMO WHISPERS (for testing without Supabase) ──
+// ── DEMO WHISPERS ──
 const demoWhispers = [
   {
     id: 1,
     text: "I've been crushing on someone in this group for months. The way they laugh at my terrible jokes makes my whole week.",
     author: "Mystery Member",
-    realName: null,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    real_name: null,
     likes: 7,
     likedByMe: false,
-    isRevealed: false
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
   },
   {
     id: 2,
     text: "I still think about that night at the beach. None of you know how much it meant to me. Thank you for being my family.",
     author: "Mystery Member",
-    realName: "Alex",
-    createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago (revealed)
+    real_name: "Alex",
     likes: 12,
     likedByMe: true,
-    isRevealed: true
+    created_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
   },
   {
     id: 3,
     text: "I pretend to hate the group chat notifications but secretly they're the highlight of my day.",
     author: "Mystery Member",
-    realName: null,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+    real_name: null,
     likes: 3,
     likedByMe: false,
-    isRevealed: false
+    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
   }
 ];
 
 // ── INIT ──
 function init() {
-  loadWhispers();
-  setupFilters();
-  setupRealtime();
-  
-  document.getElementById('whisperSubmit').addEventListener('click', submitWhisper);
-  document.getElementById('whisperInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && e.shiftKey) {
+  // Mobile nav
+  const burger = document.getElementById('burger');
+  const navLinks = document.getElementById('navLinks');
+  burger.addEventListener('click', () => navLinks.classList.toggle('open'));
+
+  // Whisper submit
+  const submitBtn = document.getElementById('whisperSubmit');
+  const input = document.getElementById('whisperInput');
+
+  submitBtn.addEventListener('click', submitWhisper);
+
+  // Enter to submit (not Shift+Enter — that's for new line)
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submitWhisper();
     }
   });
+
+  loadWhispers();
+  setupFilters();
+  setupRealtime();
 }
 
 // ── LOAD WHISPERS ──
 async function loadWhispers() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('ghost_whispers')
       .select('*')
       .order('created_at', { ascending: false });
-    
-    if (data) {
+
+    if (data && data.length > 0) {
       whispers = data.map(w => ({
         ...w,
+        likedByMe: false,
         isRevealed: new Date() - new Date(w.created_at) > 24 * 60 * 60 * 1000
       }));
     } else {
-      whispers = demoWhispers;
+      whispers = demoWhispers.map(w => ({
+        ...w,
+        isRevealed: new Date() - new Date(w.created_at) > 24 * 60 * 60 * 1000
+      }));
     }
   } catch (e) {
-    whispers = demoWhispers;
+    console.log('Using demo data:', e);
+    whispers = demoWhispers.map(w => ({
+      ...w,
+      isRevealed: new Date() - new Date(w.created_at) > 24 * 60 * 60 * 1000
+    }));
   }
-  
+
   renderWhispers();
 }
 
 // ── SUBMIT WHISPER ──
 async function submitWhisper() {
   const input = document.getElementById('whisperInput');
+  const submitBtn = document.getElementById('whisperSubmit');
   const text = input.value.trim();
-  if (!text) return;
-  
+
+  if (!text) {
+    showToast('Type something first... 👻');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'SENDING...';
+
   const playerName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Anonymous';
-  
+
   const newWhisper = {
     text: text,
     author: 'Mystery Member',
-    real_name: playerName, // Hidden for 24h
+    real_name: playerName,
     likes: 0,
     created_at: new Date().toISOString()
   };
-  
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('ghost_whispers')
       .insert(newWhisper)
       .select()
       .single();
-    
+
     if (data) {
       whispers.unshift({ ...data, isRevealed: false, likedByMe: false });
       input.value = '';
+      showToast('Whisper sent into the fog... 🌫️');
       renderWhispers();
+    } else {
+      throw error;
     }
   } catch (e) {
     // Local fallback
+    console.log('Supabase failed, using local:', e);
     whispers.unshift({
       id: Date.now(),
       ...newWhisper,
@@ -754,7 +821,11 @@ async function submitWhisper() {
       likedByMe: false
     });
     input.value = '';
+    showToast('Whisper sent (local mode)');
     renderWhispers();
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'SEND WHISPER';
   }
 }
 
@@ -762,7 +833,7 @@ async function submitWhisper() {
 function renderWhispers() {
   const wall = document.getElementById('whisperWall');
   const filtered = filterWhispers();
-  
+
   if (filtered.length === 0) {
     wall.innerHTML = `
       <div class="whisper-empty">
@@ -772,30 +843,30 @@ function renderWhispers() {
     `;
     return;
   }
-  
+
   wall.innerHTML = filtered.map((w, i) => {
-    const timeAgo = getTimeAgo(new Date(w.createdAt || w.created_at));
-    const revealTime = getRevealTime(new Date(w.createdAt || w.created_at));
-    const isRevealed = w.isRevealed || (new Date() - new Date(w.createdAt || w.created_at) > 24 * 60 * 60 * 1000);
-    
+    const timeAgo = getTimeAgo(new Date(w.created_at));
+    const revealTime = getRevealTime(new Date(w.created_at));
+    const isRevealed = w.isRevealed || (new Date() - new Date(w.created_at) > 24 * 60 * 60 * 1000);
+
     return `
       <div class="whisper-card ${isRevealed ? 'revealed' : 'fading'}" style="animation-delay: ${i * 0.1}s">
         <div class="whisper-header">
           <div class="whisper-avatar">👻</div>
           <div class="whisper-meta">
             <div class="whisper-name ${isRevealed ? 'revealed-name' : ''}">
-              ${isRevealed ? (w.realName || w.real_name || 'Anonymous') : w.author}
+              ${isRevealed ? (w.real_name || 'Anonymous') : w.author}
             </div>
             <div class="whisper-time">${timeAgo}</div>
           </div>
         </div>
-        <div class="whisper-body">${w.text}</div>
+        <div class="whisper-body">${escapeHtml(w.text)}</div>
         <div class="whisper-actions">
           <button class="whisper-action ${w.likedByMe ? 'liked' : ''}" onclick="toggleLike(${w.id})">
             <span>${w.likedByMe ? '❤️' : '🤍'}</span>
-            <span class="whisper-count">${w.likes}</span>
+            <span class="whisper-count">${w.likes || 0}</span>
           </button>
-          <button class="whisper-action" onclick="copyWhisper('${w.text.replace(/'/g, "\\'")}')">
+          <button class="whisper-action" onclick="copyWhisper('${escapeJs(w.text)}')">
             <span>📋</span>
             <span>Copy</span>
           </button>
@@ -845,14 +916,14 @@ function setupFilters() {
 async function toggleLike(id) {
   const whisper = whispers.find(w => w.id === id);
   if (!whisper) return;
-  
+
   whisper.likedByMe = !whisper.likedByMe;
   whisper.likes = (whisper.likes || 0) + (whisper.likedByMe ? 1 : -1);
-  
+
   renderWhispers();
-  
+
   try {
-    await supabase
+    await sb
       .from('ghost_whispers')
       .update({ likes: whisper.likes })
       .eq('id', id);
@@ -862,8 +933,25 @@ async function toggleLike(id) {
 // ── COPY WHISPER ──
 function copyWhisper(text) {
   navigator.clipboard.writeText(text).then(() => {
-    // Could show a toast here
+    showToast('Copied to clipboard 📋');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied to clipboard 📋');
   });
+}
+
+// ── TOAST ──
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 // ── TIME HELPERS ──
@@ -885,19 +973,32 @@ function getRevealTime(date) {
   return `${hours}h ${mins}m`;
 }
 
+// ── ESCAPE HELPERS ──
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function escapeJs(text) {
+  return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+}
+
 // ── REALTIME ──
 function setupRealtime() {
   try {
-    supabase
+    sb
       .channel('ghost_updates')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'ghost_whispers' },
-        (payload) => {
+        () => {
           loadWhispers();
         }
       )
       .subscribe();
-  } catch (e) {}
+  } catch (e) {
+    console.log('Realtime not available');
+  }
 }
 
 // ── START ──
