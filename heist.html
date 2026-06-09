@@ -1555,7 +1555,12 @@ async function loadGameState() {
       .order('created_at', { ascending: false })
       .limit(1);
     
-    if (data && data.length > 0) {
+    if (error) {
+      console.log('Game rooms not available, using local state');
+      return;
+    }
+    
+    if (data && data.length > 0 && data[0].state) {
       gameState = { ...gameState, ...data[0].state };
       renderChambers();
     }
