@@ -117,7 +117,7 @@
 
     /* ── HERO ── */
     .hero {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -925,7 +925,7 @@
   let currentPage = 0;
   const totalPages = pages.length;
 
-  function showPage(index) {
+function showPage(index, shouldScroll = true) {
     if (index < 0 || index >= totalPages) return;
     
     // Determine direction for animation
@@ -967,14 +967,13 @@
       });
     }, isMobile ? 200 : 400);
     
-    // Scroll to top of book on mobile
-    if (isMobile) {
+    // Scroll to top of book on mobile (only on button clicks, not swipe)
+    if (isMobile && shouldScroll) {
       document.querySelector('.book-wrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
-
-  prevBtn.addEventListener('click', () => showPage(currentPage - 1));
-  nextBtn.addEventListener('click', () => showPage(currentPage + 1));
+  prevBtn.addEventListener('click', () => showPage(currentPage - 1, true));
+  nextBtn.addEventListener('click', () => showPage(currentPage + 1, true));
 
   dots.forEach(dot => {
     dot.addEventListener('click', () => {
@@ -1058,13 +1057,18 @@
     });
   }, 500);
 
-  // ── RESIZE HANDLER ──
+    // ── RESIZE HANDLER ──
   let resizeTimeout;
+  let lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
-      // Recalculate mobile state on resize
-      location.reload();
+      const currentWidth = window.innerWidth;
+      const crossedBreakpoint = (lastWidth <= 768) !== (currentWidth <= 768);
+      if (crossedBreakpoint) {
+        location.reload();
+      }
+      lastWidth = currentWidth;
     }, 500);
   });
 </script>
