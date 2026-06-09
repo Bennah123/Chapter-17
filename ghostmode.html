@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chapter 17 — Ghost Mode</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080806;
+      --bg2: #0f0f0c;
+      --gold: #C9A84C;
+      --gold-bright: #FFD700;
+      --gold-dim: rgba(201,168,76,0.12);
+      --gold-border: rgba(201,168,76,0.25);
+      --white: #f5f0e8;
+      --muted: rgba(245,240,232,0.45);
+      --ghost: rgba(201,168,76,0.08);
+      --fog: rgba(8,8,6,0.7);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Raleway', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated fog background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse at 20% 80%, rgba(201,168,76,0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.02) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 1;
+      animation: fogDrift 20s ease-in-out infinite;
+    }
+
+    @keyframes fogDrift {
+      0%, 100% { transform: translateX(0) translateY(0); }
+      33% { transform: translateX(20px) translateY(-10px); }
+      66% { transform: translateX(-10px) translateY(15px); }
+    }
+
+    /* Grain */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.04;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 68px;
+      background: rgba(8,8,6,0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--gold-border);
+    }
+
+    .nav-logo {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      letter-spacing: 5px;
+      color: var(--gold);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Raleway', sans-serif;
+      font-weight: 300;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .nav-links a:hover { color: var(--gold); }
+
+    .nav-burger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+    }
+    .nav-burger span {
+      display: block;
+      width: 24px; height: 1px;
+      background: var(--gold);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 50vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 40px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 60%);
+      pointer-events: none;
+      animation: ghostPulse 6s ease-in-out infinite;
+    }
+
+    @keyframes ghostPulse {
+      0%, 100% { opacity: 0.4; transform: translate(-50%,-50%) scale(1); }
+      50% { opacity: 0.8; transform: translate(-50%,-50%) scale(1.1); }
+    }
+
+    .hero-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      animation: ghostFloat 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px rgba(201,168,76,0.3));
+    }
+
+    @keyframes ghostFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    .hero-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.5rem;
+      letter-spacing: 10px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      letter-spacing: 8px;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201,168,76,0.3);
+      margin-bottom: 16px;
+    }
+
+    .hero-sub {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      color: var(--muted);
+      letter-spacing: 2px;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+
+    /* ── WHISPER INPUT ── */
+    .whisper-section {
+      max-width: 700px;
+      margin: 0 auto 60px;
+      padding: 0 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .whisper-box {
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .whisper-box::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(201,168,76,0.03) 0%, transparent 70%);
+      animation: whisperGlow 8s ease-in-out infinite;
+    }
+
+    @keyframes whisperGlow {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(10%, 5%); }
+    }
+
+    .whisper-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 4px;
+      color: var(--gold);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      position: relative;
+    }
+
+    .whisper-textarea {
+      width: 100%;
+      min-height: 120px;
+      background: rgba(8,8,6,0.8);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      color: var(--white);
+      padding: 16px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .whisper-textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 20px rgba(201,168,76,0.1);
+    }
+
+    .whisper-textarea::placeholder {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .whisper-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .whisper-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .whisper-submit {
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      padding: 12px 32px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .whisper-submit:hover {
+      background: var(--gold-bright);
+      box-shadow: 0 0 25px rgba(201,168,76,0.3);
+      transform: translateY(-2px);
+    }
+
+    .whisper-submit::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      transition: all 0.5s;
+    }
+
+    .whisper-submit:hover::after {
+      left: 100%;
+    }
+
+    /* ── FILTERS ── */
+    .filters {
+      max-width: 700px;
+      margin: 0 auto 40px;
+      padding: 0 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 2;
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: 1px solid var(--gold-border);
+      color: var(--muted);
+      padding: 8px 20px;
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--gold-dim);
+    }
+
+    /* ── WHISPER WALL ── */
+    .whisper-wall {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .whisper-card {
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 28px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      animation: whisperAppear 0.6s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes whisperAppear {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .whisper-card:hover {
+      border-color: rgba(201,168,76,0.4);
+      box-shadow: 0 8px 30px rgba(201,168,76,0.08);
+    }
+
+    .whisper-card.fading {
+      opacity: 0.6;
+      border-color: rgba(201,168,76,0.1);
+    }
+
+    .whisper-card.revealed {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, rgba(201,168,76,0.05), var(--bg2));
+    }
+
+    .whisper-card.revealed::before {
+      content: 'REVEALED';
+      position: absolute;
+      top: 12px; right: 12px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.5rem;
+      letter-spacing: 2px;
+      color: var(--gold);
+      background: rgba(201,168,76,0.1);
+      padding: 4px 10px;
+      border-radius: 2px;
+    }
+
+    .whisper-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .whisper-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--ghost);
+      border: 1px solid var(--gold-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .whisper-meta {
+      flex: 1;
+    }
+
+    .whisper-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--gold);
+      text-transform: uppercase;
+    }
+
+    .whisper-name.revealed-name {
+      color: var(--gold-bright);
+    }
+
+    .whisper-time {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .whisper-body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: var(--white);
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .whisper-body::before {
+      content: '"';
+      position: absolute;
+      top: -10px; left: -8px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3rem;
+      color: var(--gold-dim);
+      line-height: 1;
+    }
+
+    .whisper-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .whisper-action {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.3s ease;
+      font-family: 'Raleway', sans-serif;
+    }
+
+    .whisper-action:hover {
+      color: var(--gold);
+    }
+
+    .whisper-action.liked {
+      color: var(--gold);
+    }
+
+    .whisper-count {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .whisper-reveal-timer {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .whisper-reveal-timer .timer-dots {
+      display: flex;
+      gap: 3px;
+    }
+
+    .timer-dot {
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--gold-border);
+      animation: dotPulse 1.5s ease infinite;
+    }
+
+    .timer-dot:nth-child(2) { animation-delay: 0.3s; }
+    .timer-dot:nth-child(3) { animation-delay: 0.6s; }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; background: var(--gold); }
+    }
+
+    /* ── EMPTY STATE ── */
+    .whisper-empty {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+    }
+
+    .whisper-empty-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .whisper-empty-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 1.1rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--gold-border);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    footer .logo {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 5px;
+      color: var(--gold);
+    }
+
+    footer p {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      .nav-burger { display: flex; }
+      .hero { min-height: 40vh; padding-top: 80px; }
+      .whisper-box { padding: 24px; }
+      .whisper-controls { flex-direction: column; align-items: stretch; }
+      .whisper-submit { width: 100%; }
+      footer { padding: 28px 24px; justify-content: center; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<<nav>
+  <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
+  <ul class="nav-links">
+    <li><a href="dashboard.html">Dashboard</a></li>
+    <li><a href="shoutouts.html">Shoutouts</a></li>
+  </ul>
+  <button class="nav-burger" id="burger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-icon">👻</div>
+  <p class="hero-tag">Anonymous Confessions</p>
+  <h1 class="hero-title">GHOST MODE</h1>
+  <p class="hero-sub">"Speak your truth without a name. Whispers fade, but some secrets deserve to be heard."</p>
+</section>
+
+<!-- WHISPER INPUT -->
+<div class="whisper-section">
+  <div class="whisper-box">
+    <div class="whisper-label">Leave a Whisper</div>
+    <textarea class="whisper-textarea" id="whisperInput" placeholder="Say what you can't say out loud... It will remain anonymous for 24 hours."></textarea>
+    <div class="whisper-controls">
+      <span class="whisper-hint">🕯️ Your identity is hidden. Revealed after 24h.</span>
+      <button class="whisper-submit" id="whisperSubmit">SEND WHISPER</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">All Whispers</button>
+  <button class="filter-btn" data-filter="fresh">Fresh</button>
+  <button class="filter-btn" data-filter="revealed">Revealed</button>
+  <button class="filter-btn" data-filter="popular">Most Liked</button>
+</div>
+
+<!-- WHISPER WALL -->
+<div class="whisper-wall" id="whisperWall">
+  <!-- Whispers injected by JS -->
+</div>
+
+<!-- FOOTER -->
+<<footer>
+  <span class="logo">Chapter 17</span>
+  <p>"Some truths are better spoken in shadows."</p>
+</footer>
+
+<script>
+// ── SUPABASE SETUP ──
+const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY'; // Replace with your actual anon key
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── STATE ──
+let whispers = [];
+let currentFilter = 'all';
+
+// ── DEMO WHISPERS (for testing without Supabase) ──
+const demoWhispers = [
+  {
+    id: 1,
+    text: "I've been crushing on someone in this group for months. The way they laugh at my terrible jokes makes my whole week.",
+    author: "Mystery Member",
+    realName: null,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    likes: 7,
+    likedByMe: false,
+    isRevealed: false
+  },
+  {
+    id: 2,
+    text: "I still think about that night at the beach. None of you know how much it meant to me. Thank you for being my family.",
+    author: "Mystery Member",
+    realName: "Alex",
+    createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000), // 25 hours ago (revealed)
+    likes: 12,
+    likedByMe: true,
+    isRevealed: true
+  },
+  {
+    id: 3,
+    text: "I pretend to hate the group chat notifications but secretly they're the highlight of my day.",
+    author: "Mystery Member",
+    realName: null,
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+    likes: 3,
+    likedByMe: false,
+    isRevealed: false
+  }
+];
+
+// ── INIT ──
+function init() {
+  loadWhispers();
+  setupFilters();
+  setupRealtime();
+  
+  document.getElementById('whisperSubmit').addEventListener('click', submitWhisper);
+  document.getElementById('whisperInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      submitWhisper();
+    }
+  });
+}
+
+// ── LOAD WHISPERS ──
+async function loadWhispers() {
+  try {
+    const { data, error } = await supabase
+      .from('ghost_whispers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      whispers = data.map(w => ({
+        ...w,
+        isRevealed: new Date() - new Date(w.created_at) > 24 * 60 * 60 * 1000
+      }));
+    } else {
+      whispers = demoWhispers;
+    }
+  } catch (e) {
+    whispers = demoWhispers;
+  }
+  
+  renderWhispers();
+}
+
+// ── SUBMIT WHISPER ──
+async function submitWhisper() {
+  const input = document.getElementById('whisperInput');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  const playerName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Anonymous';
+  
+  const newWhisper = {
+    text: text,
+    author: 'Mystery Member',
+    real_name: playerName, // Hidden for 24h
+    likes: 0,
+    created_at: new Date().toISOString()
+  };
+  
+  try {
+    const { data, error } = await supabase
+      .from('ghost_whispers')
+      .insert(newWhisper)
+      .select()
+      .single();
+    
+    if (data) {
+      whispers.unshift({ ...data, isRevealed: false, likedByMe: false });
+      input.value = '';
+      renderWhispers();
+    }
+  } catch (e) {
+    // Local fallback
+    whispers.unshift({
+      id: Date.now(),
+      ...newWhisper,
+      isRevealed: false,
+      likedByMe: false
+    });
+    input.value = '';
+    renderWhispers();
+  }
+}
+
+// ── RENDER WHISPERS ──
+function renderWhispers() {
+  const wall = document.getElementById('whisperWall');
+  const filtered = filterWhispers();
+  
+  if (filtered.length === 0) {
+    wall.innerHTML = `
+      <div class="whisper-empty">
+        <div class="whisper-empty-icon">🌫️</div>
+        <p class="whisper-empty-text">The fog is silent. Be the first to whisper...</p>
+      </div>
+    `;
+    return;
+  }
+  
+  wall.innerHTML = filtered.map((w, i) => {
+    const timeAgo = getTimeAgo(new Date(w.createdAt || w.created_at));
+    const revealTime = getRevealTime(new Date(w.createdAt || w.created_at));
+    const isRevealed = w.isRevealed || (new Date() - new Date(w.createdAt || w.created_at) > 24 * 60 * 60 * 1000);
+    
+    return `
+      <div class="whisper-card ${isRevealed ? 'revealed' : 'fading'}" style="animation-delay: ${i * 0.1}s">
+        <div class="whisper-header">
+          <div class="whisper-avatar">👻</div>
+          <div class="whisper-meta">
+            <div class="whisper-name ${isRevealed ? 'revealed-name' : ''}">
+              ${isRevealed ? (w.realName || w.real_name || 'Anonymous') : w.author}
+            </div>
+            <div class="whisper-time">${timeAgo}</div>
+          </div>
+        </div>
+        <div class="whisper-body">${w.text}</div>
+        <div class="whisper-actions">
+          <button class="whisper-action ${w.likedByMe ? 'liked' : ''}" onclick="toggleLike(${w.id})">
+            <span>${w.likedByMe ? '❤️' : '🤍'}</span>
+            <span class="whisper-count">${w.likes}</span>
+          </button>
+          <button class="whisper-action" onclick="copyWhisper('${w.text.replace(/'/g, "\\'")}')">
+            <span>📋</span>
+            <span>Copy</span>
+          </button>
+          ${!isRevealed ? `
+            <div class="whisper-reveal-timer">
+              <span>Reveals in</span>
+              <div class="timer-dots">
+                <div class="timer-dot"></div>
+                <div class="timer-dot"></div>
+                <div class="timer-dot"></div>
+              </div>
+              <span>${revealTime}</span>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── FILTER WHISPERS ──
+function filterWhispers() {
+  switch(currentFilter) {
+    case 'fresh':
+      return whispers.filter(w => !w.isRevealed);
+    case 'revealed':
+      return whispers.filter(w => w.isRevealed);
+    case 'popular':
+      return [...whispers].sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    default:
+      return whispers;
+  }
+}
+
+function setupFilters() {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderWhispers();
+    });
+  });
+}
+
+// ── TOGGLE LIKE ──
+async function toggleLike(id) {
+  const whisper = whispers.find(w => w.id === id);
+  if (!whisper) return;
+  
+  whisper.likedByMe = !whisper.likedByMe;
+  whisper.likes = (whisper.likes || 0) + (whisper.likedByMe ? 1 : -1);
+  
+  renderWhispers();
+  
+  try {
+    await supabase
+      .from('ghost_whispers')
+      .update({ likes: whisper.likes })
+      .eq('id', id);
+  } catch (e) {}
+}
+
+// ── COPY WHISPER ──
+function copyWhisper(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    // Could show a toast here
+  });
+}
+
+// ── TIME HELPERS ──
+function getTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function getRevealTime(date) {
+  const msLeft = (24 * 60 * 60 * 1000) - (new Date() - date);
+  if (msLeft <= 0) return 'Now';
+  const hours = Math.floor(msLeft / (60 * 60 * 1000));
+  const mins = Math.floor((msLeft % (60 * 60 * 1000)) / (60 * 1000));
+  return `${hours}h ${mins}m`;
+}
+
+// ── REALTIME ──
+function setupRealtime() {
+  try {
+    supabase
+      .channel('ghost_updates')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'ghost_whispers' },
+        (payload) => {
+          loadWhispers();
+        }
+      )
+      .subscribe();
+  } catch (e) {}
+}
+
+// ── START ──
+init();
+</script>
+
+</body>
+</html>
