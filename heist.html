@@ -1623,11 +1623,15 @@ function setupChatRealtime() {
           // NO FILTER — listen to ALL inserts for testing
         },
         (payload) => {
-          console.log('Received:', payload); // Debug log
+          console.log('Received:', payload);
           const { player, message } = payload.new;
           const myName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
+  
+          // Always show the message, but mark your own differently
           if (player !== myName) {
-            addMessage(player, message);
+           addMessage(player, message);
+          } else {
+          // Optional: console.log('Own message, already displayed locally');
           }
         }
       )
