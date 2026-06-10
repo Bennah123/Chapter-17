@@ -32,6 +32,8 @@
     select option { background: #0f0f0c; }
     textarea { resize: vertical; min-height: 100px; }
     textarea::placeholder { color: var(--muted); font-size: 0.75rem; }
+    .char-count { text-align: right; font-size: 0.6rem; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+    .char-count.warning { color: #c94c4c; }
     .vibe-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
     .vibe-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); }
     .vibe-btn { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; padding: 7px 11px; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
@@ -70,9 +72,21 @@
     .empty-state p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--muted); letter-spacing: 2px; }
     .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 12px 28px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
     .toast.show { opacity: 1; }
+    /* Delete modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(8,8,6,0.85); backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; max-width: 360px; width: 100%; padding: 32px; text-align: center; }
+    .modal-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 16px; text-transform: uppercase; }
+    .modal p { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 12px; justify-content: center; }
+    .btn-cancel { background: none; border: 1px solid var(--gold-border); border-radius: 3px; color: var(--muted); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-cancel:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-confirm-delete { background: linear-gradient(135deg, #c94c4c, #8b0000); border: none; border-radius: 3px; color: var(--white); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
+    .btn-confirm-delete:hover { transform: translateY(-1px); box-shadow: 0 0 16px rgba(201,76,76,0.3); }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 600px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 24px 80px; } .form-grid { grid-template-columns: 1fr; } }
   </style>
+<base target="_blank">
 </head>
 <body>
 <nav>
@@ -92,10 +106,11 @@
       <div class="input-group"><label>From</label><select id="fromName"><option value="">Select your name...</option></select></div>
       <div class="input-group"><label>To</label><select id="toName"><option value="">Who's it for?</option></select></div>
     </div>
-    <div class="input-group" style="margin-bottom:16px">
+    <div class="input-group" style="margin-bottom:4px">
       <label>Message</label>
-      <textarea id="shoutMsg" placeholder="Say something nice... or funny 😂"></textarea>
+      <textarea id="shoutMsg" maxlength="280" placeholder="Say something nice... or funny 😂"></textarea>
     </div>
+    <p class="char-count" id="charCount">0 / 280</p>
     <div class="vibe-row">
       <span class="vibe-label">Vibe</span>
       <button class="vibe-btn selected" data-vibe="💛">💛</button>
@@ -114,7 +129,21 @@
     <div class="loading"><div class="loading-spinner"></div><p>Loading shoutouts...</p></div>
   </div>
 </div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <p class="modal-title">⚠️ Delete Shoutout</p>
+    <p>Are you sure you want to delete this shoutout? This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-confirm-delete" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
+
 <script>
   const { createClient } = supabase;
   const sb = createClient(
@@ -123,6 +152,15 @@
   );
 
   let selectedVibe = '💛';
+  let deleteId = null;
+
+  // Character counter
+  document.getElementById('shoutMsg').addEventListener('input', function() {
+    const count = this.value.length;
+    const counter = document.getElementById('charCount');
+    counter.textContent = `${count} / 280`;
+    counter.classList.toggle('warning', count > 250);
+  });
 
   document.querySelectorAll('.vibe-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -133,15 +171,20 @@
   });
 
   async function loadMembers() {
-    const { data } = await sb.from('members').select('name').order('name');
+    const { data, error } = await sb.from('members').select('name').order('name');
+    if (error) { console.error('LOAD MEMBERS ERROR:', error); return; }
     const members = data || [];
+    const loggedInUser = localStorage.getItem('loggedInUser');
+
     ['fromName', 'toName'].forEach(id => {
       const sel = document.getElementById(id);
       const placeholder = id === 'fromName' ? 'Select your name...' : "Who's it for?";
       sel.innerHTML = `<option value="">${placeholder}</option>`;
       members.forEach(m => {
         const opt = document.createElement('option');
-        opt.value = m.name; opt.textContent = m.name;
+        opt.value = m.name;
+        opt.textContent = m.name;
+        if (id === 'fromName' && m.name === loggedInUser) opt.selected = true;
         sel.appendChild(opt);
       });
     });
@@ -154,45 +197,128 @@
     if (!from) return alert('Select your name!');
     if (!to)   return alert('Select who this is for!');
     if (!msg)  return alert('Write your message!');
-    const date = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
-    const time = new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-    await sb.from('shoutouts').insert({ from_name: from, to_name: to, message: msg, vibe: selectedVibe, date, time, likes: 0 });
+
+    const now = new Date();
+    const date = now.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    const time = now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+
+    const { error } = await sb.from('shoutouts').insert({
+      from_name: from,
+      to_name: to,
+      message: msg,
+      vibe: selectedVibe,
+      date,
+      time,
+      likes: 0
+    });
+
+    if (error) {
+      console.error('POST ERROR:', error);
+      showToast('Error posting: ' + error.message);
+      return;
+    }
+
     showToast('Shoutout posted!! 💛');
     document.getElementById('fromName').value = '';
     document.getElementById('toName').value = '';
     document.getElementById('shoutMsg').value = '';
+    document.getElementById('charCount').textContent = '0 / 280';
     loadShoutouts();
   }
 
-  async function likeShoutout(id, current) {
+  async function likeShoutout(id) {
     const likedKey = `liked_shoutout_${id}`;
-    if (localStorage.getItem(likedKey)) { showToast('You already liked this! 😄'); return; }
-    await sb.from('shoutouts').update({ likes: current + 1 }).eq('id', id);
+    if (localStorage.getItem(likedKey)) {
+      showToast('You already liked this! 😄');
+      return;
+    }
+
+    // Get current likes count first
+    const { data, error: fetchError } = await sb.from('shoutouts')
+      .select('likes')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('FETCH LIKES ERROR:', fetchError);
+      showToast('Error fetching likes');
+      return;
+    }
+
+    const { error } = await sb.from('shoutouts')
+      .update({ likes: (data?.likes || 0) + 1 })
+      .eq('id', id);
+
+    if (error) {
+      console.error('LIKE ERROR:', error);
+      showToast('Error liking: ' + error.message);
+      return;
+    }
+
     localStorage.setItem(likedKey, '1');
+    showToast('Liked! 💛');
     loadShoutouts();
   }
 
-  async function deleteShoutout(id) {
-    if (!confirm('Delete this shoutout?')) return;
-    await sb.from('shoutouts').delete().eq('id', id);
+  // Custom delete modal
+  function confirmDelete(id) {
+    deleteId = id;
+    document.getElementById('deleteModal').classList.add('show');
+  }
+
+  function closeDeleteModal() {
+    deleteId = null;
+    document.getElementById('deleteModal').classList.remove('show');
+  }
+
+  async function doDelete() {
+    if (!deleteId) return;
+
+    const { error } = await sb.from('shoutouts').delete().eq('id', deleteId);
+
+    if (error) {
+      console.error('DELETE ERROR:', error);
+      showToast('Error deleting: ' + error.message);
+      return;
+    }
+
     showToast('Shoutout deleted.');
+    deleteId = null;
+    closeDeleteModal();
     loadShoutouts();
   }
 
   async function loadShoutouts() {
-    const { data } = await sb.from('shoutouts').select('*').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('shoutouts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('LOAD SHOUTOUTS ERROR:', error);
+      showToast('Error loading shoutouts');
+      return;
+    }
+
     renderShoutouts(data || []);
   }
 
   function renderShoutouts(shoutouts) {
     const list = document.getElementById('shoutoutsList');
-    if (shoutouts.length === 0) { list.innerHTML = '<div class="empty-state"><span class="empty-icon">💬</span><p>No shoutouts yet. Be the first! 💛</p></div>'; return; }
+    if (shoutouts.length === 0) {
+      list.innerHTML = '<div class="empty-state"><span class="empty-icon">💬</span><p>No shoutouts yet. Be the first! 💛</p></div>';
+      return;
+    }
+
     list.innerHTML = '';
     shoutouts.forEach((s, i) => {
       const liked = localStorage.getItem(`liked_shoutout_${s.id}`);
       const card = document.createElement('div');
       card.className = 'shoutout-card';
       card.style.transitionDelay = `${i * 0.05}s`;
+
+      // Escape quotes for safe HTML
+      const safeMsg = (s.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
       card.innerHTML = `
         <div class="shoutout-header">
           <div class="shoutout-from-to">
@@ -203,14 +329,15 @@
           <span class="shoutout-time">${s.date} · ${s.time}</span>
         </div>
         <span class="shoutout-vibe">${s.vibe}</span>
-        <p class="shoutout-msg">"${s.message}"</p>
+        <p class="shoutout-msg">"${safeMsg}"</p>
         <div class="shoutout-footer">
-          <button class="like-btn${liked ? ' liked' : ''}" onclick="likeShoutout(${s.id}, ${s.likes})">${liked ? '💛' : '🤍'} ${s.likes} ${s.likes === 1 ? 'like' : 'likes'}</button>
-          <button class="shoutout-delete" onclick="deleteShoutout(${s.id})">✕ delete</button>
+          <button class="like-btn${liked ? ' liked' : ''}" onclick="likeShoutout('${s.id}')">${liked ? '💛' : '🤍'} ${s.likes || 0} ${(s.likes || 0) === 1 ? 'like' : 'likes'}</button>
+          <button class="shoutout-delete" onclick="confirmDelete('${s.id}')">✕ delete</button>
         </div>
       `;
       list.appendChild(card);
     });
+
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.1 });
@@ -219,9 +346,20 @@
 
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
+    t.textContent = msg;
+    t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
+
+  // Close modal on overlay click
+  document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+  });
+
+  // Close modal on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDeleteModal();
+  });
 
   sb.channel('shoutouts').on('postgres_changes', { event: '*', schema: 'public', table: 'shoutouts' }, () => loadShoutouts()).subscribe();
   loadMembers();
