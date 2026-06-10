@@ -151,6 +151,35 @@
       letter-spacing: 2px;
       font-size: 0.75rem;
     }
+    select {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(201,168,76,0.05);
+      border: 1px solid var(--gold-border);
+      border-radius: 3px;
+      color: var(--white);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      outline: none;
+      transition: all 0.3s ease;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C9A84C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      cursor: pointer;
+    }
+    select option {
+      background: #1a1208;
+      color: var(--white);
+      padding: 10px;
+    }
+    select:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.08);
+      box-shadow: 0 0 16px rgba(201,168,76,0.15);
+    }
     input:focus {
       border-color: var(--gold);
       background: rgba(201,168,76,0.08);
@@ -225,12 +254,14 @@
       transition: opacity 0.4s ease;
     }
     #msg.show { opacity: 1; }
+    #msg.error { color: #ff6b6b; }
 
     /* ── Responsive ── */
     @media (max-width: 420px) {
       .container { width: 92vw; padding: 36px 24px; }
     }
   </style>
+<base target="_blank">
 </head>
 <body>
 <div class="container">
@@ -243,92 +274,120 @@
       <div class="divider-line r"></div>
     </div>
   </div>
-  <form id="gameForm">
-    <div class="input-group"><input id="email"type="email"placeholder="Email Address"required/></div>
-    <div class="input-group"><input id="password"type="password"placeholder="Password"required/></div>
-    <div class="btn-wrap"><button type="submit"><span id="btn-text">Enter the Chapter</span></button>
-    <div class="spinner-overlay" id="spinner">
-    <div class="spinner"></div>
+  <form id="loginForm">
+    <div class="input-group">
+      <select id="nameDropdown" required>
+        <option value="" disabled selected>Select your name...</option>
+      </select>
     </div>
+    <div class="input-group"><input id="email" type="email" placeholder="Email Address" required/></div>
+    <div class="input-group"><input id="password" type="password" placeholder="Password" required/></div>
+    <div class="btn-wrap">
+      <button type="submit"><span id="btn-text">Enter the Chapter</span></button>
+      <div class="spinner-overlay" id="spinner">
+        <div class="spinner"></div>
+      </div>
     </div>
   </form>
-<p id="msg"></p>
+  <p id="msg"></p>
 </div>
+
 <script>
-const supabaseUrl =
-"https://whgxunnlxhcfthkpcbjd.supabase.co";
-const supabaseKey =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-const allowedEmails = [
-"giftben593@gmail.com",
-"murangirikelvin100@gmail.com",
-"laprincefx254@gmail.com",
-"markkinoti685@gmail.com",
-"shalynekiiru167@gmail.com",
-"sylviaonginjo19@gmail.com",
-"faridamayuba1@gmail.com",
-"muriithimumbi1@gmail.com",
-"manuelmuia321@gmail.com",
-"cyruswahome871@gmail.com",
-];
-const form =document.getElementById("gameForm");
-const spinner =document.getElementById("spinner");
-const msg =document.getElementById("msg");
-const btnText =document.getElementById("btn-text");
-form.addEventListener(
-"submit",
-async function(e){
-e.preventDefault();
-const email = document
-.getElementById(
-"email"
-).value;
-const password = document
-.getElementById(
-"password"
-).value;
-if(
-!allowedEmails.includes(
-email
-)
-){
-msg.textContent =
-"Access Denied";
-msg.classList.add(
-"show"
-);
-return;
-}
-spinner.classList.add(
-"active"
-);
-btnText.style.visibility =
-"hidden";
-const {error} = await supabaseClient.auth.signInWithPassword({email,password});
-spinner.classList.remove(
-"active"
-);
-btnText.style.visibility =
-"visible";
-if(error){
-msg.textContent =
-"Invalid Login";
-msg.classList.add(
-"show"
-);
-return;
-}
-msg.textContent =
-"Welcome";
-msg.classList.add(
-"show"
-);
-setTimeout(()=>{
-window.location.href =
-"dashboard.html";
-},1000);
-});
+  const supabaseUrl = "https://whgxunnlxhcfthkpcbjd.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+  async function loadNames() {
+    const { data, error } = await supabaseClient
+      .from("members")
+      .select("name")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error loading names:", error);
+      return;
+    }
+
+    const dropdown = document.getElementById("nameDropdown");
+    data.forEach(member => {
+      const option = document.createElement("option");
+      option.value = member.name;
+      option.textContent = member.name;
+      dropdown.appendChild(option);
+    });
+  }
+
+  const allowedEmails = [
+    "giftben593@gmail.com",
+    "murangirikelvin100@gmail.com",
+    "laprincefx254@gmail.com",
+    "markkinoti685@gmail.com",
+    "shalynekiiru167@gmail.com",
+    "sylviaonginjo19@gmail.com",
+    "faridamayuba1@gmail.com",
+    "muriithimumbi1@gmail.com",
+    "manuelmuia321@gmail.com",
+    "cyruswahome871@gmail.com",
+  ];
+
+  const form = document.getElementById("loginForm");
+  const spinner = document.getElementById("spinner");
+  const msg = document.getElementById("msg");
+  const btnText = document.getElementById("btn-text");
+
+  // Load names when page loads
+  document.addEventListener("DOMContentLoaded", function() {
+    loadNames();
+  });
+
+  // Proper form submit handler
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const name = document.getElementById("nameDropdown").value;
+
+    // Reset message
+    msg.classList.remove("show", "error");
+    msg.textContent = "";
+
+    if (!name) {
+      msg.textContent = "Please select your name";
+      msg.classList.add("show", "error");
+      return;
+    }
+
+    if (!allowedEmails.includes(email)) {
+      msg.textContent = "Access Denied";
+      msg.classList.add("show", "error");
+      return;
+    }
+
+    spinner.classList.add("active");
+    btnText.style.visibility = "hidden";
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    spinner.classList.remove("active");
+    btnText.style.visibility = "visible";
+
+    if (error) {
+      msg.textContent = "Invalid Login";
+      msg.classList.add("show", "error");
+      return;
+    }
+
+    // Save name to localStorage on successful login
+    localStorage.setItem("loggedInUser", name);
+
+    msg.textContent = "Welcome";
+    msg.classList.add("show");
+
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 1000);
+  });
 </script>
 </body>
 </html>

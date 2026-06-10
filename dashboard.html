@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chapter 17 — Dashboard</title>
@@ -224,6 +225,23 @@
     .hero-divider .diamond { width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 8px var(--gold); }
     .hero-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(0.85rem,2vw,1.05rem); color: var(--muted); letter-spacing: 2px; opacity: 0; animation: fadeUp 0.8s ease 1.1s forwards; }
 
+    /* Avatar styling */
+    .hero-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 2px solid var(--gold-border);
+      object-fit: cover;
+      margin-bottom: 16px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.4s forwards;
+      display: none;
+      box-shadow: 0 0 20px rgba(201,168,76,0.2);
+    }
+    .hero-avatar.visible {
+      display: block;
+    }
+
     /* Page number decoration */
     .page-number {
       position: absolute; bottom: 32px;
@@ -302,6 +320,7 @@
       .chapter-heading { flex-wrap: wrap; gap: 12px; }
     }
   </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -352,8 +371,9 @@
     <div class="hero-lines"></div>
     <div class="hero-glow"></div>
     <span class="hero-tag">X V I I &nbsp;·&nbsp; Dashboard</span>
+    <img id="user-avatar" class="hero-avatar" src="" alt="Profile" onerror="this.style.display='none'"/>
     <p class="hero-greeting">Welcome back,</p>
-    <h1 class="hero-name" id="heroName">Chapter 17</h1>
+    <h1 class="hero-name" id="welcome-name">Chapter 17</h1>
     <div class="hero-divider">
       <div class="line"></div><div class="diamond"></div><div class="line r"></div>
     </div>
@@ -365,7 +385,7 @@
   <div class="section" style="padding-top:0">
     <div class="stats">
       <div class="stat"><span class="stat-num" id="memberCount">—</span><span class="stat-label">Members</span></div>
-      <div class="stat"><span class="stat-num">11</span><span class="stat-label">The Chapter</span></div>
+      <div class="stat"><span class="stat-num" id="chapterCount">11</span><span class="stat-label">The Chapter</span></div>
       <div class="stat"><span class="stat-num">∞</span><span class="stat-label">Memories</span></div>
       <div class="stat"><span class="stat-num">1</span><span class="stat-label">Squad</span></div>
     </div>
@@ -449,27 +469,83 @@
     setTimeout(() => { intro.style.display = 'none'; }, 600);
   }, 2400);
 
-  // ── Greet by saved name
-  const savedName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name');
-  if (savedName) document.getElementById('heroName').textContent = savedName.split(' ')[0];
+  // ── Supabase setup
+  const supabaseUrl = "https://whgxunnlxhcfthkpcbjd.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+  // ── Check login & load user data
+  async function initDashboard() {
+    const userName = localStorage.getItem("loggedInUser");
+
+    if (userName) {
+      const { data: member, error } = await supabaseClient
+        .from("members")
+        .select("name, avatar")
+        .eq("name", userName)
+        .single();
+
+      if (error) {
+        console.error("Error loading member:", error);
+      } else if (member) {
+        document.getElementById("welcome-name").textContent = member.name;
+        const avatar = document.getElementById("user-avatar");
+        if (member.avatar) {
+          avatar.src = member.avatar;
+          avatar.classList.add("visible");
+        }
+      }
+    }
+
+    // ── Load dynamic member count from Supabase
+    const { count, error: countError } = await supabaseClient
+      .from("members")
+      .select("*", { count: "exact", head: true });
+
+    if (!countError && count !== null) {
+      const memberEl = document.getElementById('memberCount');
+      setTimeout(() => animateCount(memberEl, count, 1200), 2600);
+    } else {
+      // Fallback if Supabase count fails
+      const memberEl = document.getElementById('memberCount');
+      setTimeout(() => animateCount(memberEl, 17, 1200), 2600);
+    }
+  }
 
   // ── Animate member count
-  function animateCount(el, target, duration=1500) {
+  function animateCount(el, target, duration = 1500) {
     if (isNaN(target)) return;
-    let start=0; const step=target/(duration/16);
-    const t = setInterval(()=>{ start+=step; if(start>=target){el.textContent=target;clearInterval(t);return;} el.textContent=Math.floor(start); },16);
+    let start = 0;
+    const step = target / (duration / 16);
+    const t = setInterval(() => {
+      start += step;
+      if (start >= target) {
+        el.textContent = target;
+        clearInterval(t);
+        return;
+      }
+      el.textContent = Math.floor(start);
+    }, 16);
   }
-  const memberEl = document.getElementById('memberCount');
-  setTimeout(()=>animateCount(memberEl,17,1200), 2600);
 
   // ── Scroll card animations
-  const observer = new IntersectionObserver(entries=>{
-    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
-  },{ threshold:0.1 });
-  document.querySelectorAll('.card').forEach((c,i)=>{ c.style.transitionDelay=`${(i%3)*0.08}s`; observer.observe(c); });
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) e.target.classList.add('visible');
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.card').forEach((c, i) => {
+    c.style.transitionDelay = `${(i % 3) * 0.08}s`;
+    observer.observe(c);
+  });
 
   // ── Mobile nav
-  document.getElementById('burger').addEventListener('click',()=>{ document.getElementById('navLinks').classList.toggle('open'); });
+  document.getElementById('burger').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+
+  // ── Initialize
+  initDashboard();
 </script>
 </body>
 </html>
