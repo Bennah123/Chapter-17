@@ -675,45 +675,13 @@
 <script>
 // ── SUPABASE SETUP ──
 const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY_HERE'; // ← REPLACE THIS
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE';
 
-// Use a different variable name to avoid conflict with the module
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── STATE ──
 let whispers = [];
 let currentFilter = 'all';
-
-// ── DEMO WHISPERS ──
-const demoWhispers = [
-  {
-    id: 1,
-    text: "I've been crushing on someone in this group for months. The way they laugh at my terrible jokes makes my whole week.",
-    author: "Mystery Member",
-    real_name: null,
-    likes: 7,
-    likedByMe: false,
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 2,
-    text: "I still think about that night at the beach. None of you know how much it meant to me. Thank you for being my family.",
-    author: "Mystery Member",
-    real_name: "Alex",
-    likes: 12,
-    likedByMe: true,
-    created_at: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 3,
-    text: "I pretend to hate the group chat notifications but secretly they're the highlight of my day.",
-    author: "Mystery Member",
-    real_name: null,
-    likes: 3,
-    likedByMe: false,
-    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString()
-  }
-];
 
 // ── INIT ──
 function init() {
