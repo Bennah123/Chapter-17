@@ -278,8 +278,12 @@
 
   async function removeBadge(memberId, badge) {
     if (!isAdmin) return showToast('Admin only 🔒');
-    const member = allMembers.find(m => m.id === memberId);
-    if (!member) return;
+    const member = allMembers.find(m => String(m.id) === String(memberId));
+    if (!member) {
+      console.error('Member not found:', memberId);
+      showToast('Member not found');
+      return;
+    }
     const updated = (member.badges || []).filter(b => b !== badge);
     const { error } = await sb.from('members').update({ badges: updated }).eq('id', memberId);
     if (error) {
@@ -306,9 +310,11 @@
       
       const badgesHTML = badges.length
         ? badges.map(b => {
-            const removeBtn = isAdmin ? `<button onclick="removeBadge(${m.id}, '${b}')">✕</button>` : '';
-            return `<div class="badge-pill"><span class="badge-emoji">${b.split(' ')[0]}</span>${b.split(' ').slice(1).join(' ')}${removeBtn}</div>`;
-          }).join('')
+      const removeBtn = isAdmin 
+        ? `<button onclick="removeBadge('${m.id}', '${b.replace(/'/g, "\\'")}')">✕</button>` 
+        : '';
+      return `<div class="badge-pill"><span class="badge-emoji">${b.split(' ')[0]}</span>${b.split(' ').slice(1).join(' ')}${removeBtn}</div>`;
+      }).join('')
         : '<span class="no-badges">No badges yet 🥲</span>';
       
       card.innerHTML = `
