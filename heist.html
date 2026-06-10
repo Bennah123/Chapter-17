@@ -157,7 +157,6 @@
     }
 
     /* ── START BUTTON ── */
-    /* CHANGED: Added start button styles */
     .start-btn {
       margin-top: 32px;
       padding: 16px 48px;
@@ -322,7 +321,6 @@
       font-size: 1.2rem;
     }
 
-    /* CHANGED: Added waiting state for before game starts */
     .chamber.waiting {
       opacity: 0.4;
       cursor: not-allowed;
@@ -394,6 +392,55 @@
     .player-avatar:first-child { margin-left: 0; }
     .player-avatar.online {
       border-color: var(--green);
+      box-shadow: 0 0 8px rgba(76,201,110,0.3);
+    }
+
+    /* ── CHAMBER TOOLTIP ── */
+    .chamber-tooltip {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(8,8,6,0.95);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 12px 20px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      color: var(--gold);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 10;
+    }
+
+    .chamber.locked:hover .chamber-tooltip,
+    .chamber.waiting:hover .chamber-tooltip {
+      opacity: 1;
+    }
+
+    /* ── LIVE PROGRESS BAR ── */
+    .live-progress {
+      position: fixed;
+      top: 71px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--bg2);
+      z-index: 48;
+      display: none;
+    }
+
+    .live-progress.active {
+      display: block;
+    }
+
+    .live-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--gold));
+      transition: width 0.5s ease;
       box-shadow: 0 0 8px rgba(76,201,110,0.3);
     }
 
@@ -841,6 +888,25 @@
       font-size: 1rem;
     }
 
+    .vault-scoreboard-btn {
+      margin-top: 24px;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      color: var(--bg);
+      border: none;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .vault-scoreboard-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(201,168,76,0.4);
+    }
+
     /* ── PARTICLES ── */
     .particle {
       position: fixed;
@@ -887,11 +953,19 @@
       .hero { min-height: 40vh; padding-top: 80px; }
       .status-panel { padding: 0 24px; }
       .game-area { padding: 0 24px 60px; }
-      .team-panel { width: calc(100% - 48px); right: 24px; }
+      .team-panel { 
+        width: calc(100% - 48px); 
+        right: 24px; 
+        bottom: 12px;
+      }
+      .team-panel.collapsed {
+        transform: translateY(calc(100% - 44px));
+      }
       .timer-text { right: 24px; font-size: 0.65rem; }
       footer { padding: 28px 24px; justify-content: center; }
     }
   </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -913,14 +987,18 @@
 </div>
 <div class="timer-text" id="timerText">20:00</div>
 
+<!-- LIVE PROGRESS BAR -->
+<div class="live-progress" id="liveProgress">
+  <div class="live-progress-fill" id="liveProgressFill" style="width: 0%"></div>
+</div>
+
 <!-- HERO -->
 <section class="hero">
   <div class="hero-glow"></div>
   <p class="hero-tag">Classified Operation</p>
   <h1 class="hero-title">HEIST MODE</h1>
   <p class="hero-sub">"The vault won't crack itself. Every specialist has a role. Work together or fail together."</p>
-  
-  <!-- CHANGED: Added start button -->
+
   <button class="start-btn" id="startHeistBtn">ENTER THE HEIST</button>
 </section>
 
@@ -982,10 +1060,11 @@
     </div>
   </div>
   <p class="vault-sub" id="vaultSub">The Chapter 17 treasures are yours...</p>
+  <button class="vault-scoreboard-btn" onclick="window.location.href='scoreboard.html'">View Scoreboard →</button>
 </div>
 
 <!-- TEAM PANEL -->
-<div class="team-panel" id="teamPanel">
+<div class="team-panel collapsed" id="teamPanel">
   <div class="team-header" id="teamHeader">
     <h4>Squad Comms</h4>
     <div class="team-status"></div>
@@ -1010,15 +1089,14 @@
 
 <script>
 // ── SUPABASE SETUP ──
-/* CHANGED: Fixed supabase client initialization */
 const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'; // Replace with your actual anon key
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE';
 
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── GAME STATE ──
-const HEIST_DURATION = 20 * 60; // 20 minutes in seconds
+const HEIST_DURATION = 20 * 60;
 let timeRemaining = HEIST_DURATION;
 let timerInterval = null;
 let currentChamber = null;
@@ -1030,6 +1108,7 @@ let gameState = {
   started: false,
   completed: false
 };
+let chatChannel = null;
 
 // ── CHAMBER DATA ──
 const chambers = [
@@ -1074,7 +1153,7 @@ const chambers = [
     puzzle: 'riddle',
     riddle: 'I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?',
     options: ['A Dream', 'A Map', 'A Cloud', 'A Mirror'],
-    answer: 1, // A Map
+    answer: 1,
     players: []
   }
 ];
@@ -1086,40 +1165,63 @@ const roles = [
   'The Tech', 'The Negotiator', 'The Cleaner'
 ];
 
+// ── AUDIO ──
+const unlockSound = new Audio();
+unlockSound.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
+
+function playUnlockSound() {
+  unlockSound.currentTime = 0;
+  unlockSound.volume = 0.3;
+  unlockSound.play().catch(() => {});
+}
+
 // ── INIT ──
 function init() {
   renderChambers();
-  setupStartButton(); /* CHANGED: Setup start button instead of auto-starting timer */
+  setupStartButton();
   loadGameState();
   setupTeamChat();
   setupChatRealtime();
+  setupMobileChat();
+  updateLiveProgress();
 }
 
-/* CHANGED: New function to setup start button */
 function setupStartButton() {
   const btn = document.getElementById('startHeistBtn');
   btn.addEventListener('click', () => {
     gameState.started = true;
     btn.classList.add('hidden');
     addSystemMessage('The heist has begun! All specialists to your stations.');
-    startTimer(); /* CHANGED: Start timer only when button clicked */
+    startTimer();
     syncGameState();
-    renderChambers(); /* Refresh chambers to unlock them */
+    renderChambers();
+    document.getElementById('liveProgress').classList.add('active');
   });
 }
 
+// ── LIVE PROGRESS BAR ──
+function updateLiveProgress() {
+  const solved = gameState.chambers.filter(c => c).length;
+  const pct = (solved / 4) * 100;
+  document.getElementById('liveProgressFill').style.width = `${pct}%`;
+}
+
 // ── RENDER CHAMBERS ──
-/* CHANGED: Added waiting state and gameState.started check */
 function renderChambers() {
   const container = document.getElementById('chamberSelect');
   container.innerHTML = chambers.map((c, i) => {
     const isLocked = !gameState.started || (i > 0 && !gameState.chambers[i-1]);
     const isSolved = gameState.chambers[i];
     const progress = isSolved ? 100 : (c.players.length / 3 * 100);
-    
+
+    let tooltipText = '';
+    if (!gameState.started) tooltipText = 'Waiting for heist to start...';
+    else if (isLocked) tooltipText = 'Complete previous chamber first';
+
     return `
       <div class="chamber ${!gameState.started ? 'waiting' : ''} ${isLocked ? 'locked' : ''} ${isSolved ? 'solved' : ''}" 
            data-chamber="${i}" ${isLocked ? '' : `onclick="openChamber(${i})"`}>
+        ${tooltipText ? `<div class="chamber-tooltip">${tooltipText}</div>` : ''}
         <div class="chamber-num">CHAMBER ${c.num}</div>
         <div class="chamber-title">${c.icon} ${c.title}</div>
         <div class="chamber-desc">${c.desc}</div>
@@ -1138,12 +1240,11 @@ function renderChambers() {
 }
 
 // ── TIMER ──
-/* CHANGED: Timer now starts only when called from start button */
 function startTimer() {
   timerInterval = setInterval(() => {
     timeRemaining--;
     updateTimerDisplay();
-    
+
     if (timeRemaining <= 0) {
       clearInterval(timerInterval);
       gameOver(false);
@@ -1155,12 +1256,11 @@ function updateTimerDisplay() {
   const mins = Math.floor(timeRemaining / 60);
   const secs = timeRemaining % 60;
   const timeStr = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-  
+
   document.getElementById('timerText').textContent = timeStr;
   document.getElementById('statusTimeVal').textContent = timeStr;
   document.getElementById('timerFill').style.width = `${(timeRemaining / HEIST_DURATION) * 100}%`;
-  
-  // Color shift when low on time
+
   if (timeRemaining < 120) {
     document.getElementById('timerFill').style.background = 'var(--red)';
   }
@@ -1169,15 +1269,15 @@ function updateTimerDisplay() {
 // ── OPEN CHAMBER ──
 function openChamber(index) {
   if (gameState.chambers[index]) return;
-  
+
   currentChamber = index;
   const chamber = chambers[index];
   const modal = document.getElementById('puzzleModal');
   const title = document.getElementById('puzzleTitle');
   const body = document.getElementById('puzzleBody');
-  
+
   title.textContent = `Chamber ${chamber.num} — ${chamber.title}`;
-  
+
   switch(chamber.puzzle) {
     case 'cipher':
       body.innerHTML = renderCipherPuzzle(chamber);
@@ -1196,7 +1296,7 @@ function openChamber(index) {
       setupRiddleHandlers(chamber);
       break;
   }
-  
+
   modal.classList.add('open');
 }
 
@@ -1218,7 +1318,7 @@ function renderCipherPuzzle(chamber) {
 function setupCipherHandlers(chamber) {
   const input = document.getElementById('cipherInput');
   const submit = document.getElementById('cipherSubmit');
-  
+
   submit.addEventListener('click', () => {
     const guess = input.value.toLowerCase().trim();
     if (guess === chamber.answer) {
@@ -1229,7 +1329,7 @@ function setupCipherHandlers(chamber) {
       addSystemMessage('Incorrect cipher. Try again, specialist.');
     }
   });
-  
+
   input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') submit.click();
   });
@@ -1259,14 +1359,13 @@ function setupSequenceHandlers(chamber) {
   const status = document.getElementById('seqStatus');
   let playerSequence = [];
   let showingPattern = false;
-  
+
   startBtn.addEventListener('click', () => {
     playerSequence = [];
     showingPattern = true;
     startBtn.disabled = true;
     status.textContent = 'Watch carefully...';
-    
-    // Show pattern
+
     let i = 0;
     const interval = setInterval(() => {
       if (i >= chamber.sequence.length) {
@@ -1275,24 +1374,23 @@ function setupSequenceHandlers(chamber) {
         status.textContent = 'Your turn! Repeat the pattern.';
         return;
       }
-      
+
       const tile = grid.querySelector(`[data-num="${chamber.sequence[i]}"]`);
       tile.classList.add('selected');
       setTimeout(() => tile.classList.remove('selected'), 400);
       i++;
     }, 800);
   });
-  
+
   grid.querySelectorAll('.seq-tile').forEach(tile => {
     tile.addEventListener('click', () => {
       if (showingPattern) return;
-      
+
       const num = parseInt(tile.dataset.num);
       playerSequence.push(num);
       tile.classList.add('selected');
       setTimeout(() => tile.classList.remove('selected'), 200);
-      
-      // Check correctness so far
+
       const currentIndex = playerSequence.length - 1;
       if (playerSequence[currentIndex] !== chamber.sequence[currentIndex]) {
         tile.classList.add('wrong');
@@ -1302,8 +1400,7 @@ function setupSequenceHandlers(chamber) {
         startBtn.disabled = false;
         return;
       }
-      
-      // Check if complete
+
       if (playerSequence.length === chamber.sequence.length) {
         grid.querySelectorAll('.seq-tile').forEach(t => t.classList.add('correct'));
         setTimeout(() => solveChamber(currentChamber), 500);
@@ -1316,7 +1413,7 @@ function setupSequenceHandlers(chamber) {
 function renderMemoryPuzzle(chamber) {
   const shuffled = [...chamber.pairs, ...chamber.pairs]
     .sort(() => Math.random() - 0.5);
-  
+
   return `
     <p style="text-align:center;color:var(--muted);margin-bottom:20px;font-size:0.85rem;">
       Find all matching pairs. Click cards to flip them.
@@ -1338,19 +1435,19 @@ function setupMemoryHandlers(chamber) {
   let flipped = [];
   let matched = 0;
   let locked = false;
-  
+
   grid.querySelectorAll('.mem-card').forEach(card => {
     card.addEventListener('click', () => {
       if (locked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
-      
+
       card.textContent = card.dataset.emoji;
       card.classList.add('flipped');
       flipped.push(card);
-      
+
       if (flipped.length === 2) {
         locked = true;
         const [c1, c2] = flipped;
-        
+
         if (c1.dataset.emoji === c2.dataset.emoji) {
           c1.classList.add('matched');
           c2.classList.add('matched');
@@ -1358,7 +1455,7 @@ function setupMemoryHandlers(chamber) {
           flipped = [];
           locked = false;
           status.textContent = `Pairs found: ${matched} / ${chamber.pairs.length}`;
-          
+
           if (matched === chamber.pairs.length) {
             setTimeout(() => solveChamber(currentChamber), 500);
           }
@@ -1393,7 +1490,7 @@ function setupRiddleHandlers(chamber) {
   document.querySelectorAll('.riddle-option').forEach(btn => {
     btn.addEventListener('click', () => {
       const index = parseInt(btn.dataset.index);
-      
+
       if (index === chamber.answer) {
         btn.classList.add('correct');
         setTimeout(() => solveChamber(currentChamber), 500);
@@ -1409,23 +1506,23 @@ function setupRiddleHandlers(chamber) {
 function solveChamber(index) {
   gameState.chambers[index] = true;
   gameState.clues += 2;
-  
-  // Update UI
+
+  playUnlockSound();
+
   document.getElementById('puzzleModal').classList.remove('open');
   document.getElementById('statusChambersVal').textContent = 
     `${gameState.chambers.filter(c => c).length} / 4`;
   document.getElementById('statusCluesVal').textContent = `${gameState.clues} / 8`;
-  
+
+  updateLiveProgress();
   renderChambers();
-  
+
   addSystemMessage(`Chamber ${chambers[index].num} unlocked! ${chambers[index].title} cleared.`);
-  
-  // Check if all solved
+
   if (gameState.chambers.every(c => c)) {
     setTimeout(() => openVault(), 1000);
   }
-  
-  // Sync to Supabase
+
   syncGameState();
 }
 
@@ -1433,16 +1530,14 @@ function solveChamber(index) {
 function openVault() {
   clearInterval(timerInterval);
   gameState.completed = true;
-  
+
   const overlay = document.getElementById('vaultOverlay');
   overlay.classList.add('open');
-  
-  // Particle explosion
+
   for (let i = 0; i < 50; i++) {
     createParticle();
   }
-  
-  // Save score
+
   const timeUsed = HEIST_DURATION - timeRemaining;
   saveHeistScore(timeUsed);
 }
@@ -1453,20 +1548,20 @@ function createParticle() {
   p.style.left = '50%';
   p.style.top = '50%';
   p.style.background = Math.random() > 0.5 ? 'var(--gold)' : 'var(--gold-bright)';
-  
+
   const angle = Math.random() * Math.PI * 2;
   const velocity = 100 + Math.random() * 300;
   const tx = Math.cos(angle) * velocity;
   const ty = Math.sin(angle) * velocity;
-  
+
   p.style.transition = 'all 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
   document.body.appendChild(p);
-  
+
   requestAnimationFrame(() => {
     p.style.transform = `translate(${tx}px, ${ty}px) scale(0)`;
     p.style.opacity = '0';
   });
-  
+
   setTimeout(() => p.remove(), 1500);
 }
 
@@ -1476,9 +1571,9 @@ function gameOver(won) {
   const icon = overlay.querySelector('.vault-icon');
   const text = overlay.querySelector('.vault-text');
   const sub = document.getElementById('vaultSub');
-  
+
   overlay.classList.add('open');
-  
+
   if (!won) {
     icon.textContent = '🔒';
     text.textContent = 'HEIST FAILED';
@@ -1493,14 +1588,28 @@ function setupTeamChat() {
   const header = document.getElementById('teamHeader');
   const input = document.getElementById('teamInput');
   const send = document.getElementById('teamSend');
-  
+
   header.addEventListener('click', () => {
     panel.classList.toggle('collapsed');
   });
-  
+
   send.addEventListener('click', sendMessage);
   input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
+  });
+}
+
+function setupMobileChat() {
+  // Auto-collapse chat on mobile
+  if (window.innerWidth <= 768) {
+    document.getElementById('teamPanel').classList.add('collapsed');
+  }
+
+  window.addEventListener('resize', () => {
+    const panel = document.getElementById('teamPanel');
+    if (window.innerWidth <= 768) {
+      panel.classList.add('collapsed');
+    }
   });
 }
 
@@ -1508,20 +1617,29 @@ function sendMessage() {
   const input = document.getElementById('teamInput');
   const text = input.value.trim();
   if (!text) return;
-  
-  const name = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
+
+  const name = getPlayerName();
+
+  // Add to local UI immediately
   addMessage(name, text);
   input.value = '';
-  
+
   // Sync to Supabase
   syncMessage(name, text);
+}
+
+function getPlayerName() {
+  return localStorage.getItem('loggedInUser') || 
+         sessionStorage.getItem('c17_name') || 
+         localStorage.getItem('c17_name') || 
+         'Agent';
 }
 
 function addMessage(name, text) {
   const container = document.getElementById('teamMessages');
   const msg = document.createElement('div');
   msg.className = 'team-msg';
-  msg.innerHTML = `<span class="msg-name">${name}</span> <span class="msg-text">${text}</span>`;
+  msg.innerHTML = `<span class="msg-name">${escapeHtml(name)}</span> <span class="msg-text">${escapeHtml(text)}</span>`;
   container.appendChild(msg);
   container.scrollTop = container.scrollHeight;
 }
@@ -1530,12 +1648,17 @@ function addSystemMessage(text) {
   const container = document.getElementById('teamMessages');
   const msg = document.createElement('div');
   msg.className = 'team-msg system';
-  msg.innerHTML = `<span class="msg-name">SYSTEM</span> <span class="msg-text">${text}</span>`;
+  msg.innerHTML = `<span class="msg-name">SYSTEM</span> <span class="msg-text">${escapeHtml(text)}</span>`;
   container.appendChild(msg);
   container.scrollTop = container.scrollHeight;
 }
 
-/* CHANGED: Added missing updateStatus function */
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function updateStatus() {
   document.getElementById('statusChambersVal').textContent = 
     `${gameState.chambers.filter(c => c).length} / 4`;
@@ -1544,7 +1667,6 @@ function updateStatus() {
 }
 
 // ── SUPABASE INTEGRATION ──
-/* CHANGED: All supabase. changed to supabaseClient. */
 async function loadGameState() {
   try {
     const { data, error } = await supabaseClient
@@ -1553,110 +1675,116 @@ async function loadGameState() {
       .eq('game_type', 'heist')
       .order('created_at', { ascending: false })
       .limit(1);
-    
+
     if (error) {
-      console.log('Game rooms not available, using local state');
+      console.error('LOAD GAME STATE ERROR:', error);
       return;
     }
-    
+
     if (data && data.length > 0 && data[0].state) {
       gameState = { ...gameState, ...data[0].state };
       renderChambers();
+      updateLiveProgress();
     }
   } catch (e) {
-    console.log('Using local game state');
+    console.error('Load game state failed:', e);
   }
 }
+
 async function syncMessage(name, text) {
-  await supabaseClient
-    .from('heist_messages')
-    .insert({
-      room_id: 'heist_room_1',   // Or generate a unique room ID
-      player: name,
-      message: text,
-      created_at: new Date().toISOString()
-    });
+  try {
+    const { error } = await supabaseClient
+      .from('heist_messages')
+      .insert({
+        room_id: 'heist_room_1',
+        player: name,
+        message: text,
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('SYNC MESSAGE ERROR:', error);
+      addSystemMessage('Message sync failed. Check connection.');
+    }
+  } catch (e) {
+    console.error('Sync message failed:', e);
+  }
 }
+
 async function syncGameState() {
   try {
-    await supabaseClient
+    const { error } = await supabaseClient
       .from('game_rooms')
       .upsert({
         game_type: 'heist',
         state: gameState,
         updated_at: new Date().toISOString()
       });
+
+    if (error) {
+      console.error('SYNC GAME STATE ERROR:', error);
+    }
   } catch (e) {
-    console.log('State saved locally');
+    console.error('Sync game state failed:', e);
   }
 }
-function setupChatRealtime() {
-  supabaseClient
-    .channel('chat_messages')
-    .on('postgres_changes', 
-      { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'heist_messages',
-        filter: 'room_id=eq.heist_room_1'   // Only messages for this room
-      },
-      (payload) => {
-        const { player, message } = payload.new;
-        // Don't re-display your own messages (already shown locally)
-        const myName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
-        if (player !== myName) {
-          addMessage(player, message);
-        }
-      }
-    )
-    .subscribe();
-}
+
 function setupChatRealtime() {
   try {
-    supabaseClient
-      .channel('chat_messages')
+    // Remove existing channel if any
+    if (chatChannel) {
+      chatChannel.unsubscribe();
+    }
+
+    chatChannel = supabaseClient
+      .channel('heist_chat_' + Date.now())
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
           schema: 'public', 
-          table: 'heist_messages'
-          // NO FILTER — listen to ALL inserts for testing
+          table: 'heist_messages',
+          filter: 'room_id=eq.heist_room_1'
         },
         (payload) => {
-          console.log('Received:', payload);
+          console.log('Received message:', payload);
           const { player, message } = payload.new;
-          //Temporary: Show all messages for testing, but in production we would filter by room_id
-          addMessage(player || 'Unknown', message || 'No message');
-          const myName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Agent';
+          const myName = getPlayerName();
 
+          // Only show if it's NOT from me (my messages are already shown locally)
           if (player !== myName) {
-           addMessage(player, message);
-          } else {
-          // Optional: console.log('Own message, already displayed locally');
+            addMessage(player || 'Unknown', message || 'No message');
           }
         }
       )
       .subscribe((status) => {
-        console.log('Chat subscription:', status);
+        console.log('Chat subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          addSystemMessage('Connected to squad comms.');
+        }
       });
   } catch (e) {
-    console.log('Chat realtime not available:', e);
+    console.error('Chat realtime setup failed:', e);
   }
 }
+
 async function saveHeistScore(timeUsed) {
-  const playerName = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || 'Anonymous';
-  
+  const playerName = getPlayerName();
+
   try {
-    await supabaseClient.from('scores').insert({
+    const { error } = await supabaseClient.from('scores').insert({
       game: 'heist',
       player: playerName,
-      score: timeRemaining, // Higher score = more time left
+      score: timeRemaining,
       time_used: timeUsed,
       completed: true,
       created_at: new Date().toISOString()
     });
+
+    if (error) {
+      console.error('SAVE SCORE ERROR:', error);
+    }
   } catch (e) {
-    console.log('Score saved locally');
+    console.error('Save score failed:', e);
   }
 }
 
