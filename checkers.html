@@ -764,12 +764,12 @@ let selectedPiece = null;
 let validMoves = [];
 
 // ── INIT ──
-function init() {
+async function init() {
   populateMemberSelects();
   setupEventListeners();
-  loadGame();
   setupChatRealtime();
-  renderBoard();
+  setupGameRealtime();   // Setup listeners before loading
+  await loadGame();
 }
 
 // ── POPULATE DROPDOWNS ──
@@ -868,7 +868,12 @@ function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   
-  const board = gameState.board || initializeBoard();
+  // Ensure board exists and is valid
+  let board = gameState.board;
+  if (!board || !Array.isArray(board) || board.length === 0) {
+    board = initializeBoard();
+    gameState.board = board;
+  }
   
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
@@ -880,27 +885,23 @@ function renderBoard() {
       if (validMoves.some(m => m.row === row && m.col === col)) {
         square.classList.add('valid-move');
       }
-      
       if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
         square.classList.add('selected');
       }
-      
-      const piece = board[row][col];
+      // Safe access with fallback
+      const piece = board[row] && board[row][col] ? board[row][col] : null;
       if (piece) {
         const pieceEl = document.createElement('div');
-        pieceEl.className = `piece ${piece.color} ${piece.king ? 'king' : ''}`;
+        pieceEl.className = `piece ${piece.color || ''} ${piece.king ? 'king' : ''}`;
         square.appendChild(pieceEl);
       }
-      
       if ((row + col) % 2 === 1) {
         square.addEventListener('click', () => handleSquareClick(row, col));
       }
-      
       boardEl.appendChild(square);
     }
   }
 }
-
 // ── HANDLE CLICK ──
 function handleSquareClick(row, col) {
   if (gameState.status !== 'playing' || gameState.turn !== playerRole) return;
@@ -1011,18 +1012,36 @@ async function loadGame() {
       .from('checkers_games')
       .select('*')
       .eq('id', gameId)
-      .single();
+      .maybeSingle();  // ← Use maybeSingle instead of single
     
-    if (error || !data) {
-      // No game exists yet
+    if (error) {
+      console.log('No game found, creating new...');
+      // Create initial game state
+      gameState.board = initializeBoard();
+      gameState.turn = 'red';
+      gameState.status = 'waiting';
+      renderBoard();
       return;
     }
     
-    gameState = data;
+    if (data) {
+      gameState = data;
+    } else {
+      // No row exists yet
+      gameState.board = initializeBoard();
+      gameState.turn = 'red';
+      gameState.status = 'waiting';
+    }
+    
     updateUI();
     renderBoard();
   } catch (e) {
     console.log('Load game failed:', e);
+    // Fallback: initialize board anyway
+    gameState.board = initializeBoard();
+    gameState.turn = 'red';
+    gameState.status = 'waiting';
+    renderBoard();
   }
 }
 
@@ -1145,7 +1164,6 @@ function setupChatRealtime() {
 
 // ── START ──
 init();
-setupGameRealtime();
 </script>
 
 </body>
