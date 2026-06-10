@@ -460,14 +460,23 @@
 </div>
 
 <script>
-  // ── Book animation — after cover flips, reveal dashboard
-  setTimeout(() => {
-    const intro = document.getElementById('bookIntro');
-    const main  = document.getElementById('dashMain');
-    intro.classList.add('fade-out');
+  // ── Book animation — skip if already seen this session
+  const intro = document.getElementById('bookIntro');
+  const main  = document.getElementById('dashMain');
+
+  if (sessionStorage.getItem('bookSeen')) {
+    // Already saw the book this session — show dashboard immediately
+    intro.style.display = 'none';
     main.classList.add('revealed');
-    setTimeout(() => { intro.style.display = 'none'; }, 600);
-  }, 2400);
+  } else {
+    // First visit — play the book animation
+    setTimeout(() => {
+      intro.classList.add('fade-out');
+      main.classList.add('revealed');
+      setTimeout(() => { intro.style.display = 'none'; }, 600);
+    }, 2400);
+    sessionStorage.setItem('bookSeen', 'true');
+  }
 
   // ── Supabase setup
   const supabaseUrl = "https://whgxunnlxhcfthkpcbjd.supabase.co";
@@ -506,7 +515,6 @@
       const memberEl = document.getElementById('memberCount');
       setTimeout(() => animateCount(memberEl, count, 1200), 2600);
     } else {
-      // Fallback if Supabase count fails
       const memberEl = document.getElementById('memberCount');
       setTimeout(() => animateCount(memberEl, 17, 1200), 2600);
     }
