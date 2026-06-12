@@ -114,7 +114,7 @@
 </head>
 <body>
 
-<nav>
+<<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
   <a class="nav-back" href="dashboard.html">Dashboard</a>
 </nav>
@@ -219,6 +219,7 @@
     await loadEvents();
     setupAdmin();
     renderCalendar();
+    // FIX #1: Start countdown AFTER events are loaded, not before
     startLiveCountdown();
     requestNotificationPermission();
   }
@@ -265,6 +266,8 @@
       renderEvents();
       renderCalendar();
       updateStats();
+      // FIX #1b: Restart countdown whenever events reload so it picks up new data
+      startLiveCountdown();
       scheduleReminders();
     } catch (e) {
       console.error('Load events failed:', e);
@@ -307,7 +310,7 @@
       goingListHtml = rsvps.map(n => {
         const isMe = n === myName;
         const canRemove = isMe || isAdmin();
-        return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${String(ev.id)}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
+        return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${String(ev.id)}', '${escapeHtml(n).replace(/'/g, "\\'")}')">×</span>` : ''}</span>`;
       }).join('');
     }
 
@@ -346,6 +349,7 @@
 
   // ── LIVE COUNTDOWN ──
   function startLiveCountdown() {
+    // Clear existing interval to prevent multiple running simultaneously
     if (countdownInterval) clearInterval(countdownInterval);
 
     function update() {
@@ -533,7 +537,7 @@
         listEl.innerHTML = rsvps.map(n => {
           const isMe = n === myName;
           const canRemove = isMe || isAdmin();
-          return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${strId}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
+          return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${strId}', '${escapeHtml(n).replace(/'/g, "\\'")}')">×</span>` : ''}</span>`;
         }).join('');
       }
     }
@@ -549,8 +553,25 @@
     const description = document.getElementById('evDesc').value.trim();
     if (!title || !date || !location) return alert('Fill in title, date & location');
 
-    const { error } = await sb.from('events').insert({ title, date, time, location, category, description, rsvp: [] });
-    if (error) { showToast('Error: ' + error.message); return; }
+    // FIX #2: Remove 'rsvp: []' from insert — RSVPs are stored in separate table
+    // Also add created_by for tracking
+    const { data, error } = await sb.from('events').insert({ 
+      title, 
+      date, 
+      time, 
+      location, 
+      category, 
+      description,
+      created_by: myName || 'Admin'
+    }).select();
+
+    if (error) { 
+      console.error('ADD EVENT ERROR:', error);
+      showToast('Error: ' + error.message); 
+      return; 
+    }
+
+    console.log('Event added:', data);
 
     showToast('Event posted! 🎉');
     document.getElementById('evTitle').value = '';
@@ -564,6 +585,10 @@
   // ── DELETE ──
   async function deleteEvent(id) {
     if (!confirm('Delete this event?')) return;
+    
+    // Also delete associated RSVPs to avoid orphaned records
+    await sb.from('event_rsvps').delete().eq('event_id', id);
+    
     const { error } = await sb.from('events').delete().eq('id', id);
     if (error) { showToast('Error: ' + error.message); return; }
     showToast('Event deleted');
