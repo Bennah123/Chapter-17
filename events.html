@@ -280,7 +280,6 @@
         <div class="card-loc">📍 ${ev.location} <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">(map)</a></div>
         <div class="card-desc">${ev.description || ''}</div>
         <div class="card-actions">
-          <button class="btn-sm primary" onclick="rsvpEvent('${ev.id}')">${hasRSVPd ? '✓ Going' : 'RSVP'}</button>
           <button class="btn-sm" onclick="downloadICS('${ev.id}')">📅 Add to Calendar</button>
           ${isAdmin() ? `<button class="btn-sm" onclick="editEvent('${ev.id}')">Edit</button><button class="btn-sm" onclick="deleteEvent('${ev.id}')" style="color:var(--red)">Delete</button>` : ''}
         </div>
@@ -295,7 +294,7 @@
                 <option value="">Select your name...</option>
                 ${membersList.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('')}
               </select>
-              <button class="btn-sm primary" onclick="rsvpFromDropdown('${ev.id}')">RSVP</button>
+              <button class="btn-sm primary" onclick="rsvpFromDropdown('${ev.id}')">I'm In</button>
             </div>
           ` : ''}
         </div>
@@ -372,9 +371,19 @@
   // ── RSVP FROM DROPDOWN ──
   async function rsvpFromDropdown(eventId) {
     const select = document.getElementById('rsvp-' + eventId);
+    const btn = select.nextElementSibling;
     const name = select.value;
     if (!name) return showToast('Select your name first');
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '...';
+    btn.disabled = true;
+
     await rsvpEvent(eventId, name);
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    select.value = '';
   }
 
   // ── RSVP ──
@@ -386,14 +395,14 @@
     if (!name) return showToast('Please log in first');
 
     const rsvps = ev.rsvp || [];
-    if (rsvps.includes(name)) return showToast('Already RSVPed!');
+    if (rsvps.includes(name)) return showToast('Already joined!');
 
     const updated = [...rsvps, name];
     const { error } = await sb.from('events').update({ rsvp: updated }).eq('id', eventId);
     if (error) { showToast('Error: ' + error.message); return; }
 
-    showToast('You\'re going! 🎉');
-    loadEvents();
+    showToast('You\'re in! 🎉');
+    await loadEvents();
   }
 
   // ── UNRSVP ──
@@ -403,7 +412,7 @@
     const updated = (ev.rsvp || []).filter(n => n !== name);
     const { error } = await sb.from('events').update({ rsvp: updated }).eq('id', eventId);
     if (error) { showToast('Error: ' + error.message); return; }
-    showToast('RSVP removed');
+    showToast('Removed');
     loadEvents();
   }
 
