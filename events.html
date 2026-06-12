@@ -192,7 +192,10 @@
 
 <script>
   const { createClient } = supabase;
-  const sb = createClient('https://whgxunnlxhcfthkpcbjd.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE');
+  const sb = createClient(
+    'https://whgxunnlxhcfthkpcbjd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
+  );
 
   let allEvents = [];
   let currentMonth = new Date();
@@ -207,6 +210,18 @@
     renderCalendar();
     startLiveCountdown();
     requestNotificationPermission();
+    setupRealtime(); // ✅ NEW: live RSVP updates across devices
+  }
+
+  // ── REALTIME SUBSCRIPTION ──
+  // Listens for any changes to the events table and re-renders automatically.
+  // This means when someone RSVPs on their phone, everyone else sees it instantly.
+  function setupRealtime() {
+    sb.channel('events-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, async () => {
+        await loadEvents();
+      })
+      .subscribe();
   }
 
   // ── LOAD MEMBERS FOR RSVP DROPDOWN ──
@@ -231,7 +246,6 @@
         document.getElementById('pastList').innerHTML = '<div class="empty-state"><p>Error loading events.</p></div>';
         return;
       }
-
       allEvents = data || [];
       renderEvents();
       renderCalendar();
@@ -251,8 +265,13 @@
     const upcoming = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') >= today);
     const past = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') < today).reverse();
 
-    document.getElementById('upcomingList').innerHTML = upcoming.length ? upcoming.map(ev => buildCard(ev, false)).join('') : '<div class="empty-state"><p>No upcoming events. Plan one! 🎉</p></div>';
-    document.getElementById('pastList').innerHTML = past.length ? past.map(ev => buildCard(ev, true)).join('') : '<div class="empty-state"><p>No past events yet.</p></div>';
+    document.getElementById('upcomingList').innerHTML = upcoming.length
+      ? upcoming.map(ev => buildCard(ev, false)).join('')
+      : '<div class="empty-state"><p>No upcoming events. Plan one! 🎉</p></div>';
+
+    document.getElementById('pastList').innerHTML = past.length
+      ? past.map(ev => buildCard(ev, true)).join('')
+      : '<div class="empty-state"><p>No past events yet.</p></div>';
 
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
@@ -268,16 +287,22 @@
     const dateStr = dateObj.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     const rsvps = ev.rsvp || [];
     const myName = localStorage.getItem('loggedInUser') || '';
-    const hasRSVPd = rsvps.includes(myName);
     const mapQuery = encodeURIComponent(ev.location);
+
+    // ✅ RSVP dropdown: pre-selects the logged-in user's name automatically
+    const memberOptions = membersList.map(m => `
+      <option value="${escapeHtml(m.name)}" ${m.name === myName ? 'selected' : ''}>
+        ${escapeHtml(m.name)}
+      </option>
+    `).join('');
 
     return `
       <div class="card" data-id="${ev.id}">
         <span class="card-badge ${isPast ? 'past' : ''}">${isPast ? 'PAST' : ev.category || 'EVENT'}</span>
-        <div class="card-title">${ev.title}</div>
+        <div class="card-title">${escapeHtml(ev.title)}</div>
         <div class="card-date">${dateStr}${ev.time ? ' · ' + ev.time : ''}</div>
-        <div class="card-loc">📍 ${ev.location} <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">(map)</a></div>
-        <div class="card-desc">${ev.description || ''}</div>
+        <div class="card-loc">📍 ${escapeHtml(ev.location)} <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">(map)</a></div>
+        <div class="card-desc">${escapeHtml(ev.description || '')}</div>
         <div class="card-actions">
           <button class="btn-sm" onclick="downloadICS('${ev.id}')">📅 Add to Calendar</button>
           ${isAdmin() ? `<button class="btn-sm" onclick="editEvent('${ev.id}')">Edit</button><button class="btn-sm" onclick="deleteEvent('${ev.id}')" style="color:var(--red)">Delete</button>` : ''}
@@ -285,13 +310,20 @@
         <div class="rsvp-row">
           <span class="rsvp-label">${rsvps.length} Going</span>
           <div class="rsvp-list">
-            ${rsvps.map(n => `<span class="rsvp-chip">${escapeHtml(n)}${isAdmin() || n === myName ? ` <span class="remove-rsvp" onclick="unrsvp('${ev.id}', '${n.replace(/'/g, "\'")}')">✕</span>` : ''}</span>`).join('')}
+            ${rsvps.map(n => `
+              <span class="rsvp-chip">
+                ${escapeHtml(n)}
+                ${isAdmin() || n === myName
+                  ? `<span class="remove-rsvp" onclick="unrsvp('${ev.id}', '${n.replace(/'/g, "\\'")}')">✕</span>`
+                  : ''}
+              </span>
+            `).join('')}
           </div>
           ${!isPast ? `
             <div class="rsvp-input-row">
               <select class="rsvp-input" id="rsvp-${ev.id}">
                 <option value="">Select your name...</option>
-                ${membersList.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('')}
+                ${memberOptions}
               </select>
               <button class="btn-sm primary" onclick="rsvpFromDropdown('${ev.id}')">I'm In</button>
             </div>
@@ -304,27 +336,21 @@
   // ── LIVE COUNTDOWN ──
   function startLiveCountdown() {
     if (countdownInterval) clearInterval(countdownInterval);
-
     countdownInterval = setInterval(() => {
       const today = new Date();
       const upcoming = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') >= today);
       const nextEvent = upcoming[0];
-
       if (nextEvent) {
         const nextDate = new Date(nextEvent.date + (nextEvent.time ? 'T' + nextEvent.time : 'T00:00:00'));
         const diff = nextDate - today;
-
         if (diff > 0) {
           const days = Math.floor(diff / 86400000);
           const hours = Math.floor((diff % 86400000) / 3600000);
           const mins = Math.floor((diff % 3600000) / 60000);
           const secs = Math.floor((diff % 60000) / 1000);
-
           const statNext = document.getElementById('statNext');
           if (statNext) {
-            statNext.textContent = days > 0 
-              ? `${days}d ${hours}h` 
-              : `${hours}h ${mins}m ${secs}s`;
+            statNext.textContent = days > 0 ? `${days}d ${hours}h` : `${hours}h ${mins}m ${secs}s`;
           }
         }
       }
@@ -335,25 +361,18 @@
   function downloadICS(eventId) {
     const ev = allEvents.find(e => e.id === eventId);
     if (!ev) return;
-
     const start = new Date(ev.date + 'T' + (ev.time || '00:00:00'));
     const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
-
     const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-
     const ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'BEGIN:VEVENT',
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT',
       'SUMMARY:' + ev.title,
       'DTSTART:' + fmt(start),
       'DTEND:' + fmt(end),
       'LOCATION:' + ev.location,
       'DESCRIPTION:' + (ev.description || 'Chapter 17 Event'),
-      'END:VEVENT',
-      'END:VCALENDAR'
+      'END:VEVENT', 'END:VCALENDAR'
     ].join('\r\n');
-
     const blob = new Blob([ics], { type: 'text/calendar' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -363,7 +382,6 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
     showToast('Added to calendar! 📅');
   }
 
@@ -389,17 +407,13 @@
   async function rsvpEvent(eventId, nameOverride) {
     const ev = allEvents.find(e => e.id === eventId);
     if (!ev) return;
-
     const name = nameOverride || localStorage.getItem('loggedInUser') || '';
     if (!name) return showToast('Please log in first');
-
     const rsvps = ev.rsvp || [];
     if (rsvps.includes(name)) return showToast('Already joined!');
-
     const updated = [...rsvps, name];
     const { error } = await sb.from('events').update({ rsvp: updated }).eq('id', eventId);
     if (error) { showToast('Error: ' + error.message); return; }
-
     showToast('You\'re in! 🎉');
     await loadEvents();
   }
@@ -424,16 +438,10 @@
     const category = document.getElementById('evCat').value;
     const description = document.getElementById('evDesc').value.trim();
     if (!title || !date || !location) return alert('Fill in title, date & location');
-
     const { error } = await sb.from('events').insert({ title, date, time, location, category, description, rsvp: [] });
     if (error) { showToast('Error: ' + error.message); return; }
-
     showToast('Event posted! 🎉');
-    document.getElementById('evTitle').value = '';
-    document.getElementById('evDate').value = '';
-    document.getElementById('evTime').value = '';
-    document.getElementById('evLoc').value = '';
-    document.getElementById('evDesc').value = '';
+    ['evTitle','evDate','evTime','evLoc','evDesc'].forEach(id => document.getElementById(id).value = '');
     loadEvents();
   }
 
@@ -469,17 +477,14 @@
 
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
-    const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    dayLabels.forEach(d => {
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
       const label = document.createElement('div');
       label.className = 'cal-day-label';
       label.textContent = d;
       grid.appendChild(label);
     });
 
-    for (let i = 0; i < firstDay; i++) {
-      grid.appendChild(document.createElement('div'));
-    }
+    for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
 
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -507,15 +512,14 @@
   function showDayDetail(dateStr, events) {
     const panel = document.getElementById('detailPanel');
     const content = document.getElementById('detailContent');
-
     if (events.length === 0) {
       content.innerHTML = '<p style="color:var(--muted);font-style:italic;">No events on this day.</p>';
     } else {
       content.innerHTML = events.map(ev => `
         <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--gold-border);">
-          <div class="detail-title">${ev.title}</div>
-          <div class="detail-date">${ev.date}${ev.time ? ' · ' + ev.time : ''} · ${ev.location}</div>
-          <p>${ev.description || ''}</p>
+          <div class="detail-title">${escapeHtml(ev.title)}</div>
+          <div class="detail-date">${ev.date}${ev.time ? ' · ' + ev.time : ''} · ${escapeHtml(ev.location)}</div>
+          <p>${escapeHtml(ev.description || '')}</p>
           <div style="margin-top:8px;">
             <button class="btn-sm primary" onclick="rsvpEvent('${ev.id}')">RSVP</button>
             <button class="btn-sm" onclick="downloadICS('${ev.id}')">📅 Add to Calendar</button>
@@ -523,25 +527,25 @@
         </div>
       `).join('');
     }
-
     panel.classList.add('open');
     panel.scrollIntoView({ behavior: 'smooth' });
   }
 
   // ── STATS ──
+  // ✅ FIX: statRSVP now correctly counts events where the logged-in user has RSVP'd
   function updateStats() {
     const today = new Date();
     today.setHours(0,0,0,0);
     const upcoming = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') >= today);
-    const past = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') < today);
     const myName = localStorage.getItem('loggedInUser') || '';
+
+    // Count all events (past + upcoming) where the user has RSVP'd
     const myRSVPs = allEvents.filter(ev => (ev.rsvp || []).includes(myName)).length;
 
     document.getElementById('statTotal').textContent = allEvents.length;
     document.getElementById('statUpcoming').textContent = upcoming.length;
     document.getElementById('statRSVP').textContent = myRSVPs;
 
-    // Next event countdown is handled by startLiveCountdown()
     const nextEvent = upcoming[0];
     if (nextEvent) {
       const nextDate = new Date(nextEvent.date + (nextEvent.time ? 'T' + nextEvent.time : 'T00:00:00'));
@@ -557,11 +561,7 @@
   // ── NOTIFICATIONS ──
   function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          console.log('Notifications enabled');
-        }
-      });
+      Notification.requestPermission();
     }
   }
 
@@ -570,7 +570,6 @@
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(0,0,0,0);
-
     allEvents.forEach(ev => {
       const evDate = new Date(ev.date + 'T00:00:00');
       if (evDate >= today && evDate < tomorrow) {
