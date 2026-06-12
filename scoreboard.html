@@ -136,10 +136,19 @@
   }
 
   async function loadScores() {
-    const { data, error } = await sb.from('scores').select('*').order('created_at', { ascending: false });
-    if (error) { console.error(error); return; }
-    allScores = data || [];
-    renderAll();
+    try {
+      const { data, error } = await sb.from('scores').select('*').order('created_at', { ascending: false });
+      if (error) { 
+        console.error('LOAD SCORES ERROR:', error); 
+        showToast('Error loading scores: ' + error.message);
+        return; 
+      }
+      allScores = data || [];
+      renderAll();
+    } catch (e) {
+      console.error('Load scores failed:', e);
+      showToast('Failed to load scores');
+    }
   }
 
   function renderAll() {
@@ -152,10 +161,17 @@
   function buildStats(scores) {
     const stats = {};
     scores.forEach(s => {
+      // FIX #1: Handle both array and string players field
+      let players = s.players;
+      if (typeof players === 'string') {
+        try { players = JSON.parse(players); } catch(e) { players = []; }
+      }
+      players = players || [];
+      
       if (!stats[s.winner]) stats[s.winner] = { wins: 0, games: new Set() };
       stats[s.winner].wins++;
       stats[s.winner].games.add(s.game);
-      (s.players || []).forEach(p => {
+      players.forEach(p => {
         if (!stats[p]) stats[p] = { wins: 0, games: new Set() };
         stats[p].games.add(s.game);
       });
@@ -195,7 +211,16 @@
         <span>#</span><span>Player</span><span style="text-align:center">Wins</span><span style="text-align:center">Games</span><span style="text-align:center">Win Rate</span>
       </div>
       ${stats.map((p, i) => {
-        const totalGames = scores.filter(s => (s.players || []).includes(p.name) || s.winner === p.name).length;
+        // FIX #2: Count total games correctly using the same player parsing logic
+        let totalGames = 0;
+        scores.forEach(s => {
+          let players = s.players;
+          if (typeof players === 'string') {
+            try { players = JSON.parse(players); } catch(e) { players = []; }
+          }
+          players = players || [];
+          if (players.includes(p.name) || s.winner === p.name) totalGames++;
+        });
         const winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
         return `
           <div class="lb-row">
@@ -218,18 +243,25 @@
     }
     recent.innerHTML = '';
     scores.slice(0, 20).forEach((s, i) => {
+      // FIX #3: Parse players for display too
+      let players = s.players;
+      if (typeof players === 'string') {
+        try { players = JSON.parse(players); } catch(e) { players = []; }
+      }
+      players = players || [];
+      
       const card = document.createElement('div');
       card.className = 'match-card';
       card.style.transitionDelay = `${i * 0.05}s`;
       card.innerHTML = `
         <div>
           <span class="match-game">${s.game}</span>
-          <p class="match-players">${(s.players || []).join(' vs ')}</p>
+          <p class="match-players">${players.join(' vs ')}</p>
         </div>
         <div style="text-align:center">
           <p class="match-winner">🏆 ${s.winner}</p>
         </div>
-        <span class="match-date">${s.date}</span>
+        <span class="match-date">${s.date || new Date(s.created_at).toLocaleDateString('en-GB')}</span>
       `;
       recent.appendChild(card);
     });
@@ -239,7 +271,27 @@
     document.querySelectorAll('.match-card').forEach(c => observer.observe(c));
   }
 
-  sb.channel('scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => loadScores()).subscribe();
+  // FIX #4: Safer realtime subscription with error handling
+  try {
+    sb.channel('scores')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => loadScores())
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
+  } catch (e) {
+    console.error('Realtime subscription failed:', e);
+  }
+
+  // FIX #5: Added toast utility
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(15,15,12,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:3px;padding:12px 28px;font-family:Cinzel,serif;font-size:0.6rem;letter-spacing:3px;color:#C9A84C;z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.style.opacity = '1');
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2500);
+  }
+
   loadScores();
 </script>
 </body>
