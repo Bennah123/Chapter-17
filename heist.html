@@ -1769,22 +1769,30 @@ function setupChatRealtime() {
 
 async function saveHeistScore(timeUsed) {
   const playerName = getPlayerName();
-
+  const now = new Date();
+  
   try {
-    const { error } = await supabaseClient.from('scores').insert({
-      game: 'heist',
-      player: playerName,
-      score: timeRemaining,
-      time_used: timeUsed,
+    const { error } = await sb.from('scores').insert({
+      game: 'Heist',
+      winner: playerName,                                    // ← changed from "player"
+      players: [playerName],                                 // ← added
+      score: timeRemaining,                                  // ← time remaining as score
+      time_used: timeUsed,                                   // ← keep for reference
       completed: true,
-      created_at: new Date().toISOString()
+      date: now.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }),
+      created_at: now.toISOString()
     });
-
+    
     if (error) {
       console.error('SAVE SCORE ERROR:', error);
+      showToast('Error saving score: ' + error.message);
+    } else {
+      console.log('Score saved successfully');
+      showToast('Score saved to leaderboard! 🏆');
     }
   } catch (e) {
     console.error('Save score failed:', e);
+    showToast('Failed to save score');
   }
 }
 
