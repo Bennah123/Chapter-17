@@ -307,7 +307,7 @@
       goingListHtml = rsvps.map(n => {
         const isMe = n === myName;
         const canRemove = isMe || isAdmin();
-        return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${ev.id}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
+        return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${String(ev.id)}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
       }).join('');
     }
 
@@ -319,8 +319,8 @@
         <div class="card-loc">📍 ${escapeHtml(ev.location)} <a class="map-link" href="https://www.google.com/maps/search/?api=1&query=${mapQuery}" target="_blank" rel="noopener">(map)</a></div>
         <div class="card-desc">${escapeHtml(ev.description || '')}</div>
         <div class="card-actions">
-          <button class="btn-sm" onclick="downloadICS('${ev.id}')">📅 Add to Calendar</button>
-          ${isAdmin() ? `<button class="btn-sm" onclick="editEvent('${ev.id}')">Edit</button><button class="btn-sm" onclick="deleteEvent('${ev.id}')" style="color:var(--red)">Delete</button>` : ''}
+          <button class="btn-sm" onclick="downloadICS('${String(ev.id)}')">📅 Add to Calendar</button>
+          ${isAdmin() ? `<button class="btn-sm" onclick="editEvent('${String(ev.id)}')">Edit</button><button class="btn-sm" onclick="deleteEvent('${String(ev.id)}')" style="color:var(--red)">Delete</button>` : ''}
         </div>
         <div class="going-section">
           <div class="going-header">
@@ -336,7 +336,7 @@
                 <option value="">Select your name...</option>
                 ${membersList.map(m => `<option value="${escapeHtml(m.name)}" ${m.name === myName ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('')}
               </select>
-              <button class="btn-sm primary" id="rsvp-btn-${ev.id}" onclick="rsvpFromDropdown('${ev.id}')">I'm In</button>
+              <button class="btn-sm primary" id="rsvp-btn-${ev.id}" onclick="rsvpFromDropdown('${String(ev.id)}')">I'm In</button>
             </div>
           ` : ''}
         </div>
@@ -389,7 +389,7 @@
 
   // ── ICS EXPORT ──
   function downloadICS(eventId) {
-    const ev = allEvents.find(e => e.id === eventId);
+    const ev = allEvents.find(e => String(e.id) === String(eventId));
     if (!ev) return;
 
     const start = new Date(ev.date + 'T' + (ev.time || '00:00:00'));
@@ -425,8 +425,9 @@
 
   // ── RSVP FROM DROPDOWN ──
   async function rsvpFromDropdown(eventId) {
-    const select = document.getElementById('rsvp-' + eventId);
-    const btn = document.getElementById('rsvp-btn-' + eventId);
+    const strId = String(eventId);
+    const select = document.getElementById('rsvp-' + strId);
+    const btn = document.getElementById('rsvp-btn-' + strId);
     const name = select.value;
 
     if (!name) return showToast('Select your name first');
@@ -446,7 +447,7 @@
 
   // ── RSVP ──
   async function rsvpEvent(eventId, name) {
-    const ev = allEvents.find(e => e.id === eventId);
+    const ev = allEvents.find(e => String(e.id) === String(eventId));
     if (!ev) {
       console.log('Event not found:', eventId);
       return false;
@@ -490,7 +491,7 @@
 
   // ── UNRSVP ──
   async function unrsvp(eventId, name) {
-    const ev = allEvents.find(e => e.id === eventId);
+    const ev = allEvents.find(e => String(e.id) === String(eventId));
     if (!ev) return;
 
     console.log('Removing', name, 'from event', eventId);
@@ -519,8 +520,9 @@
 
   // ── UPDATE GOING UI DIRECTLY ──
   function updateGoingUI(eventId, rsvps) {
-    const countEl = document.getElementById('going-count-' + eventId);
-    const listEl = document.getElementById('going-list-' + eventId);
+    const strId = String(eventId);
+    const countEl = document.getElementById('going-count-' + strId);
+    const listEl = document.getElementById('going-list-' + strId);
 
     if (countEl) countEl.textContent = rsvps.length;
 
@@ -531,7 +533,7 @@
         listEl.innerHTML = rsvps.map(n => {
           const isMe = n === myName;
           const canRemove = isMe || isAdmin();
-          return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${eventId}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
+          return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${strId}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
         }).join('');
       }
     }
@@ -570,7 +572,7 @@
 
   // ── EDIT ──
   async function editEvent(id) {
-    const ev = allEvents.find(e => e.id === id);
+    const ev = allEvents.find(e => String(e.id) === String(id));
     if (!ev) return;
     const newTitle = prompt('New title:', ev.title);
     if (!newTitle) return;
@@ -639,8 +641,8 @@
           <div class="detail-date">${ev.date}${ev.time ? ' · ' + ev.time : ''} · ${escapeHtml(ev.location)}</div>
           <p>${escapeHtml(ev.description || '')}</p>
           <div style="margin-top:8px;">
-            <button class="btn-sm primary" onclick="rsvpFromDropdown('${ev.id}')">I'm In</button>
-            <button class="btn-sm" onclick="downloadICS('${ev.id}')">📅 Add to Calendar</button>
+            <button class="btn-sm primary" onclick="rsvpFromDropdown('${String(ev.id)}')">I'm In</button>
+            <button class="btn-sm" onclick="downloadICS('${String(ev.id)}')">📅 Add to Calendar</button>
           </div>
         </div>
       `).join('');
