@@ -125,17 +125,13 @@
   <h1 class="page-title">📅 Events</h1>
   <p class="page-sub">"Every hangout is a story. Plan the next chapter."</p>
 </section>
-
 <div class="content">
-
-  <!-- Stats -->
   <div class="stats">
     <div class="stat"><span class="stat-num" id="statTotal">—</span><span class="stat-label">Total Events</span></div>
     <div class="stat"><span class="stat-num" id="statUpcoming">—</span><span class="stat-label">Upcoming</span></div>
     <div class="stat"><span class="stat-num" id="statNext">—</span><span class="stat-label">Next Event In</span></div>
     <div class="stat"><span class="stat-num" id="statRSVP">—</span><span class="stat-label">Your Events</span></div>
   </div>
-
   <!-- Admin Add Panel -->
   <div class="add-panel" id="addPanel" style="display:none">
     <h3>Add New Event</h3>
@@ -192,15 +188,11 @@
   <div class="cards" id="pastList">
     <div class="loading"><div class="loading-spinner"></div><p>Loading events...</p></div>
   </div>
-
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
   const { createClient } = supabase;
   const sb = createClient('https://whgxunnlxhcfthkpcbjd.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE');
-
   let allEvents = [];
   let currentMonth = new Date();
   let countdownInterval = null;
@@ -216,7 +208,6 @@
     startLiveCountdown();
     requestNotificationPermission();
   }
-
   // ── LOAD MEMBERS ──
   async function loadMembers() {
     try {
@@ -237,7 +228,6 @@
         showToast('Error loading events: ' + error.message);
         return;
       }
-
       allEvents = data || [];
       console.log('Loaded events:', allEvents.length, allEvents);
       renderEvents();
@@ -249,7 +239,6 @@
       showToast('Failed to load events');
     }
   }
-
   // ── RENDER EVENTS ──
   function renderEvents() {
     const today = new Date();
@@ -269,7 +258,6 @@
       observer.observe(c);
     });
   }
-
   function buildCard(ev, isPast) {
     const dateObj = new Date(ev.date + 'T00:00:00');
     const dateStr = dateObj.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
@@ -325,56 +313,44 @@
   // ── LIVE COUNTDOWN ──
   function startLiveCountdown() {
     if (countdownInterval) clearInterval(countdownInterval);
-
     function update() {
       const today = new Date();
       const upcoming = allEvents.filter(ev => {
         const evDate = new Date(ev.date + 'T00:00:00');
         return evDate >= today;
       });
-
       const nextEvent = upcoming[0];
       const statNext = document.getElementById('statNext');
-
       if (!nextEvent) {
         if (statNext) statNext.textContent = '—';
         return;
       }
-
       const nextDate = new Date(nextEvent.date + (nextEvent.time ? 'T' + nextEvent.time : 'T00:00:00'));
       const diff = nextDate - today;
-
       if (diff <= 0) {
         if (statNext) statNext.textContent = 'NOW!';
         return;
       }
-
       const days = Math.floor(diff / 86400000);
       const hours = Math.floor((diff % 86400000) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
       const secs = Math.floor((diff % 60000) / 1000);
-
       if (statNext) {
         statNext.textContent = days > 0 
           ? `${days}d ${hours}h ${mins}m` 
           : `${hours}h ${mins}m ${secs}s`;
       }
     }
-
     update(); // Run immediately
     countdownInterval = setInterval(update, 1000);
   }
-
   // ── ICS EXPORT ──
   function downloadICS(eventId) {
     const ev = allEvents.find(e => e.id === eventId);
     if (!ev) return;
-
     const start = new Date(ev.date + 'T' + (ev.time || '00:00:00'));
     const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
-
     const fmt = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-
     const ics = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -387,7 +363,6 @@
       'END:VEVENT',
       'END:VCALENDAR'
     ].join('\r\n');
-
     const blob = new Blob([ics], { type: 'text/calendar' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -400,18 +375,14 @@
 
     showToast('Added to calendar! 📅');
   }
-
   // ── RSVP FROM DROPDOWN ──
   async function rsvpFromDropdown(eventId) {
     const select = document.getElementById('rsvp-' + eventId);
     const btn = document.getElementById('rsvp-btn-' + eventId);
     const name = select.value;
-
     if (!name) return showToast('Select your name first');
-
     btn.innerHTML = '...';
     btn.disabled = true;
-
     const result = await rsvpEvent(eventId, name);
 
     btn.innerHTML = "I'm In";
@@ -445,45 +416,35 @@
       .update({ rsvp: updated })
       .eq('id', eventId)
       .select();
-
     if (error) {
       console.error('RSVP ERROR:', error);
       showToast('Error: ' + error.message);
       return false;
     }
-
     console.log('RSVP success:', data);
     showToast("You're in! 🎉");
-
     // Update local state immediately
     ev.rsvp = updated;
     updateGoingUI(eventId, updated);
     updateStats();
-
     return true;
   }
-
   // ── UNRSVP ──
   async function unrsvp(eventId, name) {
     const ev = allEvents.find(e => e.id === eventId);
     if (!ev) return;
-
     const updated = (ev.rsvp || []).filter(n => n !== name);
-
     const { data, error } = await sb.from('events')
       .update({ rsvp: updated })
       .eq('id', eventId)
       .select();
-
     if (error) {
       console.error('UNRSVP ERROR:', error);
       showToast('Error: ' + error.message);
       return;
     }
-
     console.log('UnRSVP success:', data);
     showToast('Removed');
-
     // Update local state immediately
     ev.rsvp = updated;
     updateGoingUI(eventId, updated);
@@ -509,7 +470,6 @@
       }
     }
   }
-
   // ── ADD EVENT ──
   async function addEvent() {
     const title = document.getElementById('evTitle').value.trim();
@@ -575,10 +535,8 @@
     for (let i = 0; i < firstDay; i++) {
       grid.appendChild(document.createElement('div'));
     }
-
     const today = new Date();
     today.setHours(0,0,0,0);
-
     for (let d = 1; d <= daysInMonth; d++) {
       const dayDate = new Date(year, month, d);
       const dateStr = dayDate.toISOString().split('T')[0];
@@ -593,12 +551,10 @@
       grid.appendChild(cell);
     }
   }
-
   function changeMonth(delta) {
     currentMonth.setMonth(currentMonth.getMonth() + delta);
     renderCalendar();
   }
-
   function showDayDetail(dateStr, events) {
     const panel = document.getElementById('detailPanel');
     const content = document.getElementById('detailContent');
@@ -644,7 +600,6 @@
       });
     }
   }
-
   function scheduleReminders() {
     const today = new Date();
     const tomorrow = new Date(today);
@@ -666,20 +621,17 @@
       }
     });
   }
-
   // ── ADMIN ──
   function isAdmin() {
     const email = localStorage.getItem('c17_email') || '';
     return email === 'giftben593@gmail.com';
   }
-
   function setupAdmin() {
     if (!isAdmin()) return;
     const panel = document.getElementById('addPanel');
     panel.style.display = 'block';
     panel.style.animation = 'fadeUp 0.8s ease forwards';
   }
-
   // ── UTILS ──
   function showToast(msg) {
     const t = document.getElementById('toast');
