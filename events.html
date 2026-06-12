@@ -720,13 +720,13 @@
       }
     });
   }
-
   // ── ADMIN ──
   function isAdmin() {
-    const name = localStorage.getItem('loggedInUser') || '';
+  const name = localStorage.getItem('loggedInUser') || '';
     const email = localStorage.getItem('c17_email') || '';
-    // Admin by email or by name (fallback if email not set)
-    return email === 'giftben593@gmail.com' || name === 'Gift' || name === 'Admin';
+    // Admin by email OR if name starts with "Gift" (handles "Gift", "Gift Ben", etc.)
+    // Also exact "Admin" fallback
+    return email === 'giftben593@gmail.com' || name.startsWith('Gift') || name === 'Admin';
   }
 
   function setupAdmin() {
