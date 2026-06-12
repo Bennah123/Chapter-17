@@ -113,7 +113,7 @@
 </head>
 <body>
 
-<<nav>
+<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
   <a class="nav-back" href="dashboard.html">Dashboard</a>
 </nav>
@@ -218,7 +218,6 @@
     await loadEvents();
     setupAdmin();
     renderCalendar();
-    // FIX #1: Start countdown AFTER events are loaded, not before
     startLiveCountdown();
     requestNotificationPermission();
   }
@@ -265,8 +264,6 @@
       renderEvents();
       renderCalendar();
       updateStats();
-      // FIX #1b: Restart countdown whenever events reload so it picks up new data
-      startLiveCountdown();
       scheduleReminders();
     } catch (e) {
       console.error('Load events failed:', e);
@@ -276,11 +273,20 @@
 
   // ── RENDER EVENTS ──
   function renderEvents() {
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const now = new Date();
 
-    const upcoming = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') >= today);
-    const past = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') < today).reverse();
+    // Event is upcoming if its date+time is in the future
+    // If no time specified, event ends at end of day (23:59:59)
+    const upcoming = allEvents.filter(ev => {
+      const evDateTime = new Date(ev.date + 'T' + (ev.time || '23:59:59'));
+      return evDateTime > now;
+    });
+
+    // Event is past if its date+time has passed
+    const past = allEvents.filter(ev => {
+      const evDateTime = new Date(ev.date + 'T' + (ev.time || '23:59:59'));
+      return evDateTime <= now;
+    }).reverse();
 
     document.getElementById('upcomingList').innerHTML = upcoming.length ? upcoming.map(ev => buildCard(ev, false)).join('') : '<div class="empty-state"><p>No upcoming events. Plan one! 🎉</p></div>';
     document.getElementById('pastList').innerHTML = past.length ? past.map(ev => buildCard(ev, true)).join('') : '<div class="empty-state"><p>No past events yet.</p></div>';
@@ -309,7 +315,7 @@
       goingListHtml = rsvps.map(n => {
         const isMe = n === myName;
         const canRemove = isMe || isAdmin();
-        return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${String(ev.id)}', '${escapeHtml(n).replace(/'/g, "\\'")}')">×</span>` : ''}</span>`;
+        return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${String(ev.id)}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
       }).join('');
     }
 
@@ -348,14 +354,19 @@
 
   // ── LIVE COUNTDOWN ──
   function startLiveCountdown() {
-    // Clear existing interval to prevent multiple running simultaneously
     if (countdownInterval) clearInterval(countdownInterval);
 
     function update() {
-      const today = new Date();
+      const now = new Date();
+
+      // Find events that haven't started yet (compare full date+time)
       const upcoming = allEvents.filter(ev => {
-        const evDate = new Date(ev.date + 'T00:00:00');
-        return evDate >= today;
+        const evDateTime = new Date(ev.date + 'T' + (ev.time || '23:59:59'));
+        return evDateTime > now;
+      }).sort((a, b) => {
+        const aTime = new Date(a.date + 'T' + (a.time || '00:00:00'));
+        const bTime = new Date(b.date + 'T' + (b.time || '00:00:00'));
+        return aTime - bTime;
       });
 
       const nextEvent = upcoming[0];
@@ -366,11 +377,15 @@
         return;
       }
 
-      const nextDate = new Date(nextEvent.date + (nextEvent.time ? 'T' + nextEvent.time : 'T00:00:00'));
-      const diff = nextDate - today;
+      const nextDateTime = new Date(nextEvent.date + 'T' + (nextEvent.time || '00:00:00'));
+      const diff = nextDateTime - now;
 
       if (diff <= 0) {
         if (statNext) statNext.textContent = 'NOW!';
+        // Auto-move to past events after a brief delay
+        setTimeout(() => {
+          loadEvents();
+        }, 60000);
         return;
       }
 
@@ -380,9 +395,13 @@
       const secs = Math.floor((diff % 60000) / 1000);
 
       if (statNext) {
-        statNext.textContent = days > 0 
-          ? `${days}d ${hours}h ${mins}m` 
-          : `${hours}h ${mins}m ${secs}s`;
+        if (days > 0) {
+          statNext.textContent = `${days}d ${hours}h ${mins}m`;
+        } else if (hours > 0) {
+          statNext.textContent = `${hours}h ${mins}m ${secs}s`;
+        } else {
+          statNext.textContent = `${mins}m ${secs}s`;
+        }
       }
     }
 
@@ -536,7 +555,7 @@
         listEl.innerHTML = rsvps.map(n => {
           const isMe = n === myName;
           const canRemove = isMe || isAdmin();
-          return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${strId}', '${escapeHtml(n).replace(/'/g, "\\'")}')">×</span>` : ''}</span>`;
+          return `<span class="going-chip ${isMe ? 'me' : ''}">${escapeHtml(n)}${canRemove ? ` <span class="remove-btn" onclick="unrsvp('${strId}', '${escapeHtml(n).replace(/'/g, "\'")}')">×</span>` : ''}</span>`;
         }).join('');
       }
     }
@@ -552,25 +571,8 @@
     const description = document.getElementById('evDesc').value.trim();
     if (!title || !date || !location) return alert('Fill in title, date & location');
 
-    // FIX #2: Remove 'rsvp: []' from insert — RSVPs are stored in separate table
-    // Also add created_by for tracking
-    const { data, error } = await sb.from('events').insert({ 
-      title, 
-      date, 
-      time, 
-      location, 
-      category, 
-      description,
-      created_by: myName || 'Admin'
-    }).select();
-
-    if (error) { 
-      console.error('ADD EVENT ERROR:', error);
-      showToast('Error: ' + error.message); 
-      return; 
-    }
-
-    console.log('Event added:', data);
+    const { error } = await sb.from('events').insert({ title, date, time, location, category, description, rsvp: [] });
+    if (error) { showToast('Error: ' + error.message); return; }
 
     showToast('Event posted! 🎉');
     document.getElementById('evTitle').value = '';
@@ -584,10 +586,6 @@
   // ── DELETE ──
   async function deleteEvent(id) {
     if (!confirm('Delete this event?')) return;
-    
-    // Also delete associated RSVPs to avoid orphaned records
-    await sb.from('event_rsvps').delete().eq('event_id', id);
-    
     const { error } = await sb.from('events').delete().eq('id', id);
     if (error) { showToast('Error: ' + error.message); return; }
     showToast('Event deleted');
@@ -632,12 +630,13 @@
     const today = new Date();
     today.setHours(0,0,0,0);
 
+    const nowForCal = new Date();
     for (let d = 1; d <= daysInMonth; d++) {
       const dayDate = new Date(year, month, d);
       const dateStr = dayDate.toISOString().split('T')[0];
       const dayEvents = allEvents.filter(ev => ev.date === dateStr);
-      const isPast = dayDate < today;
-      const isToday = dayDate.getTime() === today.getTime();
+      const isPast = dayDate < new Date(nowForCal.getFullYear(), nowForCal.getMonth(), nowForCal.getDate());
+      const isToday = dayDate.getTime() === new Date(nowForCal.getFullYear(), nowForCal.getMonth(), nowForCal.getDate()).getTime();
 
       const cell = document.createElement('div');
       cell.className = 'cal-day' + (isPast ? ' past' : '') + (isToday ? ' today' : '');
@@ -678,10 +677,15 @@
 
   // ── STATS ──
   function updateStats() {
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const upcoming = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') >= today);
-    const past = allEvents.filter(ev => new Date(ev.date + 'T00:00:00') < today);
+    const now = new Date();
+    const upcoming = allEvents.filter(ev => {
+      const evDateTime = new Date(ev.date + 'T' + (ev.time || '23:59:59'));
+      return evDateTime > now;
+    });
+    const past = allEvents.filter(ev => {
+      const evDateTime = new Date(ev.date + 'T' + (ev.time || '23:59:59'));
+      return evDateTime <= now;
+    });
     const myRSVPs = allEvents.filter(ev => (ev.rsvp || []).includes(myName)).length;
 
     document.getElementById('statTotal').textContent = allEvents.length;
@@ -699,33 +703,34 @@
   }
 
   function scheduleReminders() {
-    const today = new Date();
-    const tomorrow = new Date(today);
+    const now = new Date();
+    const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0,0,0,0);
+    tomorrow.setHours(23, 59, 59, 999);
 
     allEvents.forEach(ev => {
-      const evDate = new Date(ev.date + 'T00:00:00');
-      if (evDate >= today && evDate < tomorrow) {
-        const timeUntil = evDate - today;
-        if (timeUntil > 0) {
-          setTimeout(() => {
-            showToast('Event today: ' + ev.title + '! 🎉');
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Chapter 17 Event Today!', { body: ev.title + ' at ' + ev.location });
-            }
-          }, Math.min(timeUntil, 2147483647));
-        }
+      const evDateTime = new Date(ev.date + 'T' + (ev.time || '09:00:00'));
+      // Remind 1 hour before event
+      const reminderTime = evDateTime.getTime() - (60 * 60 * 1000);
+      const timeUntil = reminderTime - now.getTime();
+
+      if (timeUntil > 0 && timeUntil < 86400000) { // Within 24 hours
+        setTimeout(() => {
+          showToast('Event starting soon: ' + ev.title + '! 🎉');
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Chapter 17 Event Soon!', { body: ev.title + ' at ' + ev.location });
+          }
+        }, Math.min(timeUntil, 2147483647));
       }
     });
   }
+
   // ── ADMIN ──
   function isAdmin() {
-  const name = localStorage.getItem('loggedInUser') || '';
+    const name = localStorage.getItem('loggedInUser') || '';
     const email = localStorage.getItem('c17_email') || '';
-    // Admin by email OR if name starts with "Gift" (handles "Gift", "Gift Ben", etc.)
-    // Also exact "Admin" fallback
-    return email === 'giftben593@gmail.com' || name.startsWith('Gift') || name === 'Admin';
+    // Admin by email or by name (fallback if email not set)
+    return email === 'giftben593@gmail.com' || name === 'Gift' || name === 'Admin';
   }
 
   function setupAdmin() {
