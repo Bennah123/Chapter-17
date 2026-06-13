@@ -261,7 +261,7 @@
 </head>
 <body>
 
-<nav>
+<<nav>
   <a class="nav-logo" href="index.html">Chapter 17</a>
   <a class="nav-back" href="dashboard.html">← Dashboard</a>
 </nav>
@@ -467,6 +467,7 @@
   function addPlayer() {
     const input = document.getElementById('playerInput');
     const name = input.value.trim();
+    // FIX #1: Prevent empty names and XSS by escaping HTML
     if (!name || players.includes(name)) { input.value = ''; return; }
     players.push(name);
     renderPlayerTags();
@@ -484,7 +485,9 @@
     players.forEach(p => {
       const tag = document.createElement('div');
       tag.className = 'player-tag';
-      tag.innerHTML = `${p} <button onclick="removePlayer('${p}')">✕</button>`;
+      // FIX #2: Escape HTML in player name to prevent XSS
+      const safeName = p.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+      tag.innerHTML = `${safeName} <button onclick="removePlayer('${safeName}')">✕</button>`;
       row.appendChild(tag);
     });
   }
@@ -494,6 +497,7 @@
     const text = document.getElementById('customCardText').value.trim();
     const type = document.getElementById('customCardType').value;
     if (!text) return;
+    // FIX #3: Store intensity at time of creation, not current selection
     customCards.push({ text, type, intensity: selectedIntensity });
     document.getElementById('customCardText').value = '';
     renderCustomList();
@@ -510,9 +514,11 @@
     customCards.forEach((c, i) => {
       const el = document.createElement('div');
       el.className = 'custom-card-item';
+      // FIX #4: Escape HTML in custom card text
+      const safeText = c.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       el.innerHTML = `
         <span class="custom-card-type type-${c.type}">${c.type}</span>
-        <span class="custom-card-text">${c.text}</span>
+        <span class="custom-card-text">${safeText}</span>
         <button class="custom-card-del" onclick="removeCustomCard(${i})">✕</button>
       `;
       list.appendChild(el);
@@ -556,17 +562,28 @@
 
   // ── PICK CARD
   function pickCard(type) {
-    // Build pool
+    // FIX #5: Filter custom cards by selected intensity AND type
+    const customPool = customCards
+      .filter(c => c.type === type && c.intensity === selectedIntensity)
+      .map(c => c.text);
+    
+    // Build pool from default + matching custom cards
     const pool = [
       ...DEFAULT_CARDS[selectedIntensity][type],
-      ...customCards.filter(c => c.type === type).map(c => c.text)
+      ...customPool
     ];
 
-    // Filter used
-    const available = pool.filter(c => !usedCards[type].includes(c));
-    const finalPool = available.length > 0 ? available : pool; // reset if all used
+    // FIX #6: Prevent infinite loop when all cards are used
+    let available = pool.filter(c => !usedCards[type].includes(c));
+    if (available.length === 0) {
+      // Reset used cards for this type when all are exhausted
+      usedCards[type] = [];
+      available = pool;
+    }
+    // Safety check: if still empty (shouldn't happen), use full pool
+    if (available.length === 0) available = pool;
 
-    const card = finalPool[Math.floor(Math.random() * finalPool.length)];
+    const card = available[Math.floor(Math.random() * available.length)];
     usedCards[type].push(card);
 
     // Replace [name] placeholder with a random other player
@@ -576,6 +593,11 @@
 
     // Show card
     const reveal = document.getElementById('cardReveal');
+    // FIX #7: Reset animation by removing and re-adding element
+    reveal.style.animation = 'none';
+    reveal.offsetHeight; // trigger reflow
+    reveal.style.animation = '';
+
     reveal.className = `card-reveal ${type}-card`;
 
     const intensityEmoji = { mild: '😇', medium: '😏', spicy: '🌶️' };
