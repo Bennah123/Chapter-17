@@ -725,7 +725,7 @@
 <script>
 // ── SUPABASE SETUP ──
 const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'; // Replace with your actual anon key
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE';
 
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -768,7 +768,7 @@ async function init() {
   populateMemberSelects();
   setupEventListeners();
   setupChatRealtime();
-  setupGameRealtime();   // Setup listeners before loading
+  setupGameRealtime();
   await loadGame();
 }
 
@@ -777,23 +777,26 @@ function populateMemberSelects() {
   const s1 = document.getElementById('memberSelect1');
   const s2 = document.getElementById('memberSelect2');
   
+  // FIX #1: Clear and rebuild properly, avoid += on <select> which duplicates in some browsers
+  const baseOptions = '<option value="">Select a member...</option>';
+  let memberOptions = '';
+  
   chapterMembers.forEach(m => {
     if (m.name !== currentUser) {
-      s1.innerHTML += `<option value="${m.name}">${m.name}</option>`;
-      s2.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+      memberOptions += `<option value="${m.name}">${m.name}</option>`;
     }
   });
   
-  // Also add current user if logged in
   if (currentUser) {
-    s1.innerHTML += `<option value="${currentUser}">${currentUser} (You)</option>`;
-    s2.innerHTML += `<option value="${currentUser}">${currentUser} (You)</option>`;
+    memberOptions += `<option value="${currentUser}">${currentUser} (You)</option>`;
   }
+  
+  s1.innerHTML = baseOptions + memberOptions;
+  s2.innerHTML = baseOptions + memberOptions;
 }
 
 // ── EVENT LISTENERS ──
 function setupEventListeners() {
-  // Member selects
   document.getElementById('memberSelect1').addEventListener('change', (e) => {
     document.getElementById('inviteBtn1').disabled = !e.target.value;
   });
@@ -802,11 +805,9 @@ function setupEventListeners() {
     document.getElementById('inviteBtn2').disabled = !e.target.value;
   });
   
-  // Join buttons
   document.getElementById('inviteBtn1').addEventListener('click', () => joinGame('red'));
   document.getElementById('inviteBtn2').addEventListener('click', () => joinGame('black'));
   
-  // Chat
   document.getElementById('chatSend').addEventListener('click', sendChat);
   document.getElementById('chatInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendChat();
@@ -821,27 +822,38 @@ async function joinGame(role) {
   
   playerRole = role;
   
-  const update = role === 'red' 
-    ? { redPlayer: playerName, status: gameState.blackPlayer ? 'playing' : 'waiting' }
-    : { blackPlayer: playerName, status: gameState.redPlayer ? 'playing' : 'waiting' };
+  // FIX #2: Build full game state for upsert, not just partial update
+  const newBoard = gameState.board && gameState.board.length === 8 ? gameState.board : initializeBoard();
+  const newStatus = role === 'red' 
+    ? (gameState.blackPlayer ? 'playing' : 'waiting')
+    : (gameState.redPlayer ? 'playing' : 'waiting');
+  
+  const update = {
+    id: gameId,
+    board: newBoard,
+    turn: gameState.turn || 'red',
+    redPlayer: role === 'red' ? playerName : (gameState.redPlayer || null),
+    blackPlayer: role === 'black' ? playerName : (gameState.blackPlayer || null),
+    redCaptured: gameState.redCaptured || [],
+    blackCaptured: gameState.blackCaptured || [],
+    status: newStatus,
+    updated_at: new Date().toISOString()
+  };
   
   try {
-    await supabaseClient
+    const { error } = await supabaseClient
       .from('checkers_games')
-      .upsert({ 
-        id: gameId,
-        ...update,
-        board: initializeBoard(),
-        turn: 'red',
-        redCaptured: [],
-        blackCaptured: [],
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      .upsert(update, { onConflict: 'id' });
     
+    if (error) throw error;
+    
+    // Update local state immediately
+    gameState = { ...gameState, ...update };
     updateUI();
     addChatMessage('SYSTEM', `${playerName} joined as ${role}!`, true);
   } catch (e) {
-    console.log('Join failed:', e);
+    console.error('Join failed:', e);
+    addChatMessage('SYSTEM', 'Failed to join. Try again.', true);
   }
 }
 
@@ -868,11 +880,17 @@ function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   
-  // Ensure board exists and is valid
+  // FIX #3: Safer board validation with JSON parse fallback
   let board = gameState.board;
-  if (!board || !Array.isArray(board) || board.length === 0) {
-    board = initializeBoard();
-    gameState.board = board;
+  if (!board || !Array.isArray(board) || board.length !== 8) {
+    // Try parsing if it's a string
+    if (typeof board === 'string') {
+      try { board = JSON.parse(board); } catch(e) { board = null; }
+    }
+    if (!board || !Array.isArray(board) || board.length !== 8) {
+      board = initializeBoard();
+      gameState.board = board;
+    }
   }
   
   for (let row = 0; row < 8; row++) {
@@ -888,13 +906,15 @@ function renderBoard() {
       if (selectedPiece && selectedPiece.row === row && selectedPiece.col === col) {
         square.classList.add('selected');
       }
-      // Safe access with fallback
-      const piece = board[row] && board[row][col] ? board[row][col] : null;
-      if (piece) {
+      
+      // FIX #4: Extra safety for board[row] being undefined
+      const piece = (board[row] && board[row][col]) ? board[row][col] : null;
+      if (piece && piece.color) {
         const pieceEl = document.createElement('div');
-        pieceEl.className = `piece ${piece.color || ''} ${piece.king ? 'king' : ''}`;
+        pieceEl.className = `piece ${piece.color} ${piece.king ? 'king' : ''}`;
         square.appendChild(pieceEl);
       }
+      
       if ((row + col) % 2 === 1) {
         square.addEventListener('click', () => handleSquareClick(row, col));
       }
@@ -902,31 +922,43 @@ function renderBoard() {
     }
   }
 }
+
 // ── HANDLE CLICK ──
 function handleSquareClick(row, col) {
   if (gameState.status !== 'playing' || gameState.turn !== playerRole) return;
   
-  const board = gameState.board;
+  // FIX #5: Parse board if stored as string
+  let board = gameState.board;
+  if (typeof board === 'string') {
+    try { board = JSON.parse(board); } catch(e) { return; }
+  }
   
   // Select piece
-  if (board[row][col] && board[row][col].color === playerRole) {
+  if (board[row] && board[row][col] && board[row][col].color === playerRole) {
     selectedPiece = { row, col };
-    validMoves = calculateValidMoves(row, col);
+    validMoves = calculateValidMoves(row, col, board);
     renderBoard();
     return;
   }
   
   // Move piece
   if (selectedPiece && validMoves.some(m => m.row === row && m.col === col)) {
-    makeMove(selectedPiece, { row, col });
+    const move = validMoves.find(m => m.row === row && m.col === col);
+    makeMove(selectedPiece, move, board);
     selectedPiece = null;
     validMoves = [];
   }
 }
 
 // ── CALCULATE MOVES ──
-function calculateValidMoves(row, col) {
-  const board = gameState.board;
+// FIX #6: Accept board as parameter instead of reading from global
+function calculateValidMoves(row, col, boardParam) {
+  let board = boardParam || gameState.board;
+  if (typeof board === 'string') {
+    try { board = JSON.parse(board); } catch(e) { return []; }
+  }
+  
+  if (!board[row]) return [];
   const piece = board[row][col];
   if (!piece) return [];
   
@@ -942,13 +974,15 @@ function calculateValidMoves(row, col) {
     const newCol = col + dc;
     
     if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
-      if (!board[newRow][newCol]) {
+      if (!board[newRow] || !board[newRow][newCol]) {
         moves.push({ row: newRow, col: newCol });
       } else if (board[newRow][newCol].color !== piece.color) {
         const jumpRow = newRow + dr;
         const jumpCol = newCol + dc;
-        if (jumpRow >= 0 && jumpRow < 8 && jumpCol >= 0 && jumpCol < 8 && !board[jumpRow][jumpCol]) {
-          moves.push({ row: jumpRow, col: jumpCol, capture: { row: newRow, col: newCol } });
+        if (jumpRow >= 0 && jumpRow < 8 && jumpCol >= 0 && jumpCol < 8) {
+          if (!board[jumpRow] || !board[jumpRow][jumpCol]) {
+            moves.push({ row: jumpRow, col: jumpCol, capture: { row: newRow, col: newCol } });
+          }
         }
       }
     }
@@ -958,9 +992,17 @@ function calculateValidMoves(row, col) {
 }
 
 // ── MAKE MOVE ──
-async function makeMove(from, to) {
-  const board = JSON.parse(JSON.stringify(gameState.board));
-  const piece = board[from.row][from.col];
+// FIX #7: Accept board parameter, handle string boards, and fix capture logic
+async function makeMove(from, to, boardParam) {
+  let board = boardParam || gameState.board;
+  if (typeof board === 'string') {
+    try { board = JSON.parse(board); } catch(e) { board = initializeBoard(); }
+  }
+  
+  // Deep clone
+  board = JSON.parse(JSON.stringify(board));
+  const piece = board[from.row] && board[from.row][from.col] ? board[from.row][from.col] : null;
+  if (!piece) return;
   
   // Move piece
   board[to.row][to.col] = piece;
@@ -979,29 +1021,49 @@ async function makeMove(from, to) {
   
   // Update game state
   const newTurn = gameState.turn === 'red' ? 'black' : 'red';
-  const update = {
-    board: board,
-    turn: newTurn,
-    updated_at: new Date().toISOString()
-  };
+  
+  // FIX #8: Parse existing captured arrays if they're strings
+  let redCaptured = gameState.redCaptured || [];
+  let blackCaptured = gameState.blackCaptured || [];
+  if (typeof redCaptured === 'string') {
+    try { redCaptured = JSON.parse(redCaptured); } catch(e) { redCaptured = []; }
+  }
+  if (typeof blackCaptured === 'string') {
+    try { blackCaptured = JSON.parse(blackCaptured); } catch(e) { blackCaptured = []; }
+  }
   
   if (captured) {
     if (piece.color === 'red') {
-      update.blackCaptured = [...(gameState.blackCaptured || []), captured];
+      blackCaptured = [...blackCaptured, captured];
     } else {
-      update.redCaptured = [...(gameState.redCaptured || []), captured];
+      redCaptured = [...redCaptured, captured];
     }
   }
   
+  const update = {
+    board: board,
+    turn: newTurn,
+    redCaptured: redCaptured,
+    blackCaptured: blackCaptured,
+    updated_at: new Date().toISOString()
+  };
+  
   try {
-    await supabaseClient
+    const { error } = await supabaseClient
       .from('checkers_games')
       .update(update)
       .eq('id', gameId);
     
+    if (error) throw error;
+    
+    // Update local state immediately for responsiveness
+    gameState = { ...gameState, ...update };
+    updateUI();
+    renderBoard();
     addChatMessage('SYSTEM', `${currentUser} moved!`, true);
   } catch (e) {
-    console.log('Move failed:', e);
+    console.error('Move failed:', e);
+    addChatMessage('SYSTEM', 'Move failed. Try again.', true);
   }
 }
 
@@ -1012,69 +1074,97 @@ async function loadGame() {
       .from('checkers_games')
       .select('*')
       .eq('id', gameId)
-      .maybeSingle();  // ← Use maybeSingle instead of single
+      .maybeSingle();
     
     if (error) {
       console.log('No game found, creating new...');
-      // Create initial game state
-      gameState.board = initializeBoard();
-      gameState.turn = 'red';
-      gameState.status = 'waiting';
-      renderBoard();
+      await createNewGame();
       return;
     }
     
     if (data) {
       gameState = data;
+      // FIX #9: Parse string fields from database
+      if (typeof gameState.board === 'string') {
+        try { gameState.board = JSON.parse(gameState.board); } catch(e) { gameState.board = initializeBoard(); }
+      }
+      if (typeof gameState.redCaptured === 'string') {
+        try { gameState.redCaptured = JSON.parse(gameState.redCaptured); } catch(e) { gameState.redCaptured = []; }
+      }
+      if (typeof gameState.blackCaptured === 'string') {
+        try { gameState.blackCaptured = JSON.parse(gameState.blackCaptured); } catch(e) { gameState.blackCaptured = []; }
+      }
     } else {
-      // No row exists yet
-      gameState.board = initializeBoard();
-      gameState.turn = 'red';
-      gameState.status = 'waiting';
+      await createNewGame();
     }
     
     updateUI();
     renderBoard();
   } catch (e) {
-    console.log('Load game failed:', e);
-    // Fallback: initialize board anyway
-    gameState.board = initializeBoard();
-    gameState.turn = 'red';
-    gameState.status = 'waiting';
-    renderBoard();
+    console.error('Load game failed:', e);
+    await createNewGame();
   }
+}
+
+// FIX #10: Extract game creation to reusable function
+async function createNewGame() {
+  gameState = {
+    id: gameId,
+    board: initializeBoard(),
+    turn: 'red',
+    redPlayer: null,
+    blackPlayer: null,
+    redCaptured: [],
+    blackCaptured: [],
+    status: 'waiting',
+    winner: null
+  };
+  
+  try {
+    await supabaseClient.from('checkers_games').upsert({
+      ...gameState,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+  } catch (e) {
+    console.error('Create game failed:', e);
+  }
+  
+  updateUI();
+  renderBoard();
 }
 
 // ── UPDATE UI ──
 function updateUI() {
-  // Player 1 (Red)
   const p1 = gameState.redPlayer;
   document.getElementById('p1Name').textContent = p1 || 'Waiting...';
   document.getElementById('p1Avatar').textContent = p1 ? p1[0] : '?';
   document.getElementById('p1Status').textContent = p1 ? 'Ready' : 'Waiting';
   document.getElementById('p1Status').className = `status-badge ${p1 ? 'ready' : 'waiting'}`;
-  document.getElementById('p1Captured').innerHTML = (gameState.redCaptured || [])
+  
+  // FIX #11: Parse captured arrays for display
+  let redCap = gameState.redCaptured || [];
+  let blackCap = gameState.blackCaptured || [];
+  if (typeof redCap === 'string') { try { redCap = JSON.parse(redCap); } catch(e) { redCap = []; } }
+  if (typeof blackCap === 'string') { try { blackCap = JSON.parse(blackCap); } catch(e) { blackCap = []; } }
+  
+  document.getElementById('p1Captured').innerHTML = redCap
     .map(() => `<div class="captured-piece black"></div>`).join('');
   
-  // Player 2 (Black)
   const p2 = gameState.blackPlayer;
   document.getElementById('p2Name').textContent = p2 || 'Waiting...';
   document.getElementById('p2Avatar').textContent = p2 ? p2[0] : '?';
   document.getElementById('p2Status').textContent = p2 ? 'Ready' : 'Waiting';
   document.getElementById('p2Status').className = `status-badge ${p2 ? 'ready' : 'waiting'}`;
-  document.getElementById('p2Captured').innerHTML = (gameState.blackCaptured || [])
+  document.getElementById('p2Captured').innerHTML = blackCap
     .map(() => `<div class="captured-piece red"></div>`).join('');
   
-  // Turn indicator
   const turnBar = document.getElementById('turnBar');
   turnBar.textContent = gameState.turn === 'red' ? "Red's Turn" : "Black's Turn";
   turnBar.className = `turn-bar ${gameState.turn}-turn`;
   
-  // Highlight active player
   document.getElementById('p1Avatar').classList.toggle('active-turn', gameState.turn === 'red');
   document.getElementById('p2Avatar').classList.toggle('active-turn', gameState.turn === 'black');
   
-  // Disable selects if game is full
   if (p1) {
     document.getElementById('memberSelect1').disabled = true;
     document.getElementById('inviteBtn1').disabled = true;
@@ -1091,9 +1181,21 @@ function setupGameRealtime() {
     supabaseClient
       .channel('checkers_updates')
       .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'checkers_games', filter: `id=eq.${gameId}` },
+        { event: '*', schema: 'public', table: 'checkers_games', filter: `id=eq.${gameId}` },
         (payload) => {
-          gameState = payload.new;
+          // FIX #12: Parse all string fields from realtime payload
+          const newState = payload.new;
+          if (typeof newState.board === 'string') {
+            try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
+          }
+          if (typeof newState.redCaptured === 'string') {
+            try { newState.redCaptured = JSON.parse(newState.redCaptured); } catch(e) { newState.redCaptured = []; }
+          }
+          if (typeof newState.blackCaptured === 'string') {
+            try { newState.blackCaptured = JSON.parse(newState.blackCaptured); } catch(e) { newState.blackCaptured = []; }
+          }
+          
+          gameState = newState;
           updateUI();
           renderBoard();
           
@@ -1102,9 +1204,11 @@ function setupGameRealtime() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Game realtime status:', status);
+      });
   } catch (e) {
-    console.log('Game realtime failed:', e);
+    console.error('Game realtime failed:', e);
   }
 }
 
@@ -1125,7 +1229,12 @@ function addChatMessage(name, text, isSystem) {
   const container = document.getElementById('chatMessages');
   const div = document.createElement('div');
   div.className = `chat-msg ${name === currentUser ? 'own' : ''} ${isSystem ? 'system' : ''}`;
-  div.innerHTML = `<span class="msg-name">${name}</span><span class="msg-text">${text}</span>`;
+  
+  // FIX #13: Escape HTML to prevent XSS
+  const safeName = name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  div.innerHTML = `<span class="msg-name">${safeName}</span><span class="msg-text">${safeText}</span>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
@@ -1139,7 +1248,7 @@ async function syncChatMessage(name, text) {
       created_at: new Date().toISOString()
     });
   } catch (e) {
-    console.log('Chat sync failed:', e);
+    console.error('Chat sync failed:', e);
   }
 }
 
@@ -1156,9 +1265,11 @@ function setupChatRealtime() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Chat realtime status:', status);
+      });
   } catch (e) {
-    console.log('Chat realtime failed:', e);
+    console.error('Chat realtime failed:', e);
   }
 }
 
