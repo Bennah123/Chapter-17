@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    :root { --bg: #080806; --gold: #C9A84C; --gold-bright: #FFD700; --gold-border: rgba(201,168,76,0.25); --gold-dim: rgba(201,168,76,0.08); --white: #f5f0e8; --muted: rgba(245,240,232,0.45); --card-bg: rgba(15,15,12,0.9); --light-sq: #f0d9b5; --dark-sq: #b58863; }
+    :root { --bg: #080806; --gold: #C9A84C; --gold-bright: #FFD700; --gold-border: rgba(201,168,76,0.25); --gold-dim: rgba(201,168,76,0.08); --white: #f5f0e8; --muted: rgba(245,240,232,0.45); --card-bg: rgba(15,15,12,0.9); --light-sq: #ffffff; --dark-sq: #1a1a1a; }
     html { scroll-behavior: smooth; }
     body { background: var(--bg); color: var(--white); font-family: 'Raleway', sans-serif; min-height: 100vh; }
     body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E"); opacity: 0.04; pointer-events: none; z-index: 100; }
@@ -53,14 +53,14 @@
     .player-name-label { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 3px; color: var(--white); }
     .player-turn-label { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.8rem; color: var(--gold); }
     .you-badge { font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 2px; background: var(--gold); color: #080806; padding: 2px 8px; border-radius: 2px; margin-left: 6px; }
-    .board-wrap { display: flex; justify-content: center; margin: 8px 0; }
-    .board { display: grid; grid-template-columns: repeat(8,1fr); width: min(560px,90vw); height: min(560px,90vw); border: 2px solid var(--gold); box-shadow: 0 0 60px rgba(201,168,76,0.2); }
-    .sq { display: flex; align-items: center; justify-content: center; font-size: clamp(1.4rem,4vw,2.2rem); cursor: pointer; position: relative; transition: background 0.15s; user-select: none; }
+    .board-wrap { display: flex; justify-content: center; margin: 8px 0; min-height: min(562px, 90vw); }
+    .board { display: grid; grid-template-columns: repeat(8,1fr); width: min(560px,90vw); height: min(560px,90vw); border: 2px solid var(--gold); box-shadow: 0 0 60px rgba(201,168,76,0.2); flex-shrink: 0; align-self: flex-start; }
+    .sq { display: flex; align-items: center; justify-content: center; font-size: clamp(1.4rem,4vw,2.2rem); cursor: pointer; position: relative; transition: background 0.15s; user-select: none; aspect-ratio: 1; overflow: hidden; }
     .sq.light { background: var(--light-sq); }
     .sq.dark  { background: var(--dark-sq); }
     .sq.selected { background: rgba(255,215,0,0.5) !important; }
-    .sq.valid-move::after { content: ''; position: absolute; width: 30%; height: 30%; border-radius: 50%; background: rgba(0,0,0,0.2); }
-    .sq.valid-capture::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 4px rgba(0,0,0,0.25); }
+    .sq.valid-move::after { content: ''; position: absolute; width: 30%; height: 30%; border-radius: 50%; background: rgba(128,128,128,0.4); }
+    .sq.valid-capture::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 4px rgba(128,128,128,0.4); }
     .sq.last-move { background: rgba(255,215,0,0.2) !important; }
     .sq.in-check { background: rgba(255,50,50,0.5) !important; }
     .file-labels { display: grid; grid-template-columns: repeat(8,1fr); width: min(560px,90vw); padding: 0 2px; margin: 0 auto; }
