@@ -26,7 +26,6 @@
     }
 
     html { scroll-behavior: smooth; }
-
     body {
       background: var(--bg);
       color: var(--white);
@@ -62,102 +61,222 @@
       backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--gold-border);
     }
-
-    .nav-logo {
-      font-family: 'Cinzel', serif;
-      font-size: 0.85rem;
-      letter-spacing: 5px;
-      color: var(--gold);
-      text-decoration: none;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 36px;
-      list-style: none;
-    }
-
+    .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
     .nav-links a {
-      font-family: 'Raleway', sans-serif;
-      font-weight: 300;
-      font-size: 0.7rem;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.3s ease;
+      font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem;
+      letter-spacing: 3px; text-transform: uppercase; color: var(--muted);
+      text-decoration: none; transition: color 0.3s ease;
     }
-
     .nav-links a:hover { color: var(--gold); }
-
-    .nav-burger {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 4px;
-    }
-    .nav-burger span {
-      display: block;
-      width: 24px; height: 1px;
-      background: var(--gold);
-    }
 
     /* ── HERO ── */
     .hero {
-      min-height: 35dvh;
+      min-height: 30dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 100px 24px 40px;
+      padding: 100px 24px 30px;
       position: relative;
-      overflow: hidden;
     }
-
     .hero-glow {
-      position: absolute;
-      top: 50%; left: 50%;
+      position: absolute; top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       width: 500px; height: 500px;
       background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 60%);
       pointer-events: none;
       animation: glowPulse 4s ease-in-out infinite;
     }
-
     @keyframes glowPulse {
       0%,100% { opacity: 0.5; transform: translate(-50%,-50%) scale(1); }
-      50%      { opacity: 1;   transform: translate(-50%,-50%) scale(1.15); }
+      50% { opacity: 1; transform: translate(-50%,-50%) scale(1.15); }
     }
-
     .hero-tag {
-      font-family: 'Cinzel', serif;
-      font-size: 0.5rem;
-      letter-spacing: 10px;
-      color: var(--gold);
-      margin-bottom: 16px;
-      text-transform: uppercase;
+      font-family: 'Cinzel', serif; font-size: 0.5rem;
+      letter-spacing: 10px; color: var(--gold);
+      margin-bottom: 16px; text-transform: uppercase;
     }
-
     .hero-title {
       font-family: 'Cinzel', serif;
       font-size: clamp(2.5rem, 8vw, 4rem);
-      letter-spacing: 8px;
-      color: var(--gold);
+      letter-spacing: 8px; color: var(--gold);
       text-shadow: 0 0 60px rgba(201,168,76,0.4);
       margin-bottom: 16px;
     }
 
-    .hero-sub {
+    /* ── SCREENS ── */
+    .screen { display: none; }
+    .screen.active { display: block; width: 100%; }
+
+    /* ── LOBBY ── */
+    .lobby {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+    .lobby-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    @media (max-width: 768px) {
+      .lobby-grid { grid-template-columns: 1fr; }
+    }
+
+    .lobby-card {
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 32px;
+      text-align: center;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards;
+    }
+    .lobby-card h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 4px;
+      color: var(--gold);
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    .lobby-card .icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .room-code-display {
       font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      font-size: 2.5rem;
+      color: var(--gold-bright);
+      letter-spacing: 8px;
+      margin: 16px 0;
+      filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));
+    }
+
+    .input-styled {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(201,168,76,0.05);
+      border: 1px solid var(--gold-border);
+      border-radius: 3px;
+      color: var(--white);
+      font-family: 'Raleway', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 1.5px;
+      outline: none;
+      transition: all 0.3s ease;
+      margin-bottom: 12px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+    .input-styled:focus {
+      border-color: var(--gold);
+      background: rgba(201,168,76,0.08);
+      box-shadow: 0 0 16px rgba(201,168,76,0.15);
+    }
+    .input-styled::placeholder {
       color: var(--muted);
+      font-weight: 200;
       letter-spacing: 2px;
-      max-width: 500px;
+      text-transform: none;
+    }
+
+    .btn-gold {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none;
+      border-radius: 3px;
+      color: #080806;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 24px rgba(201,168,76,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-gold:hover {
+      box-shadow: 0 0 40px rgba(255,215,0,0.4);
+      transform: translateY(-1px);
+    }
+    .btn-gold:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── ACTIVE ROOMS LIST ── */
+    .rooms-section {
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 24px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.3s forwards;
+    }
+    .rooms-section h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 4px;
+      color: var(--gold);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+    .room-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--gold-border);
+      transition: background 0.2s;
+    }
+    .room-item:hover {
+      background: var(--gold-dim);
+    }
+    .room-item:last-child {
+      border-bottom: none;
+    }
+    .room-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .room-code {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      color: var(--gold-bright);
+    }
+    .room-players {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .room-status {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      padding: 4px 12px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+    .status-waiting {
+      background: rgba(201,168,76,0.15);
+      color: var(--gold);
+    }
+    .status-playing {
+      background: rgba(76,201,110,0.15);
+      color: var(--green);
+    }
+    .status-full {
+      background: rgba(201,76,76,0.15);
+      color: var(--red);
     }
 
     /* ── GAME AREA ── */
@@ -172,12 +291,51 @@
       position: relative;
       z-index: 10;
     }
-
     @media (max-width: 1024px) {
       .game-area {
         grid-template-columns: 1fr;
         max-width: 500px;
       }
+    }
+
+    /* ── ROOM HEADER ── */
+    .room-header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 16px 24px;
+      margin-bottom: 8px;
+    }
+    .room-header-code {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      color: var(--gold);
+    }
+    .room-header-code span {
+      color: var(--gold-bright);
+      font-size: 1rem;
+      margin-left: 8px;
+    }
+    .btn-leave {
+      background: transparent;
+      border: 1px solid var(--gold-border);
+      color: var(--muted);
+      padding: 8px 16px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border-radius: 3px;
+      transition: all 0.3s;
+    }
+    .btn-leave:hover {
+      border-color: var(--red);
+      color: var(--red);
     }
 
     /* ── PLAYER PANELS ── */
@@ -190,7 +348,6 @@
       position: sticky;
       top: 100px;
     }
-
     .player-panel h3 {
       font-family: 'Cinzel', serif;
       font-size: 0.65rem;
@@ -200,7 +357,6 @@
       margin-bottom: 16px;
       text-align: center;
     }
-
     .player-avatar {
       width: 60px; height: 60px;
       border-radius: 50%;
@@ -214,48 +370,40 @@
       color: var(--gold);
       margin: 0 auto 12px;
     }
-
     .player-avatar.active-turn {
       border-color: var(--gold-bright);
       box-shadow: 0 0 20px rgba(201,168,76,0.4);
       animation: pulseTurn 2s ease infinite;
     }
-
     @keyframes pulseTurn {
       0%,100% { box-shadow: 0 0 20px rgba(201,168,76,0.4); }
       50% { box-shadow: 0 0 30px rgba(201,168,76,0.7); }
     }
-
     .player-name {
       text-align: center;
       font-size: 0.9rem;
       margin-bottom: 4px;
     }
-
     .player-color {
       text-align: center;
       font-size: 0.7rem;
       color: var(--muted);
       margin-bottom: 12px;
     }
-
     .player-pieces {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
       justify-content: center;
     }
-
     .captured-piece {
       width: 24px; height: 24px;
       border-radius: 50%;
       opacity: 0.6;
     }
-
     .captured-piece.red { background: var(--red); }
     .captured-piece.black { background: #333; }
 
-    /* ── MEMBER SELECT ── */
     .member-select {
       width: 100%;
       background: var(--bg);
@@ -269,15 +417,8 @@
       cursor: pointer;
       margin-bottom: 12px;
     }
-
-    .member-select:focus {
-      border-color: var(--gold);
-    }
-
-    .member-select option {
-      background: var(--bg2);
-      color: var(--white);
-    }
+    .member-select:focus { border-color: var(--gold); }
+    .member-select option { background: var(--bg2); color: var(--white); }
 
     .invite-btn {
       width: 100%;
@@ -293,15 +434,8 @@
       border-radius: 4px;
       transition: all 0.3s ease;
     }
-
-    .invite-btn:hover {
-      background: var(--gold-bright);
-    }
-
-    .invite-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    .invite-btn:hover { background: var(--gold-bright); }
+    .invite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .status-badge {
       display: inline-block;
@@ -312,7 +446,6 @@
       text-transform: uppercase;
       margin-top: 8px;
     }
-
     .status-badge.waiting { background: rgba(201,168,76,0.15); color: var(--gold); }
     .status-badge.ready { background: rgba(76,201,110,0.15); color: var(--green); }
     .status-badge.playing { background: rgba(201,76,76,0.15); color: var(--red); }
@@ -323,7 +456,6 @@
       flex-direction: column;
       align-items: center;
     }
-
     .board-wrapper {
       position: relative;
       padding: 8px;
@@ -331,106 +463,71 @@
       border-radius: 4px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
-
     .board {
       display: grid;
       grid-template-columns: repeat(8, 56px);
       grid-template-rows: repeat(8, 56px);
       gap: 0;
     }
-
     @media (max-width: 768px) {
       .board {
         grid-template-columns: repeat(8, 44px);
         grid-template-rows: repeat(8, 44px);
       }
     }
-
     .square {
-      width: 56px;
-      height: 56px;
+      width: 56px; height: 56px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       position: relative;
     }
-
     @media (max-width: 768px) {
-      .square {
-        width: 44px;
-        height: 44px;
-      }
+      .square { width: 44px; height: 44px; }
     }
-
     .square.light { background: var(--board-light); }
     .square.dark { background: var(--board-dark); }
-
     .square.valid-move::after {
       content: '';
-      width: 16px;
-      height: 16px;
+      width: 16px; height: 16px;
       border-radius: 50%;
       background: rgba(76,201,110,0.5);
       position: absolute;
     }
-
     .square.selected {
       box-shadow: inset 0 0 0 3px var(--gold-bright);
     }
 
     /* ── PIECES ── */
     .piece {
-      width: 44px;
-      height: 44px;
+      width: 44px; height: 44px;
       border-radius: 50%;
       position: relative;
       transition: all 0.3s ease;
       cursor: pointer;
     }
-
     @media (max-width: 768px) {
-      .piece {
-        width: 36px;
-        height: 36px;
-      }
+      .piece { width: 36px; height: 36px; }
     }
-
     .piece.red {
       background: radial-gradient(circle at 30% 30%, #ff6b6b, var(--red));
       border: 2px solid var(--red-dark);
       box-shadow: 0 2px 8px rgba(201,76,76,0.4);
     }
-
     .piece.black {
       background: radial-gradient(circle at 30% 30%, #555, #222);
       border: 2px solid #111;
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
-
     .piece.king::after {
       content: '👑';
       position: absolute;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       font-size: 1.2rem;
     }
-
-    .piece:hover {
-      transform: scale(1.1);
-    }
-
-    .piece.captured {
-      animation: capturePiece 0.5s ease forwards;
-    }
-
-    @keyframes capturePiece {
-      to {
-        transform: scale(0) rotate(360deg);
-        opacity: 0;
-      }
-    }
+    .piece:hover { transform: scale(1.1); }
 
     /* ── TURN INDICATOR ── */
     .turn-bar {
@@ -445,13 +542,11 @@
       border-radius: 4px;
       transition: all 0.3s ease;
     }
-
     .turn-bar.red-turn {
       background: rgba(201,76,76,0.15);
       color: var(--red);
       border: 1px solid rgba(201,76,76,0.3);
     }
-
     .turn-bar.black-turn {
       background: rgba(0,0,0,0.3);
       color: var(--muted);
@@ -468,7 +563,6 @@
       display: flex;
       flex-direction: column;
     }
-
     .chat-header {
       padding: 14px 20px;
       background: rgba(201,168,76,0.05);
@@ -477,14 +571,12 @@
       justify-content: space-between;
       align-items: center;
     }
-
     .chat-header h4 {
       font-family: 'Cinzel', serif;
       font-size: 0.6rem;
       letter-spacing: 3px;
       color: var(--gold);
     }
-
     .chat-status {
       width: 8px; height: 8px;
       border-radius: 50%;
@@ -492,12 +584,10 @@
       box-shadow: 0 0 8px rgba(76,201,110,0.5);
       animation: pulse 2s ease infinite;
     }
-
     @keyframes pulse {
       0%,100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
-
     .chat-messages {
       flex: 1;
       overflow-y: auto;
@@ -506,18 +596,15 @@
       flex-direction: column;
       gap: 10px;
     }
-
     .chat-msg {
       font-size: 0.75rem;
       line-height: 1.5;
       max-width: 85%;
     }
-
     .chat-msg.own {
       align-self: flex-end;
       text-align: right;
     }
-
     .chat-msg .msg-name {
       font-family: 'Cinzel', serif;
       color: var(--gold);
@@ -526,7 +613,6 @@
       display: block;
       margin-bottom: 2px;
     }
-
     .chat-msg .msg-text {
       color: var(--muted);
       background: rgba(15,15,12,0.6);
@@ -534,23 +620,17 @@
       border-radius: 4px;
       display: inline-block;
     }
-
     .chat-msg.own .msg-text {
       background: rgba(201,168,76,0.1);
       border: 1px solid var(--gold-border);
     }
-
-    .chat-msg.system .msg-name {
-      color: var(--red);
-    }
-
+    .chat-msg.system .msg-name { color: var(--red); }
     .chat-input-area {
       padding: 12px 16px;
       border-top: 1px solid var(--gold-border);
       display: flex;
       gap: 8px;
     }
-
     .chat-input {
       flex: 1;
       background: var(--bg);
@@ -561,9 +641,7 @@
       border-radius: 4px;
       outline: none;
     }
-
     .chat-input:focus { border-color: var(--gold); }
-
     .chat-send {
       background: var(--gold);
       color: var(--bg);
@@ -576,7 +654,7 @@
       letter-spacing: 1px;
     }
 
-    /* ── NEW: Game Over Modal ── */
+    /* ── MODAL ── */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -589,7 +667,7 @@
     }
     .modal-overlay.active { display: flex; }
     .modal-content {
-      background: var(--card-bg);
+      background: var(--bg2);
       border: 1px solid var(--gold-border);
       border-radius: 4px;
       padding: 40px;
@@ -622,7 +700,7 @@
       margin: 0 8px;
     }
 
-    /* ── NEW: Move History ── */
+    /* ── MOVE HISTORY ── */
     .move-history {
       background: var(--bg2);
       border: 1px solid var(--gold-border);
@@ -646,341 +724,495 @@
       border-bottom: 1px solid var(--gold-border);
     }
 
-    /* ── NEW: Spectator Mode ── */
-    .spectator-badge {
-      position: absolute;
-      top: 80px;
-      right: 24px;
-      background: var(--gold-dim);
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg2);
       border: 1px solid var(--gold-border);
-      padding: 8px 16px;
-      border-radius: 2px;
+      border-radius: 3px;
+      padding: 12px 28px;
       font-family: 'Cinzel', serif;
-      font-size: 0.55rem;
-      letter-spacing: 2px;
+      font-size: 0.6rem;
+      letter-spacing: 3px;
       color: var(--gold);
+      z-index: 500;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── FOOTER ── */
-    footer {
-      border-top: 1px solid var(--gold-border);
-      padding: 32px 48px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    footer .logo {
-      font-family: 'Cinzel', serif;
-      font-size: 0.7rem;
-      letter-spacing: 5px;
-      color: var(--gold);
-    }
-
-    footer p {
-      font-family: 'Cormorant Garamond', serif;
-      font-style: italic;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    /* ── MOBILE ── */
     @media (max-width: 768px) {
       nav { padding: 0 24px; }
-      .nav-links { display: none; }
-      .nav-burger { display: flex; }
-      .hero { min-height: 30dvh; padding-top: 80px; }
+      .hero { padding: 90px 24px 20px; }
       .game-area { padding: 0 24px 60px; }
       .player-panel { position: static; }
-      footer { padding: 28px 24px; justify-content: center; }
     }
   </style>
 </head>
 <body>
 
-<!-- NAVBAR -->
-<<nav>
+<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
   <ul class="nav-links">
     <li><a href="dashboard.html">Dashboard</a></li>
     <li><a href="scoreboard.html">Scoreboard</a></li>
   </ul>
-  <button class="nav-burger" id="burger" aria-label="Menu">
-    <span></span><span></span><span></span>
-  </button>
 </nav>
 
-<!-- NEW: Spectator Badge -->
-<div class="spectator-badge" id="spectatorBadge" style="display:none">👁 Spectator Mode</div>
+<!-- ═══════════════════════════════════════ -->
+<!-- LOBBY SCREEN -->
+<!-- ═══════════════════════════════════════ -->
+<div class="screen active" id="lobbyScreen">
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-glow"></div>
-  <p class="hero-tag">Chapter 17 — Strategy</p>
-  <h1 class="hero-title">CHECKERS</h1>
-  <p class="hero-sub">"Every move is a message. Every capture, a statement."</p>
-</section>
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <p class="hero-tag">Chapter 17 — Strategy</p>
+    <h1 class="hero-title">CHECKERS</h1>
+  </section>
 
-<!-- GAME AREA -->
-<div class="game-area">
+  <div class="lobby">
+    <div class="lobby-grid">
+      <!-- Create Room -->
+      <div class="lobby-card">
+        <span class="icon">🏰</span>
+        <h3>Create a Room</h3>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.6">
+          Start a new game and invite a friend with a room code.
+        </p>
+        <button class="btn-gold" onclick="createRoom()">
+          Create Room
+        </button>
+        <div id="createdRoom" style="margin-top:16px;display:none">
+          <p style="font-size:0.65rem;color:var(--muted);letter-spacing:2px">YOUR ROOM CODE</p>
+          <div class="room-code-display" id="newRoomCode">ABC123</div>
+          <button class="btn-gold" onclick="enterRoom()" style="margin-top:8px">
+            Enter Room
+          </button>
+        </div>
+      </div>
 
-  <!-- LEFT: Player 1 (Red) -->
-  <div class="player-panel" id="player1Panel">
-    <h3>Player 1</h3>
-    <div class="player-avatar" id="p1Avatar">?</div>
-    <div class="player-name" id="p1Name">Waiting...</div>
-    <div class="player-color" style="color:var(--red)">Red Pieces</div>
-    <span class="status-badge waiting" id="p1Status">Waiting</span>
-    
-    <div style="margin-top: 16px;">
-      <select class="member-select" id="memberSelect1">
-        <option value="">Select a member...</option>
-      </select>
-      <button class="invite-btn" id="inviteBtn1" disabled>Join as Red</button>
+      <!-- Join Room -->
+      <div class="lobby-card" style="animation-delay:0.15s">
+        <span class="icon">🔑</span>
+        <h3>Join a Room</h3>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.6">
+          Enter a room code to join an existing game.
+        </p>
+        <input type="text" class="input-styled" id="joinCodeInput" placeholder="Enter room code..." maxlength="6"/>
+        <button class="btn-gold" onclick="joinRoom()">
+          Join Room
+        </button>
+      </div>
     </div>
-    
-    <div style="margin-top: 16px;">
-      <div style="font-size:0.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Captured</div>
-      <div class="player-pieces" id="p1Captured"></div>
-    </div>
 
-    <!-- NEW: Move History -->
-    <div class="move-history" id="moveHistory" style="display:none">
-      <h4>Move Log</h4>
-      <div id="moveList"></div>
+    <!-- Active Rooms -->
+    <div class="rooms-section">
+      <h3>🔥 Active Rooms</h3>
+      <div id="roomsList">
+        <p style="text-align:center;color:var(--muted);font-style:italic;padding:20px">Loading rooms...</p>
+      </div>
     </div>
   </div>
+</div>
 
-  <!-- CENTER: Board -->
-  <div class="board-container">
-    <div class="turn-bar red-turn" id="turnBar">Red's Turn</div>
-    <div class="board-wrapper">
-      <div class="board" id="board"></div>
+<!-- ═══════════════════════════════════════ -->
+<!-- GAME SCREEN -->
+<!-- ═══════════════════════════════════════ -->
+<div class="screen" id="gameScreen">
+
+  <section class="hero" style="min-height:20dvh;padding-top:90px">
+    <div class="hero-glow"></div>
+    <p class="hero-tag">Chapter 17 — Strategy</p>
+    <h1 class="hero-title" style="font-size:clamp(1.5rem,5vw,2.5rem)">CHECKERS</h1>
+  </section>
+
+  <div class="game-area">
+    <!-- Room Header -->
+    <div class="room-header">
+      <div class="room-header-code">
+        ROOM: <span id="currentRoomCode">---</span>
+      </div>
+      <button class="btn-leave" onclick="leaveRoom()">Leave Room</button>
     </div>
-  </div>
 
-  <!-- RIGHT: Player 2 (Black) + Chat -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
-    
-    <!-- Player 2 Panel -->
-    <div class="player-panel" id="player2Panel">
-      <h3>Player 2</h3>
-      <div class="player-avatar" id="p2Avatar">?</div>
-      <div class="player-name" id="p2Name">Waiting...</div>
-      <div class="player-color" style="color:#888">Black Pieces</div>
-      <span class="status-badge waiting" id="p2Status">Waiting</span>
+    <!-- LEFT: Player 1 (Red) -->
+    <div class="player-panel" id="player1Panel">
+      <h3>Player 1 (Red)</h3>
+      <div class="player-avatar" id="p1Avatar">?</div>
+      <div class="player-name" id="p1Name">Waiting...</div>
+      <span class="status-badge waiting" id="p1Status">Waiting</span>
       
-      <div style="margin-top: 16px;">
-        <select class="member-select" id="memberSelect2">
-          <option value="">Select a member...</option>
+      <div style="margin-top: 16px;" id="p1JoinArea">
+        <select class="member-select" id="memberSelect1">
+          <option value="">Select your name...</option>
         </select>
-        <button class="invite-btn" id="inviteBtn2" disabled>Join as Black</button>
+        <button class="invite-btn" id="inviteBtn1" disabled>Join as Red</button>
       </div>
       
       <div style="margin-top: 16px;">
         <div style="font-size:0.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Captured</div>
-        <div class="player-pieces" id="p2Captured"></div>
+        <div class="player-pieces" id="p1Captured"></div>
+      </div>
+
+      <div class="move-history" id="moveHistory" style="display:none">
+        <h4>Move Log</h4>
+        <div id="moveList"></div>
       </div>
     </div>
 
-    <!-- Chat -->
-    <div class="chat-panel" id="chatPanel">
-      <div class="chat-header">
-        <h4>Game Chat</h4>
-        <div class="chat-status"></div>
+    <!-- CENTER: Board -->
+    <div class="board-container">
+      <div class="turn-bar red-turn" id="turnBar">Waiting for players...</div>
+      <div class="board-wrapper">
+        <div class="board" id="board"></div>
       </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="chat-msg system">
-          <span class="msg-name">SYSTEM</span>
-          <span class="msg-text">Welcome to Checkers! Select a member to join.</span>
+    </div>
+
+    <!-- RIGHT: Player 2 (Black) + Chat -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="player-panel" id="player2Panel">
+        <h3>Player 2 (Black)</h3>
+        <div class="player-avatar" id="p2Avatar">?</div>
+        <div class="player-name" id="p2Name">Waiting...</div>
+        <span class="status-badge waiting" id="p2Status">Waiting</span>
+        
+        <div style="margin-top: 16px;" id="p2JoinArea">
+          <select class="member-select" id="memberSelect2">
+            <option value="">Select your name...</option>
+          </select>
+          <button class="invite-btn" id="inviteBtn2" disabled>Join as Black</button>
+        </div>
+        
+        <div style="margin-top: 16px;">
+          <div style="font-size:0.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Captured</div>
+          <div class="player-pieces" id="p2Captured"></div>
         </div>
       </div>
-      <div class="chat-input-area">
-        <input type="text" class="chat-input" id="chatInput" placeholder="Send message..." maxlength="100"/>
-        <button class="chat-send" id="chatSend">SEND</button>
+
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+          <h4>Room Chat</h4>
+          <div class="chat-status"></div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-msg system">
+            <span class="msg-name">SYSTEM</span>
+            <span class="msg-text">Welcome! Select a side to join the game.</span>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Send message..." maxlength="100"/>
+          <button class="chat-send" id="chatSend">SEND</button>
+        </div>
       </div>
     </div>
-
   </div>
-
 </div>
 
-<!-- NEW: Game Over Modal -->
+<!-- Game Over Modal -->
 <div class="modal-overlay" id="gameOverModal">
   <div class="modal-content">
     <div class="modal-title">🏆 Game Over</div>
     <div class="modal-winner" id="modalWinner">Winner Name</div>
-    <button class="modal-btn" onclick="resetGame()">New Game</button>
-    <button class="modal-btn" onclick="saveToScoreboard()" style="background:var(--bg);border:1px solid var(--gold);color:var(--gold)">Save to Scoreboard</button>
+    <button class="modal-btn" onclick="playAgain()">Play Again</button>
+    <button class="modal-btn" onclick="backToLobby()" style="background:var(--bg2);border:1px solid var(--gold);color:var(--gold)">Back to Lobby</button>
   </div>
 </div>
 
-<!-- FOOTER -->
-<<footer>
-  <span class="logo">Chapter 17</span>
-  <p>"The board is a battlefield. Mind your kings."</p>
-</footer>
+<div class="toast" id="toast"></div>
 
 <script>
-// ── SUPABASE SETUP ──
+// ═══════════════════════════════════════
+// SUPABASE SETUP
+// ═══════════════════════════════════════
 const SUPABASE_URL = 'https://whgxunnlxhcfthkpcbjd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE';
-
 const { createClient } = supabase;
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── SHARED MEMBER SYSTEM ──
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
 let chapterMembers = [];
 const currentUser = localStorage.getItem('loggedInUser') || '';
+let currentRoomId = null;
+let playerRole = null;
+let gameState = null;
+let selectedPiece = null;
+let validMoves = [];
+let realtimeChannel = null;
+let chatChannel = null;
 
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+async function init() {
+  await loadMembers();
+  setupLobbyListeners();
+  loadActiveRooms();
+  // Auto-refresh rooms every 10 seconds
+  setInterval(loadActiveRooms, 10000);
+}
+
+// ═══════════════════════════════════════
+// MEMBERS
+// ═══════════════════════════════════════
 async function loadMembers() {
   try {
-    const { data, error } = await supabaseClient.from('members').select('name').order('name');
-    if (error) { console.error('Members load error:', error); return; }
+    const { data, error } = await sb.from('members').select('name').order('name');
+    if (error) throw error;
     chapterMembers = data || [];
-    populateMemberSelects();
   } catch (e) {
     console.error('Load members failed:', e);
-    // Fallback: use hardcoded list if Supabase fails
     chapterMembers = [
       { name: 'Ghost' }, { name: 'Mrs Ghost' }, { name: 'Macharia' },
       { name: 'Thee Ori' }, { name: 'Mrs Ori' }, { name: 'Mustapha' },
       { name: 'Okoth' }, { name: 'Mrs Okoth' }, { name: 'Mrs Edwardo' },
       { name: 'Kinoti' }, { name: 'Mrs Kinoti' }
     ];
-    populateMemberSelects();
   }
 }
 
-// ── GAME STATE ──
-let gameId = 'checkers_room_1';
-let playerRole = null;
-let gameState = {
-  board: [],
-  turn: 'red',
-  redPlayer: null,
-  blackPlayer: null,
-  redCaptured: [],
-  blackCaptured: [],
-  status: 'waiting',
-  winner: null,
-  moveHistory: [] // NEW: Track moves
-};
-
-let selectedPiece = null;
-let validMoves = [];
-
-// ── INIT ──
-async function init() {
-  await loadMembers();
-  setupEventListeners();
-  setupChatRealtime();
-  setupGameRealtime();
-  checkSpectatorMode();
-  await loadGame();
-}
-
-// ── POPULATE DROPDOWNS ──
 function populateMemberSelects() {
   const s1 = document.getElementById('memberSelect1');
   const s2 = document.getElementById('memberSelect2');
-  
-  const baseOptions = '<option value="">Select a member...</option>';
-  let memberOptions = '';
+  const base = '<option value="">Select your name...</option>';
+  let opts = '';
   
   chapterMembers.forEach(m => {
-    if (m.name !== currentUser) {
-      memberOptions += `<option value="${m.name}">${m.name}</option>`;
-    }
+    opts += `<option value="${m.name}">${m.name}${m.name === currentUser ? ' (You)' : ''}</option>`;
   });
   
-  if (currentUser) {
-    memberOptions += `<option value="${currentUser}">${currentUser} (You)</option>`;
+  s1.innerHTML = base + opts;
+  s2.innerHTML = base + opts;
+}
+
+// ═══════════════════════════════════════
+// ROOM CODE GENERATOR
+// ═══════════════════════════════════════
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// ═══════════════════════════════════════
+// CREATE ROOM
+// ═══════════════════════════════════════
+async function createRoom() {
+  const code = generateRoomCode();
+  const roomId = 'checkers_' + code;
+  
+  try {
+    const { error } = await sb.from('checkers_rooms').insert({
+      id: roomId,
+      code: code,
+      status: 'waiting',
+      created_by: currentUser || 'Anonymous',
+      created_at: new Date().toISOString()
+    });
+    
+    if (error) throw error;
+    
+    document.getElementById('newRoomCode').textContent = code;
+    document.getElementById('createdRoom').style.display = 'block';
+    showToast('Room created! Code: ' + code);
+  } catch (e) {
+    console.error('Create room failed:', e);
+    showToast('Failed to create room');
+  }
+}
+
+function enterRoom() {
+  const code = document.getElementById('newRoomCode').textContent;
+  goToRoom(code);
+}
+
+// ═══════════════════════════════════════
+// JOIN ROOM
+// ═══════════════════════════════════════
+async function joinRoom() {
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if (!code || code.length !== 6) {
+    showToast('Enter a valid 6-character room code');
+    return;
+  }
+  goToRoom(code);
+}
+
+async function goToRoom(code) {
+  try {
+    const { data, error } = await sb.from('checkers_rooms')
+      .select('*')
+      .eq('code', code)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    if (!data) {
+      showToast('Room not found!');
+      return;
+    }
+    
+    if (data.status === 'finished') {
+      showToast('This game has ended');
+      return;
+    }
+    
+    currentRoomId = data.id;
+    showScreen('gameScreen');
+    document.getElementById('currentRoomCode').textContent = code;
+    populateMemberSelects();
+    await loadGame();
+    setupRealtime();
+    setupChat();
+    
+    // Check if current user was already in this room
+    if (data.red_player === currentUser) playerRole = 'red';
+    if (data.black_player === currentUser) playerRole = 'black';
+    
+    updateUI();
+  } catch (e) {
+    console.error('Join room failed:', e);
+    showToast('Failed to join room');
+  }
+}
+
+// ═══════════════════════════════════════
+// LEAVE ROOM
+// ═══════════════════════════════════════
+async function leaveRoom() {
+  if (realtimeChannel) {
+    await realtimeChannel.unsubscribe();
+    realtimeChannel = null;
+  }
+  if (chatChannel) {
+    await chatChannel.unsubscribe();
+    chatChannel = null;
   }
   
-  s1.innerHTML = baseOptions + memberOptions;
-  s2.innerHTML = baseOptions + memberOptions;
+  currentRoomId = null;
+  playerRole = null;
+  gameState = null;
+  
+  showScreen('lobbyScreen');
+  loadActiveRooms();
 }
 
-// ── SPECTATOR MODE ──
-function checkSpectatorMode() {
-  if (!currentUser) {
-    document.getElementById('spectatorBadge').style.display = 'block';
-    document.getElementById('memberSelect1').disabled = true;
-    document.getElementById('memberSelect2').disabled = true;
-    document.getElementById('inviteBtn1').disabled = true;
-    document.getElementById('inviteBtn2').disabled = true;
+// ═══════════════════════════════════════
+// LOAD ACTIVE ROOMS
+// ═══════════════════════════════════════
+async function loadActiveRooms() {
+  try {
+    const { data, error } = await sb.from('checkers_rooms')
+      .select('*')
+      .in('status', ['waiting', 'playing'])
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (error) throw error;
+    
+    const list = document.getElementById('roomsList');
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p style="text-align:center;color:var(--muted);font-style:italic;padding:20px">No active rooms. Create one!</p>';
+      return;
+    }
+    
+    list.innerHTML = data.map(room => {
+      const playerCount = (room.red_player ? 1 : 0) + (room.black_player ? 1 : 0);
+      const statusClass = room.status === 'waiting' ? 'status-waiting' : 'status-playing';
+      const statusText = room.status === 'waiting' ? `${playerCount}/2 Players` : 'In Game';
+      
+      return `
+        <div class="room-item" onclick="goToRoom('${room.code}')" style="cursor:pointer">
+          <div class="room-info">
+            <span class="room-code">${room.code}</span>
+            <span class="room-players">
+              ${room.red_player || '?'} vs ${room.black_player || '?'}
+              ${room.created_by ? '· Created by ' + room.created_by : ''}
+            </span>
+          </div>
+          <span class="room-status ${statusClass}">${statusText}</span>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (e) {
+    console.error('Load rooms failed:', e);
   }
 }
 
-// ── EVENT LISTENERS ──
-function setupEventListeners() {
+// ═══════════════════════════════════════
+// JOIN GAME (Select Side)
+// ═══════════════════════════════════════
+function setupLobbyListeners() {
   document.getElementById('memberSelect1').addEventListener('change', (e) => {
     document.getElementById('inviteBtn1').disabled = !e.target.value;
   });
-  
   document.getElementById('memberSelect2').addEventListener('change', (e) => {
     document.getElementById('inviteBtn2').disabled = !e.target.value;
   });
-  
-  document.getElementById('inviteBtn1').addEventListener('click', () => joinGame('red'));
-  document.getElementById('inviteBtn2').addEventListener('click', () => joinGame('black'));
-  
+  document.getElementById('inviteBtn1').addEventListener('click', () => joinSide('red'));
+  document.getElementById('inviteBtn2').addEventListener('click', () => joinSide('black'));
   document.getElementById('chatSend').addEventListener('click', sendChat);
   document.getElementById('chatInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendChat();
   });
 }
 
-// ── JOIN GAME ──
-async function joinGame(role) {
+async function joinSide(role) {
   const select = document.getElementById(role === 'red' ? 'memberSelect1' : 'memberSelect2');
   const playerName = select.value;
   if (!playerName) return;
   
+  // Check if slot is taken
+  if (role === 'red' && gameState.red_player && gameState.red_player !== playerName) {
+    showToast('Red side is already taken!');
+    return;
+  }
+  if (role === 'black' && gameState.black_player && gameState.black_player !== playerName) {
+    showToast('Black side is already taken!');
+    return;
+  }
+  
   playerRole = role;
   
-  const newBoard = gameState.board && gameState.board.length === 8 ? gameState.board : initializeBoard();
-  const newStatus = role === 'red' 
-    ? (gameState.blackPlayer ? 'playing' : 'waiting')
-    : (gameState.redPlayer ? 'playing' : 'waiting');
-  
   const update = {
-    id: gameId,
-    board: newBoard,
-    turn: gameState.turn || 'red',
-    redPlayer: role === 'red' ? playerName : (gameState.redPlayer || null),
-    blackPlayer: role === 'black' ? playerName : (gameState.blackPlayer || null),
-    redCaptured: gameState.redCaptured || [],
-    blackCaptured: gameState.blackCaptured || [],
-    status: newStatus,
-    winner: gameState.winner,
-    moveHistory: gameState.moveHistory || [],
-    updated_at: new Date().toISOString()
+    [role === 'red' ? 'red_player' : 'black_player']: playerName,
+    status: (gameState.red_player && role === 'black') || (gameState.black_player && role === 'red') 
+      ? 'playing' 
+      : 'waiting'
   };
   
   try {
-    const { error } = await supabaseClient
-      .from('checkers_games')
-      .upsert(update, { onConflict: 'id' });
+    const { error } = await sb.from('checkers_rooms')
+      .update(update)
+      .eq('id', currentRoomId);
     
     if (error) throw error;
     
-    gameState = { ...gameState, ...update };
-    updateUI();
     addChatMessage('SYSTEM', `${playerName} joined as ${role}!`, true);
   } catch (e) {
-    console.error('Join failed:', e);
-    addChatMessage('SYSTEM', 'Failed to join. Try again.', true);
+    console.error('Join side failed:', e);
+    showToast('Failed to join side');
   }
 }
 
-// ── INITIALIZE BOARD ──
+// ═══════════════════════════════════════
+// GAME LOGIC
+// ═══════════════════════════════════════
 function initializeBoard() {
   const board = [];
   for (let row = 0; row < 8; row++) {
@@ -998,20 +1230,37 @@ function initializeBoard() {
   return board;
 }
 
-// ── RENDER BOARD ──
+async function loadGame() {
+  try {
+    const { data, error } = await sb.from('checkers_rooms')
+      .select('*')
+      .eq('id', currentRoomId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    if (data) {
+      gameState = data;
+      if (typeof gameState.board === 'string') {
+        try { gameState.board = JSON.parse(gameState.board); } catch(e) { gameState.board = initializeBoard(); }
+      }
+      if (!gameState.board) gameState.board = initializeBoard();
+      
+      updateUI();
+      renderBoard();
+    }
+  } catch (e) {
+    console.error('Load game failed:', e);
+  }
+}
+
 function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   
-  let board = gameState.board;
-  if (!board || !Array.isArray(board) || board.length !== 8) {
-    if (typeof board === 'string') {
-      try { board = JSON.parse(board); } catch(e) { board = null; }
-    }
-    if (!board || !Array.isArray(board) || board.length !== 8) {
-      board = initializeBoard();
-      gameState.board = board;
-    }
+  let board = gameState.board || initializeBoard();
+  if (typeof board === 'string') {
+    try { board = JSON.parse(board); } catch(e) { board = initializeBoard(); }
   }
   
   for (let row = 0; row < 8; row++) {
@@ -1035,7 +1284,7 @@ function renderBoard() {
         square.appendChild(pieceEl);
       }
       
-      if ((row + col) % 2 === 1) {
+      if ((row + col) % 2 === 1 && gameState.status === 'playing') {
         square.addEventListener('click', () => handleSquareClick(row, col));
       }
       boardEl.appendChild(square);
@@ -1043,7 +1292,6 @@ function renderBoard() {
   }
 }
 
-// ── HANDLE CLICK ──
 function handleSquareClick(row, col) {
   if (gameState.status !== 'playing' || gameState.turn !== playerRole) return;
   
@@ -1061,13 +1309,12 @@ function handleSquareClick(row, col) {
   
   if (selectedPiece && validMoves.some(m => m.row === row && m.col === col)) {
     const move = validMoves.find(m => m.row === row && m.col === col);
-    makeMove(selectedPiece, move, board);
+    executeMove(selectedPiece, move, board);
     selectedPiece = null;
     validMoves = [];
   }
 }
 
-// ── CALCULATE MOVES ──
 function calculateValidMoves(row, col, boardParam) {
   let board = boardParam || gameState.board;
   if (typeof board === 'string') {
@@ -1107,8 +1354,7 @@ function calculateValidMoves(row, col, boardParam) {
   return moves;
 }
 
-// ── MAKE MOVE ──
-async function makeMove(from, to, boardParam) {
+async function executeMove(from, to, boardParam) {
   let board = boardParam || gameState.board;
   if (typeof board === 'string') {
     try { board = JSON.parse(board); } catch(e) { board = initializeBoard(); }
@@ -1132,24 +1378,20 @@ async function makeMove(from, to, boardParam) {
   
   const newTurn = gameState.turn === 'red' ? 'black' : 'red';
   
-  let redCaptured = gameState.redCaptured || [];
-  let blackCaptured = gameState.blackCaptured || [];
-  if (typeof redCaptured === 'string') {
-    try { redCaptured = JSON.parse(redCaptured); } catch(e) { redCaptured = []; }
-  }
-  if (typeof blackCaptured === 'string') {
-    try { blackCaptured = JSON.parse(blackCaptured); } catch(e) { blackCaptured = []; }
+  // Check win condition
+  const redCount = board.flat().filter(p => p && p.color === 'red').length;
+  const blackCount = board.flat().filter(p => p && p.color === 'black').length;
+  let newStatus = gameState.status;
+  let winner = gameState.winner;
+  
+  if (redCount === 0) {
+    newStatus = 'finished';
+    winner = gameState.black_player;
+  } else if (blackCount === 0) {
+    newStatus = 'finished';
+    winner = gameState.red_player;
   }
   
-  if (captured) {
-    if (piece.color === 'red') {
-      blackCaptured = [...blackCaptured, captured];
-    } else {
-      redCaptured = [...redCaptured, captured];
-    }
-  }
-  
-  // NEW: Track move history
   const moveRecord = {
     player: gameState.turn,
     from: `${String.fromCharCode(97 + from.col)}${8 - from.row}`,
@@ -1157,300 +1399,135 @@ async function makeMove(from, to, boardParam) {
     capture: captured ? true : false,
     timestamp: new Date().toISOString()
   };
-  const moveHistory = [...(gameState.moveHistory || []), moveRecord];
   
-  const update = {
-    board: board,
-    turn: newTurn,
-    redCaptured: redCaptured,
-    blackCaptured: blackCaptured,
-    moveHistory: moveHistory,
-    updated_at: new Date().toISOString()
-  };
+  const moveHistory = [...(gameState.move_history || []), moveRecord];
   
   try {
-    const { error } = await supabaseClient
-      .from('checkers_games')
-      .update(update)
-      .eq('id', gameId);
+    const { error } = await sb.from('checkers_rooms')
+      .update({
+        board: board,
+        turn: newTurn,
+        status: newStatus,
+        winner: winner,
+        move_history: moveHistory,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentRoomId);
     
     if (error) throw error;
     
-    gameState = { ...gameState, ...update };
-    updateUI();
-    renderBoard();
-    addMoveToHistory(moveRecord);
-    addChatMessage('SYSTEM', `${currentUser} moved!`, true);
-    
-    // NEW: Check for win condition
-    checkWinCondition(board);
+    if (newStatus === 'finished' && winner) {
+      showGameOver(winner);
+    }
   } catch (e) {
     console.error('Move failed:', e);
-    addChatMessage('SYSTEM', 'Move failed. Try again.', true);
+    showToast('Move failed');
   }
 }
 
-// ── NEW: CHECK WIN CONDITION ──
-function checkWinCondition(board) {
-  const redPieces = board.flat().filter(p => p && p.color === 'red').length;
-  const blackPieces = board.flat().filter(p => p && p.color === 'black').length;
-  
-  if (redPieces === 0) {
-    endGame('black');
-  } else if (blackPieces === 0) {
-    endGame('red');
-  }
-}
-
-// ── NEW: END GAME ──
-function endGame(winner) {
-  gameState.winner = winner;
-  gameState.status = 'finished';
-  
-  const winnerName = winner === 'red' ? gameState.redPlayer : gameState.blackPlayer;
-  
-  document.getElementById('modalWinner').textContent = `${winnerName} wins! 🏆`;
-  document.getElementById('gameOverModal').classList.add('active');
-  
-  addChatMessage('SYSTEM', `Game Over! ${winnerName} wins! 🎉`, true);
-}
-
-// ── NEW: RESET GAME ──
-async function resetGame() {
-  document.getElementById('gameOverModal').classList.remove('active');
-  
-  gameState = {
-    id: gameId,
-    board: initializeBoard(),
-    turn: 'red',
-    redPlayer: null,
-    blackPlayer: null,
-    redCaptured: [],
-    blackCaptured: [],
-    status: 'waiting',
-    winner: null,
-    moveHistory: []
-  };
-  
-  try {
-    await supabaseClient.from('checkers_games').upsert({
-      ...gameState,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
-  } catch (e) {
-    console.error('Reset failed:', e);
-  }
-  
-  updateUI();
-  renderBoard();
-  document.getElementById('moveHistory').style.display = 'none';
-  document.getElementById('moveList').innerHTML = '';
-}
-
-// ── NEW: SAVE TO SCOREBOARD ──
-async function saveToScoreboard() {
-  if (!gameState.winner) return;
-  
-  const winner = gameState.winner === 'red' ? gameState.redPlayer : gameState.blackPlayer;
-  const loser = gameState.winner === 'red' ? gameState.blackPlayer : gameState.redPlayer;
-  
-  try {
-    await supabaseClient.from('scores').insert({
-      game: 'Checkers',
-      winner: winner,
-      players: [winner, loser],
-      created_at: new Date().toISOString()
-    });
-    
-    addChatMessage('SYSTEM', 'Score saved to scoreboard! 🏆', true);
-    document.getElementById('gameOverModal').classList.remove('active');
-  } catch (e) {
-    console.error('Save score failed:', e);
-    addChatMessage('SYSTEM', 'Failed to save score.', true);
-  }
-}
-
-// ── NEW: ADD MOVE TO HISTORY ──
-function addMoveToHistory(move) {
-  const historyEl = document.getElementById('moveHistory');
-  const listEl = document.getElementById('moveList');
-  historyEl.style.display = 'block';
-  
-  const item = document.createElement('div');
-  item.className = 'move-item';
-  item.textContent = `${move.player}: ${move.from} → ${move.to}${move.capture ? ' ⚔️' : ''}`;
-  listEl.prepend(item);
-}
-
-// ── LOAD GAME ──
-async function loadGame() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('checkers_games')
-      .select('*')
-      .eq('id', gameId)
-      .maybeSingle();
-    
-    if (error) {
-      await createNewGame();
-      return;
-    }
-    
-    if (data) {
-      gameState = data;
-      if (typeof gameState.board === 'string') {
-        try { gameState.board = JSON.parse(gameState.board); } catch(e) { gameState.board = initializeBoard(); }
-      }
-      if (typeof gameState.redCaptured === 'string') {
-        try { gameState.redCaptured = JSON.parse(gameState.redCaptured); } catch(e) { gameState.redCaptured = []; }
-      }
-      if (typeof gameState.blackCaptured === 'string') {
-        try { gameState.blackCaptured = JSON.parse(gameState.blackCaptured); } catch(e) { gameState.blackCaptured = []; }
-      }
-      if (typeof gameState.moveHistory === 'string') {
-        try { gameState.moveHistory = JSON.parse(gameState.moveHistory); } catch(e) { gameState.moveHistory = []; }
-      }
-    } else {
-      await createNewGame();
-    }
-    
-    updateUI();
-    renderBoard();
-    
-    // Render move history
-    if (gameState.moveHistory && gameState.moveHistory.length > 0) {
-      document.getElementById('moveHistory').style.display = 'block';
-      document.getElementById('moveList').innerHTML = '';
-      gameState.moveHistory.forEach(move => addMoveToHistory(move));
-    }
-  } catch (e) {
-    console.error('Load game failed:', e);
-    await createNewGame();
-  }
-}
-
-async function createNewGame() {
-  gameState = {
-    id: gameId,
-    board: initializeBoard(),
-    turn: 'red',
-    redPlayer: null,
-    blackPlayer: null,
-    redCaptured: [],
-    blackCaptured: [],
-    status: 'waiting',
-    winner: null,
-    moveHistory: []
-  };
-  
-  try {
-    await supabaseClient.from('checkers_games').upsert({
-      ...gameState,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
-  } catch (e) {
-    console.error('Create game failed:', e);
-  }
-  
-  updateUI();
-  renderBoard();
-}
-
-// ── UPDATE UI ──
+// ═══════════════════════════════════════
+// UPDATE UI
+// ═══════════════════════════════════════
 function updateUI() {
-  const p1 = gameState.redPlayer;
+  if (!gameState) return;
+  
+  const p1 = gameState.red_player;
   document.getElementById('p1Name').textContent = p1 || 'Waiting...';
   document.getElementById('p1Avatar').textContent = p1 ? p1[0] : '?';
   document.getElementById('p1Status').textContent = p1 ? 'Ready' : 'Waiting';
   document.getElementById('p1Status').className = `status-badge ${p1 ? 'ready' : 'waiting'}`;
   
-  let redCap = gameState.redCaptured || [];
-  let blackCap = gameState.blackCaptured || [];
-  if (typeof redCap === 'string') { try { redCap = JSON.parse(redCap); } catch(e) { redCap = []; } }
-  if (typeof blackCap === 'string') { try { blackCap = JSON.parse(blackCap); } catch(e) { blackCap = []; } }
+  const p1JoinArea = document.getElementById('p1JoinArea');
+  if (p1) {
+    p1JoinArea.style.display = 'none';
+  } else {
+    p1JoinArea.style.display = 'block';
+    document.getElementById('memberSelect1').disabled = !!gameState.red_player;
+    document.getElementById('inviteBtn1').disabled = !document.getElementById('memberSelect1').value;
+  }
   
-  document.getElementById('p1Captured').innerHTML = redCap
-    .map(() => `<div class="captured-piece black"></div>`).join('');
-  
-  const p2 = gameState.blackPlayer;
+  const p2 = gameState.black_player;
   document.getElementById('p2Name').textContent = p2 || 'Waiting...';
   document.getElementById('p2Avatar').textContent = p2 ? p2[0] : '?';
   document.getElementById('p2Status').textContent = p2 ? 'Ready' : 'Waiting';
   document.getElementById('p2Status').className = `status-badge ${p2 ? 'ready' : 'waiting'}`;
-  document.getElementById('p2Captured').innerHTML = blackCap
-    .map(() => `<div class="captured-piece red"></div>`).join('');
+  
+  const p2JoinArea = document.getElementById('p2JoinArea');
+  if (p2) {
+    p2JoinArea.style.display = 'none';
+  } else {
+    p2JoinArea.style.display = 'block';
+    document.getElementById('memberSelect2').disabled = !!gameState.black_player;
+    document.getElementById('inviteBtn2').disabled = !document.getElementById('memberSelect2').value;
+  }
   
   const turnBar = document.getElementById('turnBar');
-  turnBar.textContent = gameState.turn === 'red' ? "Red's Turn" : "Black's Turn";
-  turnBar.className = `turn-bar ${gameState.turn}-turn`;
-  
-  document.getElementById('p1Avatar').classList.toggle('active-turn', gameState.turn === 'red');
-  document.getElementById('p2Avatar').classList.toggle('active-turn', gameState.turn === 'black');
-  
-  if (p1) {
-    document.getElementById('memberSelect1').disabled = true;
-    document.getElementById('inviteBtn1').disabled = true;
+  if (gameState.status === 'waiting') {
+    turnBar.textContent = 'Waiting for players...';
+    turnBar.className = 'turn-bar';
+  } else if (gameState.status === 'playing') {
+    turnBar.textContent = gameState.turn === 'red' ? "Red's Turn" : "Black's Turn";
+    turnBar.className = `turn-bar ${gameState.turn}-turn`;
+  } else if (gameState.status === 'finished') {
+    turnBar.textContent = `Game Over — ${gameState.winner} Wins!`;
+    turnBar.className = 'turn-bar';
+    turnBar.style.background = 'rgba(201,168,76,0.2)';
+    turnBar.style.color = 'var(--gold-bright)';
   }
-  if (p2) {
-    document.getElementById('memberSelect2').disabled = true;
-    document.getElementById('inviteBtn2').disabled = true;
-  }
+  
+  document.getElementById('p1Avatar').classList.toggle('active-turn', gameState.turn === 'red' && gameState.status === 'playing');
+  document.getElementById('p2Avatar').classList.toggle('active-turn', gameState.turn === 'black' && gameState.status === 'playing');
 }
 
-// ── REALTIME ──
-function setupGameRealtime() {
-  try {
-    supabaseClient
-      .channel('checkers_updates')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'checkers_games', filter: `id=eq.${gameId}` },
-        (payload) => {
-          const newState = payload.new;
-          if (typeof newState.board === 'string') {
-            try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
-          }
-          if (typeof newState.redCaptured === 'string') {
-            try { newState.redCaptured = JSON.parse(newState.redCaptured); } catch(e) { newState.redCaptured = []; }
-          }
-          if (typeof newState.blackCaptured === 'string') {
-            try { newState.blackCaptured = JSON.parse(newState.blackCaptured); } catch(e) { newState.blackCaptured = []; }
-          }
-          if (typeof newState.moveHistory === 'string') {
-            try { newState.moveHistory = JSON.parse(newState.moveHistory); } catch(e) { newState.moveHistory = []; }
-          }
-          
-          gameState = newState;
-          updateUI();
-          renderBoard();
-          
-          if (gameState.status === 'playing' && gameState.turn !== playerRole) {
-            addChatMessage('SYSTEM', `${gameState.turn === 'red' ? 'Red' : 'Black'}'s turn!`, true);
-          }
-          
-          // NEW: Check if game ended
-          if (gameState.winner) {
-            endGame(gameState.winner);
-          }
+// ═══════════════════════════════════════
+// REALTIME
+// ═══════════════════════════════════════
+function setupRealtime() {
+  if (realtimeChannel) realtimeChannel.unsubscribe();
+  
+  realtimeChannel = sb
+    .channel('room_' + currentRoomId)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'checkers_rooms', filter: `id=eq.${currentRoomId}` },
+      (payload) => {
+        const newState = payload.new;
+        if (typeof newState.board === 'string') {
+          try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
         }
-      )
-      .subscribe((status) => {
-        console.log('Game realtime status:', status);
-      });
-  } catch (e) {
-    console.error('Game realtime failed:', e);
-  }
+        gameState = newState;
+        updateUI();
+        renderBoard();
+        
+        if (newState.status === 'playing' && newState.turn !== playerRole) {
+          addChatMessage('SYSTEM', `${newState.turn === 'red' ? 'Red' : 'Black'}'s turn!`, true);
+        }
+        
+        if (newState.status === 'finished' && newState.winner) {
+          showGameOver(newState.winner);
+        }
+      }
+    )
+    .subscribe();
 }
 
-// ── CHAT ──
+// ═══════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════
 function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
-  if (!text) return;
+  if (!text || !currentRoomId) return;
   
   const name = currentUser || 'Spectator';
-  
   addChatMessage(name, text, false);
-  syncChatMessage(name, text);
+  
+  sb.from('checkers_chat').insert({
+    room_id: currentRoomId,
+    player: name,
+    message: text,
+    created_at: new Date().toISOString()
+  }).catch(e => console.error('Chat sync failed:', e));
+  
   input.value = '';
 }
 
@@ -1458,50 +1535,103 @@ function addChatMessage(name, text, isSystem) {
   const container = document.getElementById('chatMessages');
   const div = document.createElement('div');
   div.className = `chat-msg ${name === currentUser ? 'own' : ''} ${isSystem ? 'system' : ''}`;
-  
   const safeName = name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  
   div.innerHTML = `<span class="msg-name">${safeName}</span><span class="msg-text">${safeText}</span>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
 
-async function syncChatMessage(name, text) {
+function setupChat() {
+  if (chatChannel) chatChannel.unsubscribe();
+  
+  chatChannel = sb
+    .channel('chat_' + currentRoomId)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'checkers_chat', filter: `room_id=eq.${currentRoomId}` },
+      (payload) => {
+        const msg = payload.new;
+        if (msg.player !== currentUser) {
+          addChatMessage(msg.player, msg.message, false);
+        }
+      }
+    )
+    .subscribe();
+}
+
+// ═══════════════════════════════════════
+// GAME OVER
+// ═══════════════════════════════════════
+function showGameOver(winner) {
+  document.getElementById('modalWinner').textContent = `${winner} Wins! 🏆`;
+  document.getElementById('gameOverModal').classList.add('active');
+  
+  // Auto-save to scoreboard
+  saveToScoreboard(winner);
+}
+
+async function saveToScoreboard(winner) {
+  const loser = winner === gameState.red_player ? gameState.black_player : gameState.red_player;
+  if (!winner || !loser) return;
+  
   try {
-    await supabaseClient.from('checkers_chat').insert({
-      game_id: gameId,
-      player: name,
-      message: text,
+    await sb.from('scores').insert({
+      game: 'Checkers',
+      winner: winner,
+      players: JSON.stringify([winner, loser]),
       created_at: new Date().toISOString()
     });
   } catch (e) {
-    console.error('Chat sync failed:', e);
+    console.error('Save score failed:', e);
   }
 }
 
-function setupChatRealtime() {
+function playAgain() {
+  document.getElementById('gameOverModal').classList.remove('active');
+  resetBoard();
+}
+
+async function resetBoard() {
   try {
-    supabaseClient
-      .channel('checkers_chat')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'checkers_chat', filter: `game_id=eq.${gameId}` },
-        (payload) => {
-          const msg = payload.new;
-          if (msg.player !== currentUser) {
-            addChatMessage(msg.player, msg.message, false);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Chat realtime status:', status);
-      });
+    await sb.from('checkers_rooms')
+      .update({
+        board: initializeBoard(),
+        turn: 'red',
+        status: 'playing',
+        winner: null,
+        move_history: [],
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', currentRoomId);
   } catch (e) {
-    console.error('Chat realtime failed:', e);
+    console.error('Reset failed:', e);
   }
 }
 
-// ── START ──
+function backToLobby() {
+  document.getElementById('gameOverModal').classList.remove('active');
+  leaveRoom();
+}
+
+// ═══════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════
+// START
+// ═══════════════════════════════════════
 init();
 </script>
 

@@ -5,67 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chapter 17 — Math Duel</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&family=Cinzel:wght@400;700&family=Raleway:wght@200;300;400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --bg: #080806;
-      --gold: #C9A84C;
-      --gold-bright: #FFD700;
-      --gold-border: rgba(201,168,76,0.25);
-      --gold-dim: rgba(201,168,76,0.08);
-      --white: #f5f0e8;
-      --muted: rgba(245,240,232,0.45);
+      --bg: #080806; --gold: #C9A84C; --gold-bright: #FFD700;
+      --gold-border: rgba(201,168,76,0.25); --gold-dim: rgba(201,168,76,0.08);
+      --white: #f5f0e8; --muted: rgba(245,240,232,0.45);
       --card-bg: rgba(15,15,12,0.9);
-      --correct: rgba(50,200,100,0.2);
-      --wrong: rgba(200,50,50,0.2);
-      --correct-border: rgba(50,200,100,0.6);
-      --wrong-border: rgba(200,50,50,0.6);
+      --correct: rgba(50,200,100,0.2); --wrong: rgba(200,50,50,0.2);
+      --correct-border: rgba(50,200,100,0.6); --wrong-border: rgba(200,50,50,0.6);
     }
-
     html { scroll-behavior: smooth; }
     body { background: var(--bg); color: var(--white); font-family: 'Raleway', sans-serif; min-height: 100vh; }
-
-    body::before {
-      content: ''; position: fixed; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.04; pointer-events: none; z-index: 100;
-    }
-
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 48px; height: 68px;
-      background: rgba(8,8,6,0.95); backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--gold-border);
-    }
+    body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E"); opacity: 0.04; pointer-events: none; z-index: 100; }
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 68px; background: rgba(8,8,6,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--gold-border); }
     .nav-logo { font-family: 'Cinzel', serif; font-size: 0.85rem; letter-spacing: 5px; color: var(--gold); text-decoration: none; }
     .nav-back { font-family: 'Raleway', sans-serif; font-weight: 300; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color 0.3s; }
     .nav-back:hover { color: var(--gold); }
-
     .hero { padding: 100px 48px 40px; text-align: center; position: relative; }
     .hero-glow { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); width: 500px; height: 300px; background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%); pointer-events: none; }
     .page-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 12px; opacity: 0; animation: fadeUp 0.8s ease 0.2s forwards; }
     .page-title { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2.5rem, 8vw, 5rem); background: linear-gradient(160deg, #fff8e7 0%, var(--gold-bright) 45%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 30px rgba(201,168,76,0.25)); opacity: 0; animation: fadeUp 0.8s ease 0.4s forwards; }
-
     .content { max-width: 700px; margin: 0 auto; padding: 0 24px 100px; }
-
     .screen { display: none; }
     .screen.active { display: block; }
 
-    /* ── SETUP ── */
-    .panel {
-      background: var(--card-bg); border: 1px solid var(--gold-border);
-      border-radius: 4px; padding: 36px; margin-bottom: 24px;
-      opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards;
-    }
+    /* ── PANEL ── */
+    .panel { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 36px; margin-bottom: 24px; opacity: 0; animation: fadeUp 0.8s ease 0.6s forwards; }
     .panel-title { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 24px; }
+
+    /* ── MODE TABS ── */
+    .mode-tabs { display: flex; gap: 0; margin-bottom: 28px; border: 1px solid var(--gold-border); border-radius: 3px; overflow: hidden; }
+    .mode-tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); background: transparent; border: none; transition: all 0.2s; }
+    .mode-tab.active { background: var(--gold-dim); color: var(--gold); border-bottom: 2px solid var(--gold); }
+    .mode-tab:hover:not(.active) { color: var(--white); }
+
+    /* ── ROOM SECTION ── */
+    .room-section { display: none; }
+    .room-section.visible { display: block; }
+    .room-code-display { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: var(--gold-bright); text-align: center; letter-spacing: 8px; filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); margin: 20px 0; display: block; }
+    .room-status { text-align: center; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 4px; color: var(--muted); margin-bottom: 20px; }
+    .room-status.waiting { color: var(--gold); }
+    .room-status.ready { color: #4cc96e; }
+    .waiting-dots::after { content: '...'; animation: dots 1.5s infinite; }
+    @keyframes dots { 0%,100%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
 
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .input-group { display: flex; flex-direction: column; gap: 8px; }
     .input-group label { font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; font-family: 'Cinzel', serif; }
-
-    input[type="text"], select {
+    input[type="text"], input[type="number"], select {
       background: rgba(201,168,76,0.05); border: 1px solid var(--gold-border);
       border-radius: 3px; color: var(--white); font-family: 'Raleway', sans-serif;
       font-size: 0.82rem; letter-spacing: 1px; padding: 12px 16px;
@@ -75,167 +64,85 @@
     input::placeholder { color: var(--muted); font-size: 0.75rem; }
     select option { background: #0f0f0c; }
 
-    /* difficulty pills */
     .diff-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-    .diff-pill {
-      background: var(--gold-dim); border: 1px solid var(--gold-border);
-      border-radius: 2px; padding: 8px 20px; cursor: pointer;
-      font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px;
-      color: var(--muted); transition: all 0.2s; user-select: none;
-    }
+    .diff-pill { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 2px; padding: 8px 20px; cursor: pointer; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--muted); transition: all 0.2s; user-select: none; }
     .diff-pill.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
 
-    .btn-start {
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-      border: none; border-radius: 3px; color: #080806;
-      font-family: 'Cinzel', serif; font-size: 0.65rem;
-      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
-      transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2);
-      position: relative; overflow: hidden;
-    }
+    .btn-start { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%; transition: all 0.3s; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; }
     .btn-start::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
     .btn-start:hover::before { opacity: 1; }
     .btn-start:hover { transform: translateY(-1px); }
     .btn-start span { position: relative; z-index: 1; }
+    .btn-secondary { background: var(--gold-dim); border: 1px solid var(--gold-border); border-radius: 3px; color: var(--gold); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 12px; cursor: pointer; width: 100%; transition: all 0.2s; margin-top: 10px; }
+    .btn-secondary:hover { border-color: var(--gold); background: rgba(201,168,76,0.15); }
 
-    /* ── COUNTDOWN SPLASH ── */
-    .countdown-splash {
-      text-align: center; padding: 60px 24px;
-    }
-    .splash-num {
-      font-family: 'Cormorant Garamond', serif; font-weight: 700;
-      font-size: 10rem; color: var(--gold-bright);
-      filter: drop-shadow(0 0 40px rgba(255,215,0,0.5));
-      display: block; animation: splashPop 0.4s ease;
-    }
+    /* ── COUNTDOWN ── */
+    .countdown-splash { text-align: center; padding: 60px 24px; }
+    .splash-num { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 10rem; color: var(--gold-bright); filter: drop-shadow(0 0 40px rgba(255,215,0,0.5)); display: block; animation: splashPop 0.4s ease; }
     .splash-text { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 8px; color: var(--muted); margin-top: 16px; }
     @keyframes splashPop { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     /* ── GAME ── */
-    .score-bar {
-      display: grid; grid-template-columns: 1fr auto 1fr;
-      align-items: center; gap: 16px;
-      background: var(--card-bg); border: 1px solid var(--gold-border);
-      border-radius: 4px; padding: 20px 28px; margin-bottom: 20px;
-    }
+    .score-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 20px 28px; margin-bottom: 20px; }
     .score-player { text-align: center; }
     .score-player.active-p { border-radius: 3px; background: var(--gold-dim); padding: 8px; border: 1px solid var(--gold-border); }
     .score-name { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); display: block; margin-bottom: 4px; }
     .score-num { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 2.5rem; color: var(--gold-bright); filter: drop-shadow(0 0 10px rgba(255,215,0,0.3)); display: block; }
     .score-vs { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 4px; color: var(--muted); text-align: center; }
-
-    /* progress */
     .progress-wrap { margin-bottom: 20px; }
     .progress-info { display: flex; justify-content: space-between; margin-bottom: 6px; }
     .progress-info span { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); }
     .progress-bar { height: 3px; background: var(--gold-border); border-radius: 2px; overflow: hidden; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width 0.4s ease; }
-
-    /* question display */
-    .question-wrap {
-      background: var(--card-bg); border: 1px solid var(--gold-border);
-      border-radius: 4px; padding: 36px; margin-bottom: 20px; text-align: center;
-      position: relative;
-    }
+    .question-wrap { background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; padding: 36px; margin-bottom: 20px; text-align: center; position: relative; }
     .q-player-label { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 5px; color: var(--gold); display: block; margin-bottom: 16px; }
-    .q-equation {
-      font-family: 'Cormorant Garamond', serif; font-weight: 700;
-      font-size: clamp(2.5rem, 10vw, 5rem);
-      color: var(--white); letter-spacing: 4px;
-      filter: drop-shadow(0 0 20px rgba(201,168,76,0.15));
-    }
-    .q-type-badge {
-      position: absolute; top: 14px; right: 14px;
-      font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 2px;
-      background: var(--gold-dim); border: 1px solid var(--gold-border);
-      color: var(--gold); padding: 3px 10px; border-radius: 2px;
-    }
-
-    /* timer bar */
+    .q-equation { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2.5rem, 10vw, 5rem); color: var(--white); letter-spacing: 4px; filter: drop-shadow(0 0 20px rgba(201,168,76,0.15)); }
+    .q-type-badge { position: absolute; top: 14px; right: 14px; font-family: 'Cinzel', serif; font-size: 0.5rem; letter-spacing: 2px; background: var(--gold-dim); border: 1px solid var(--gold-border); color: var(--gold); padding: 3px 10px; border-radius: 2px; }
     .timer-bar-wrap { margin-bottom: 20px; }
     .timer-bar-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
     .timer-bar-row span { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 3px; color: var(--muted); }
     .timer-bar-track { height: 6px; background: var(--gold-border); border-radius: 3px; overflow: hidden; }
     .timer-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-bright), var(--gold)); transition: width 0.1s linear; border-radius: 3px; }
     .timer-bar-fill.urgent { background: linear-gradient(90deg, #ff6b6b, #ff4444); }
-
-    /* answer input */
     .answer-row { display: flex; gap: 12px; margin-bottom: 16px; }
-    .answer-input {
-      flex: 1; background: rgba(201,168,76,0.05); border: 2px solid var(--gold-border);
-      border-radius: 3px; color: var(--white); font-family: 'Cormorant Garamond', serif;
-      font-size: 1.8rem; font-weight: 700; letter-spacing: 2px; padding: 16px 20px;
-      outline: none; transition: all 0.3s ease; text-align: center;
-    }
+    .answer-input { flex: 1; background: rgba(201,168,76,0.05); border: 2px solid var(--gold-border); border-radius: 3px; color: var(--white); font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 700; letter-spacing: 2px; padding: 16px 20px; outline: none; transition: all 0.3s ease; text-align: center; }
     .answer-input:focus { border-color: var(--gold); background: rgba(201,168,76,0.08); box-shadow: 0 0 20px rgba(201,168,76,0.15); }
     .answer-input.correct-input { border-color: var(--correct-border); background: var(--correct); }
     .answer-input.wrong-input { border-color: var(--wrong-border); background: var(--wrong); }
-
-    .btn-submit {
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-      border: none; border-radius: 3px; color: #080806;
-      font-family: 'Cinzel', serif; font-size: 0.65rem;
-      letter-spacing: 3px; padding: 16px 28px; cursor: pointer;
-      transition: all 0.3s; box-shadow: 0 0 20px rgba(201,168,76,0.2);
-      white-space: nowrap;
-    }
+    .btn-submit { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 3px; padding: 16px 28px; cursor: pointer; transition: all 0.3s; box-shadow: 0 0 20px rgba(201,168,76,0.2); white-space: nowrap; }
     .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
     .btn-submit:disabled { opacity: 0.5; cursor: default; transform: none; }
-
-    /* feedback */
-    .feedback {
-      text-align: center; padding: 14px; border-radius: 3px; margin-bottom: 16px;
-      font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic;
-      min-height: 52px; transition: all 0.3s;
-    }
+    .feedback { text-align: center; padding: 14px; border-radius: 3px; margin-bottom: 16px; font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; min-height: 52px; transition: all 0.3s; }
     .feedback.correct-fb { background: var(--correct); border: 1px solid var(--correct-border); color: #7fff9a; }
-    .feedback.wrong-fb   { background: var(--wrong);   border: 1px solid var(--wrong-border);   color: #ff9a9a; }
+    .feedback.wrong-fb { background: var(--wrong); border: 1px solid var(--wrong-border); color: #ff9a9a; }
     .feedback.timeout-fb { background: rgba(255,165,0,0.15); border: 1px solid rgba(255,165,0,0.4); color: #ffb347; }
-
-    .btn-next {
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-      border: none; border-radius: 3px; color: #080806;
-      font-family: 'Cinzel', serif; font-size: 0.65rem;
-      letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%;
-      transition: all 0.3s; display: none;
-    }
+    .btn-next { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px; cursor: pointer; width: 100%; transition: all 0.3s; display: none; }
     .btn-next:hover { opacity: 0.9; transform: translateY(-1px); }
 
+    /* ── WAITING FOR OPPONENT ── */
+    .waiting-screen { text-align: center; padding: 40px 24px; background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 4px; margin-bottom: 20px; }
+    .waiting-title { font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 5px; color: var(--gold); margin-bottom: 12px; display: block; }
+    .waiting-msg { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--muted); }
+
     /* ── RESULTS ── */
-    .results-card {
-      background: var(--card-bg); border: 1px solid var(--gold);
-      border-radius: 4px; padding: 48px; text-align: center;
-      position: relative; overflow: hidden;
-    }
+    .results-card { background: var(--card-bg); border: 1px solid var(--gold); border-radius: 4px; padding: 48px; text-align: center; position: relative; overflow: hidden; }
     .results-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,168,76,0.07) 0%, transparent 70%); pointer-events: none; }
     .result-tag { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 8px; color: var(--gold); display: block; margin-bottom: 16px; }
     .result-winner { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: clamp(2rem, 7vw, 4rem); background: linear-gradient(160deg, #fff8e7, var(--gold-bright), var(--gold)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; filter: drop-shadow(0 0 20px rgba(201,168,76,0.3)); margin-bottom: 8px; }
     .result-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--muted); margin-bottom: 32px; }
-
     .result-scores { display: flex; justify-content: center; gap: 40px; margin-bottom: 32px; }
     .result-player { text-align: center; }
     .result-player-name { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 4px; color: var(--gold); display: block; margin-bottom: 6px; }
     .result-player-score { font-family: 'Cormorant Garamond', serif; font-size: 3rem; font-weight: 700; color: var(--white); display: block; }
     .result-player-detail { font-family: 'Raleway', sans-serif; font-size: 0.65rem; color: var(--muted); letter-spacing: 1px; display: block; margin-top: 4px; }
-
-    .btn-play-again {
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
-      border: none; border-radius: 3px; color: #080806;
-      font-family: 'Cinzel', serif; font-size: 0.65rem;
-      letter-spacing: 5px; padding: 14px 48px; cursor: pointer; transition: all 0.3s;
-    }
+    .btn-play-again { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 48px; cursor: pointer; transition: all 0.3s; }
     .btn-play-again:hover { opacity: 0.9; transform: translateY(-1px); }
 
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card-bg); border: 1px solid var(--gold-border); border-radius: 3px; padding: 12px 28px; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; color: var(--gold); z-index: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
 
-    @media (max-width: 600px) {
-      nav { padding: 0 20px; }
-      .hero { padding: 90px 20px 30px; }
-      .form-grid { grid-template-columns: 1fr; }
-      .score-bar { padding: 14px; gap: 8px; }
-      .answer-row { flex-direction: column; }
-      .btn-submit { width: 100%; }
-    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 600px) { nav { padding: 0 20px; } .hero { padding: 90px 20px 30px; } .form-grid { grid-template-columns: 1fr; } .score-bar { padding: 14px; gap: 8px; } .answer-row { flex-direction: column; } .btn-submit { width: 100%; } }
   </style>
 </head>
 <body>
@@ -257,46 +164,111 @@
   <div class="screen active" id="setupScreen">
     <div class="panel">
       <p class="panel-title">Set Up The Duel</p>
-      <div class="form-grid">
-        <div class="input-group">
-          <label>Player 1</label>
-          <input type="text" id="p1Name" placeholder="Player 1 name"/>
-        </div>
-        <div class="input-group">
-          <label>Player 2</label>
-          <input type="text" id="p2Name" placeholder="Player 2 name"/>
-        </div>
+
+      <!-- Mode tabs -->
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="tabLocal" onclick="switchMode('local')">⚔️ Same Device</button>
+        <button class="mode-tab" id="tabCreate" onclick="switchMode('create')">🏠 Create Room</button>
+        <button class="mode-tab" id="tabJoin" onclick="switchMode('join')">🔑 Join Room</button>
       </div>
-      <div class="form-grid">
-        <div class="input-group">
-          <label>Rounds</label>
-          <select id="rounds">
-            <option value="5">5 Rounds</option>
-            <option value="10" selected>10 Rounds</option>
-            <option value="15">15 Rounds</option>
-          </select>
+
+      <!-- LOCAL MODE -->
+      <div id="localSection">
+        <div class="form-grid">
+          <div class="input-group">
+            <label for="p1Select">Player 1</label>
+            <select id="p1Select"><option value="">Loading members...</option></select>
+          </div>
+          <div class="input-group">
+            <label for="p2Select">Player 2</label>
+            <select id="p2Select"><option value="">Loading members...</option></select>
+          </div>
         </div>
-        <div class="input-group">
-          <label>Seconds per question</label>
-          <select id="timeLimit">
-            <option value="10">10 seconds</option>
-            <option value="15" selected>15 seconds</option>
-            <option value="20">20 seconds</option>
-          </select>
+        <div class="form-grid">
+          <div class="input-group">
+            <label for="rounds">Rounds</label>
+            <select id="rounds">
+              <option value="5">5 Rounds</option>
+              <option value="10" selected>10 Rounds</option>
+              <option value="15">15 Rounds</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="timeLimit">Seconds per question</label>
+            <select id="timeLimit">
+              <option value="10">10 seconds</option>
+              <option value="15" selected>15 seconds</option>
+              <option value="20">20 seconds</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group" style="margin-bottom:20px">
+          <label>Difficulty</label>
+          <div class="diff-pills" id="diffPills">
+            <span class="diff-pill selected" data-diff="easy">Easy 😌</span>
+            <span class="diff-pill" data-diff="medium">Medium 😤</span>
+            <span class="diff-pill" data-diff="hard">Hard 😰</span>
+            <span class="diff-pill" data-diff="insane">Insane 💀</span>
+          </div>
+        </div>
+        <button class="btn-start" onclick="startLocalGame()"><span>Start Duel 🔢</span></button>
+      </div>
+
+      <!-- CREATE ROOM MODE -->
+      <div id="createSection" class="room-section">
+        <div class="input-group" style="margin-bottom:16px">
+          <label for="hostSelect">Your Name</label>
+          <select id="hostSelect"><option value="">Loading members...</option></select>
+        </div>
+        <div class="form-grid">
+          <div class="input-group">
+            <label for="roomRounds">Rounds</label>
+            <select id="roomRounds">
+              <option value="5">5 Rounds</option>
+              <option value="10" selected>10 Rounds</option>
+              <option value="15">15 Rounds</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="roomTimeLimit">Seconds per question</label>
+            <select id="roomTimeLimit">
+              <option value="10">10 seconds</option>
+              <option value="15" selected>15 seconds</option>
+              <option value="20">20 seconds</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group" style="margin-bottom:20px">
+          <label>Difficulty</label>
+          <div class="diff-pills" id="roomDiffPills">
+            <span class="diff-pill selected" data-diff="easy">Easy 😌</span>
+            <span class="diff-pill" data-diff="medium">Medium 😤</span>
+            <span class="diff-pill" data-diff="hard">Hard 😰</span>
+            <span class="diff-pill" data-diff="insane">Insane 💀</span>
+          </div>
+        </div>
+        <button class="btn-start" onclick="createRoom()"><span>Create Room 🏠</span></button>
+        <!-- Code shown after room created -->
+        <div id="roomCreatedBox" style="display:none;margin-top:24px;text-align:center;">
+          <p style="font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:4px;color:var(--muted);margin-bottom:8px;">SHARE THIS CODE</p>
+          <span class="room-code-display" id="createdRoomCode">—</span>
+          <p class="room-status waiting" id="roomWaitStatus"><span class="waiting-dots">Waiting for opponent</span></p>
         </div>
       </div>
 
-      <div class="input-group" style="margin-bottom:20px">
-        <label>Difficulty</label>
-        <div class="diff-pills">
-          <span class="diff-pill selected" data-diff="easy">Easy 😌</span>
-          <span class="diff-pill" data-diff="medium">Medium 😤</span>
-          <span class="diff-pill" data-diff="hard">Hard 😰</span>
-          <span class="diff-pill" data-diff="insane">Insane 💀</span>
+      <!-- JOIN ROOM MODE -->
+      <div id="joinSection" class="room-section">
+        <div class="input-group" style="margin-bottom:16px">
+          <label for="guestSelect">Your Name</label>
+          <select id="guestSelect"><option value="">Loading members...</option></select>
         </div>
+        <div class="input-group" style="margin-bottom:20px">
+          <label for="joinCodeInput">Room Code</label>
+          <input type="text" id="joinCodeInput" placeholder="e.g. C17-4829" style="text-transform:uppercase;letter-spacing:4px;font-size:1.1rem;text-align:center;"/>
+        </div>
+        <button class="btn-start" onclick="joinRoom()"><span>Join Room 🔑</span></button>
       </div>
 
-      <button class="btn-start" onclick="startGame()"><span>Start Duel 🔢</span></button>
     </div>
   </div>
 
@@ -310,7 +282,6 @@
 
   <!-- ── GAME ── -->
   <div class="screen" id="gameScreen">
-
     <div class="score-bar">
       <div class="score-player" id="scoreP1wrap">
         <span class="score-name" id="scoreP1name">P1</span>
@@ -322,7 +293,6 @@
         <span class="score-num" id="scoreP2">0</span>
       </div>
     </div>
-
     <div class="progress-wrap">
       <div class="progress-info">
         <span id="progressLabel">Round 1</span>
@@ -330,13 +300,11 @@
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
-
     <div class="question-wrap">
       <span class="q-player-label" id="qPlayerLabel">Player 1's Turn</span>
       <p class="q-equation" id="qEquation">12 + 7 = ?</p>
       <span class="q-type-badge" id="qTypeBadge">Addition</span>
     </div>
-
     <div class="timer-bar-wrap">
       <div class="timer-bar-row">
         <span id="timerLabel">15s</span>
@@ -344,16 +312,20 @@
       </div>
       <div class="timer-bar-track"><div class="timer-bar-fill" id="timerFill" style="width:100%"></div></div>
     </div>
-
-    <div class="answer-row">
-      <input type="number" class="answer-input" id="answerInput" placeholder="?" autocomplete="off"
-        onkeydown="if(event.key==='Enter') submitAnswer()"/>
-      <button class="btn-submit" id="btnSubmit" onclick="submitAnswer()">Submit</button>
+    <!-- Waiting for opponent panel (multiplayer) -->
+    <div class="waiting-screen" id="waitingOpponent" style="display:none;">
+      <span class="waiting-title">WAITING FOR OPPONENT</span>
+      <p class="waiting-msg"><span class="waiting-dots">Their turn</span></p>
     </div>
-
-    <div class="feedback" id="feedback"></div>
-    <button class="btn-next" id="btnNext" onclick="nextRound()">Next Round →</button>
-
+    <div id="answerSection">
+      <div class="answer-row">
+        <input type="number" class="answer-input" id="answerInput" placeholder="?" autocomplete="off"
+          onkeydown="if(event.key==='Enter') submitAnswer()"/>
+        <button class="btn-submit" id="btnSubmit" onclick="submitAnswer()">Submit</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext" onclick="nextRound()">Next Round →</button>
+    </div>
   </div>
 
   <!-- ── RESULTS ── -->
@@ -380,91 +352,300 @@
 
 </div>
 
-<script>
-  // ── STATE
-  let p1, p2, scores, correct, totalRounds, timeLimitSecs, difficulty;
-  let currentRound, currentPlayer, timerInterval, timeLeft;
-  let currentAnswer, stats;
+<div class="toast" id="toast"></div>
 
-  // ── DIFFICULTY PILLS
-  let selectedDiff = 'easy';
-  document.querySelectorAll('.diff-pill').forEach(pill => {
+<script>
+  // ── SUPABASE ──
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://whgxunnlxhcfthkpcbjd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
+  );
+
+  // ── STATE ──
+  let p1, p2, scores, totalRounds, timeLimitSecs, difficulty, selectedDiff = 'easy';
+  let currentRound, currentPlayer, timerInterval, timeLeft;
+  let currentAnswer, stats, questionStartTime;
+
+  // Multiplayer state
+  let gameMode = 'local'; // 'local' | 'create' | 'join'
+  let roomCode = null;
+  let myRole = null;       // 'host' | 'guest'
+  let myName = localStorage.getItem('loggedInUser') || '';
+  let roomChannel = null;
+  let roomDiffSelected = 'easy';
+  let waitingForOpponent = false;
+  let questionSeed = null; // shared seed so both devices get same question
+
+  // ── INIT ──
+  async function init() {
+    await loadMembers();
+  }
+
+  async function loadMembers() {
+    const { data, error } = await sb.from('members').select('name').order('name');
+    if (error) { console.error('Members load error:', error); return; }
+
+    const members = data || [];
+    const selects = ['p1Select','p2Select','hostSelect','guestSelect'];
+
+    selects.forEach(id => {
+      const sel = document.getElementById(id);
+      sel.innerHTML = '<option value="">Select name...</option>';
+      members.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.name;
+        opt.textContent = m.name;
+        // Pre-select logged-in user where appropriate
+        if ((id === 'hostSelect' || id === 'guestSelect') && m.name === myName) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  // ── MODE SWITCHING ──
+  function switchMode(mode) {
+    gameMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('localSection').style.display = 'none';
+    document.getElementById('createSection').classList.remove('visible');
+    document.getElementById('joinSection').classList.remove('visible');
+
+    if (mode === 'local') {
+      document.getElementById('tabLocal').classList.add('active');
+      document.getElementById('localSection').style.display = 'block';
+    } else if (mode === 'create') {
+      document.getElementById('tabCreate').classList.add('active');
+      document.getElementById('createSection').classList.add('visible');
+    } else {
+      document.getElementById('tabJoin').classList.add('active');
+      document.getElementById('joinSection').classList.add('visible');
+    }
+  }
+
+  // ── DIFFICULTY PILLS (both local and room) ──
+  document.querySelectorAll('#diffPills .diff-pill').forEach(pill => {
     pill.addEventListener('click', () => {
-      document.querySelectorAll('.diff-pill').forEach(p => p.classList.remove('selected'));
+      document.querySelectorAll('#diffPills .diff-pill').forEach(p => p.classList.remove('selected'));
       pill.classList.add('selected');
       selectedDiff = pill.dataset.diff;
     });
   });
+  document.querySelectorAll('#roomDiffPills .diff-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('#roomDiffPills .diff-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      roomDiffSelected = pill.dataset.diff;
+    });
+  });
 
-  // ── QUESTION GENERATOR
-  function generateQuestion(diff) {
+  // ── QUESTION GENERATOR ──
+  function generateQuestion(diff, seed) {
+    // Use seed so both devices generate identical questions
+    let rng = seed;
+    const seededRand = (min, max) => {
+      rng = (rng * 1664525 + 1013904223) & 0xffffffff;
+      return min + Math.abs(rng) % (max - min + 1);
+    };
+
     const ops = {
       easy:   ['+', '-'],
       medium: ['+', '-', '×'],
       hard:   ['+', '-', '×', '÷'],
       insane: ['+', '-', '×', '÷', '²', '√']
     };
-    const ranges = {
-      easy:   [1, 20],
-      medium: [1, 50],
-      hard:   [1, 100],
-      insane: [1, 200]
-    };
-
+    const ranges = { easy:[1,20], medium:[1,50], hard:[1,100], insane:[1,200] };
     const opList = ops[diff];
-    const op = opList[Math.floor(Math.random() * opList.length)];
+    const op = opList[Math.abs(seededRand(0, 1000)) % opList.length];
     const [min, max] = ranges[diff];
     let a, b, answer, display, type;
 
-    const rand = (mn, mx) => Math.floor(Math.random() * (mx - mn + 1)) + mn;
-
     switch(op) {
       case '+':
-        a = rand(min, max); b = rand(min, max);
-        answer = a + b; display = `${a} + ${b} = ?`; type = 'Addition'; break;
+        a = seededRand(min,max); b = seededRand(min,max);
+        answer = a+b; display=`${a} + ${b} = ?`; type='Addition'; break;
       case '-':
-        a = rand(min, max); b = rand(min, Math.min(a, max));
-        answer = a - b; display = `${a} − ${b} = ?`; type = 'Subtraction'; break;
+        a = seededRand(min,max); b = seededRand(min, Math.min(a,max));
+        answer = a-b; display=`${a} − ${b} = ?`; type='Subtraction'; break;
       case '×':
-        a = rand(1, diff === 'hard' || diff === 'insane' ? 20 : 12);
-        b = rand(1, diff === 'hard' || diff === 'insane' ? 20 : 12);
-        answer = a * b; display = `${a} × ${b} = ?`; type = 'Multiplication'; break;
+        a = seededRand(1, diff==='hard'||diff==='insane'?20:12);
+        b = seededRand(1, diff==='hard'||diff==='insane'?20:12);
+        answer=a*b; display=`${a} × ${b} = ?`; type='Multiplication'; break;
       case '÷':
-        b = rand(1, 15); answer = rand(1, 15); a = b * answer;
-        display = `${a} ÷ ${b} = ?`; type = 'Division'; break;
+        b = seededRand(1,15); answer=seededRand(1,15); a=b*answer;
+        display=`${a} ÷ ${b} = ?`; type='Division'; break;
       case '²':
-        a = rand(1, diff === 'insane' ? 20 : 15);
-        answer = a * a; display = `${a}² = ?`; type = 'Squares'; break;
+        a = seededRand(1, diff==='insane'?20:15);
+        answer=a*a; display=`${a}² = ?`; type='Squares'; break;
       case '√':
-        answer = rand(1, diff === 'insane' ? 20 : 12); a = answer * answer;
-        display = `√${a} = ?`; type = 'Square Roots'; break;
+        answer=seededRand(1, diff==='insane'?20:12); a=answer*answer;
+        display=`√${a} = ?`; type='Square Roots'; break;
     }
     return { display, answer, type };
   }
 
-  // ── START GAME
-  function startGame() {
-    p1 = document.getElementById('p1Name').value.trim() || 'Player 1';
-    p2 = document.getElementById('p2Name').value.trim() || 'Player 2';
-    totalRounds = parseInt(document.getElementById('rounds').value);
-    timeLimitSecs = parseInt(document.getElementById('timeLimit').value);
-    difficulty = selectedDiff;
+  // ── LOCAL GAME ──
+  function startLocalGame() {
+    p1 = document.getElementById('p1Select').value;
+    p2 = document.getElementById('p2Select').value;
+    if (!p1 || !p2) return showToast('Select both players first');
+    if (p1 === p2) return showToast('Pick two different players!');
 
-    scores = { [p1]: 0, [p2]: 0 };
-    stats  = { [p1]: { correct: 0, total: 0, fastest: null }, [p2]: { correct: 0, total: 0, fastest: null } };
-    currentRound = 0;
-    currentPlayer = 0;
+    totalRounds    = parseInt(document.getElementById('rounds').value);
+    timeLimitSecs  = parseInt(document.getElementById('timeLimit').value);
+    difficulty     = selectedDiff;
+    gameMode       = 'local';
 
-    document.getElementById('scoreP1name').textContent = p1;
-    document.getElementById('scoreP2name').textContent = p2;
-    document.getElementById('resP1name').textContent = p1;
-    document.getElementById('resP2name').textContent = p2;
-
+    initGameState();
     showScreen('countdownScreen');
     runCountdown(3);
   }
 
-  // ── COUNTDOWN SPLASH
+  function initGameState() {
+    scores = { [p1]: 0, [p2]: 0 };
+    stats  = {
+      [p1]: { correct:0, total:0, fastest:null },
+      [p2]: { correct:0, total:0, fastest:null }
+    };
+    currentRound  = 0;
+    currentPlayer = 0;
+
+    document.getElementById('scoreP1name').textContent = p1;
+    document.getElementById('scoreP2name').textContent = p2;
+    document.getElementById('resP1name').textContent   = p1;
+    document.getElementById('resP2name').textContent   = p2;
+  }
+
+  // ── CREATE ROOM ──
+  async function createRoom() {
+    const hostName = document.getElementById('hostSelect').value;
+    if (!hostName) return showToast('Select your name first');
+
+    const code = 'C17-' + Math.floor(1000 + Math.random() * 9000);
+    roomCode = code;
+    myRole   = 'host';
+    p1       = hostName;
+    totalRounds   = parseInt(document.getElementById('roomRounds').value);
+    timeLimitSecs = parseInt(document.getElementById('roomTimeLimit').value);
+    difficulty    = roomDiffSelected;
+
+    const { error } = await sb.from('game_rooms').insert({
+      room_code: code,
+      game_type: 'math_duel',
+      status: 'waiting',
+      state: {
+        host: hostName,
+        guest: null,
+        totalRounds,
+        timeLimitSecs,
+        difficulty,
+        scores: { [hostName]: 0 },
+        currentRound: 0,
+        currentPlayer: 0
+      }
+    });
+
+    if (error) { showToast('Error creating room: ' + error.message); return; }
+
+    document.getElementById('createdRoomCode').textContent = code;
+    document.getElementById('roomCreatedBox').style.display = 'block';
+
+    // Listen for guest joining
+    subscribeToRoom(code);
+    showToast('Room created! Share the code 🏠');
+  }
+
+  // ── JOIN ROOM ──
+  async function joinRoom() {
+    const guestName = document.getElementById('guestSelect').value;
+    const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+    if (!guestName) return showToast('Select your name first');
+    if (!code) return showToast('Enter a room code');
+
+    const { data, error } = await sb.from('game_rooms')
+      .select('*').eq('room_code', code).eq('game_type', 'math_duel').single();
+
+    if (error || !data) return showToast('Room not found. Check the code!');
+    if (data.status !== 'waiting') return showToast('Game already started!');
+    if (data.state.host === guestName) return showToast("You can't join your own room!");
+
+    roomCode  = code;
+    myRole    = 'guest';
+    p2        = guestName;
+    p1        = data.state.host;
+    totalRounds   = data.state.totalRounds;
+    timeLimitSecs = data.state.timeLimitSecs;
+    difficulty    = data.state.difficulty;
+
+    // Update room with guest
+    const newState = {
+      ...data.state,
+      guest: guestName,
+      scores: { [p1]: 0, [p2]: 0 }
+    };
+    await sb.from('game_rooms').update({ status: 'active', state: newState }).eq('room_code', code);
+
+    subscribeToRoom(code);
+    initGameState();
+    showScreen('countdownScreen');
+    runCountdown(3);
+    showToast(`Joined room ${code}!`);
+  }
+
+  // ── ROOM REALTIME SUBSCRIPTION ──
+  function subscribeToRoom(code) {
+    if (roomChannel) roomChannel.unsubscribe();
+
+    roomChannel = sb.channel('room-' + code)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'game_rooms',
+        filter: `room_code=eq.${code}`
+      }, payload => {
+        handleRoomUpdate(payload.new);
+      })
+      .subscribe();
+  }
+
+  function handleRoomUpdate(room) {
+    const state = room.state;
+
+    // Host sees guest joined → start game
+    if (myRole === 'host' && state.guest && room.status === 'active') {
+      p2 = state.guest;
+      document.getElementById('roomWaitStatus').textContent = `${p2} joined! Starting...`;
+      document.getElementById('roomWaitStatus').className = 'room-status ready';
+      setTimeout(() => {
+        initGameState();
+        showScreen('countdownScreen');
+        runCountdown(3);
+      }, 1000);
+      return;
+    }
+
+    // Sync opponent's answer result
+    if (state.lastAction === 'answer' && state.answeredBy !== (myRole === 'host' ? p1 : p2)) {
+      // Opponent answered — update their score and advance
+      scores[state.answeredBy] = state.scores[state.answeredBy];
+      document.getElementById(state.answeredBy === p1 ? 'scoreP1' : 'scoreP2').textContent = scores[state.answeredBy];
+
+      if (waitingForOpponent) {
+        waitingForOpponent = false;
+        // Now it's our turn
+        currentRound++;
+        currentPlayer = currentPlayer === 0 ? 1 : 0;
+        loadRound();
+      }
+    }
+
+    // Sync game over
+    if (state.status === 'finished') {
+      scores[p1] = state.scores[p1] || 0;
+      scores[p2] = state.scores[p2] || 0;
+      showResults();
+    }
+  }
+
+  // ── COUNTDOWN ──
   function runCountdown(n) {
     const numEl = document.getElementById('splashNum');
     const txtEl = document.getElementById('splashText');
@@ -478,24 +659,36 @@
     } else {
       numEl.textContent = 'GO!!';
       txtEl.textContent = 'NO CALCULATOR ALLOWED 😂';
-      setTimeout(() => {
-        showScreen('gameScreen');
-        loadRound();
-      }, 900);
+      setTimeout(() => { showScreen('gameScreen'); loadRound(); }, 900);
     }
   }
 
-  // ── LOAD ROUND
+  // ── LOAD ROUND ──
   function loadRound() {
     if (currentRound >= totalRounds * 2) { showResults(); return; }
 
     const player = currentPlayer === 0 ? p1 : p2;
-    const q = generateQuestion(difficulty);
-    currentAnswer = q.answer;
 
+    // In multiplayer, check if it's our turn
+    if (gameMode !== 'local') {
+      const isMyTurn = (myRole === 'host' && currentPlayer === 0) ||
+                       (myRole === 'guest' && currentPlayer === 1);
+      if (!isMyTurn) {
+        // Show waiting UI
+        showWaitingForOpponent(player);
+        return;
+      }
+    }
+
+    showAnswerSection();
+
+    // Use a random seed (shared via room in multiplayer, random locally)
+    questionSeed = Math.floor(Math.random() * 999999) + currentRound * 1000;
+    const q = generateQuestion(difficulty, questionSeed);
+    currentAnswer = q.answer;
     stats[player].total++;
 
-    // UI
+    // Update scores display
     document.getElementById('scoreP1').textContent = scores[p1];
     document.getElementById('scoreP2').textContent = scores[p2];
     document.getElementById('scoreP1wrap').classList.toggle('active-p', currentPlayer === 0);
@@ -505,7 +698,6 @@
     document.getElementById('progressFill').style.width = pct + '%';
     document.getElementById('progressLabel').textContent = `Round ${Math.floor(currentRound / 2) + 1}`;
     document.getElementById('progressFrac').textContent = `${currentRound + 1} / ${totalRounds * 2}`;
-
     document.getElementById('qPlayerLabel').textContent = `${player}'s Turn`;
     document.getElementById('qEquation').textContent = q.display;
     document.getElementById('qTypeBadge').textContent = q.type;
@@ -524,8 +716,24 @@
     startTimer(player);
   }
 
-  let questionStartTime;
+  function showWaitingForOpponent(opponentName) {
+    waitingForOpponent = true;
+    document.getElementById('waitingOpponent').style.display = 'block';
+    document.getElementById('answerSection').style.display = 'none';
+    document.getElementById('qPlayerLabel').textContent = `${opponentName}'s Turn`;
+    clearInterval(timerInterval);
+    document.getElementById('timerFill').style.width = '0%';
+    document.getElementById('timerLabel').textContent = '—';
+    document.getElementById('timerPct').textContent = '';
+  }
 
+  function showAnswerSection() {
+    document.getElementById('waitingOpponent').style.display = 'none';
+    document.getElementById('answerSection').style.display = 'block';
+    waitingForOpponent = false;
+  }
+
+  // ── TIMER ──
   function startTimer(player) {
     clearInterval(timerInterval);
     timeLeft = timeLimitSecs;
@@ -540,10 +748,7 @@
       document.getElementById('timerLabel').textContent = Math.ceil(timeLeft) + 's';
       document.getElementById('timerPct').textContent = Math.round(pct) + '%';
       if (pct < 30) fill.className = 'timer-bar-fill urgent';
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        timeOut(player);
-      }
+      if (timeLeft <= 0) { clearInterval(timerInterval); timeOut(player); }
     }, 100);
   }
 
@@ -553,36 +758,58 @@
     document.getElementById('feedback').textContent = `⏰ Time's up! The answer was ${currentAnswer}`;
     document.getElementById('feedback').className = 'feedback timeout-fb';
     document.getElementById('btnNext').style.display = 'block';
+    if (gameMode !== 'local') syncAnswer(player, false, 0);
   }
 
+  // ── SUBMIT ANSWER ──
   function submitAnswer() {
     const val = document.getElementById('answerInput').value.trim();
     if (val === '') return;
     clearInterval(timerInterval);
 
-    const player = currentPlayer === 0 ? p1 : p2;
-    const given  = parseFloat(val);
-    const timeTaken = ((Date.now() - questionStartTime) / 1000).toFixed(1);
-    const ansInput  = document.getElementById('answerInput');
+    const player     = currentPlayer === 0 ? p1 : p2;
+    const given      = parseFloat(val);
+    const timeTaken  = ((Date.now() - questionStartTime) / 1000).toFixed(1);
+    const ansInput   = document.getElementById('answerInput');
 
-    document.getElementById('answerInput').disabled = true;
-    document.getElementById('btnSubmit').disabled = true;
+    document.getElementById('answerInput').disabled  = true;
+    document.getElementById('btnSubmit').disabled    = true;
 
+    // FIX: compare timeLeft directly (it's always a number, bonus is clean)
     if (given === currentAnswer) {
-      const bonus = timeLeft > timeLimitSecs * 0.6 ? 2 : 1;
+      const bonus = timeLeft >= timeLimitSecs * 0.6 ? 2 : 1;
       scores[player] += bonus;
       stats[player].correct++;
-      if (!stats[player].fastest || timeTaken < stats[player].fastest) stats[player].fastest = timeTaken;
+      if (!stats[player].fastest || parseFloat(timeTaken) < parseFloat(stats[player].fastest)) {
+        stats[player].fastest = timeTaken;
+      }
       ansInput.className = 'answer-input correct-input';
       document.getElementById('feedback').textContent = `✅ Correct!! +${bonus} point${bonus > 1 ? 's' : ''} — answered in ${timeTaken}s`;
-      document.getElementById('feedback').className = 'feedback correct-fb';
+      document.getElementById('feedback').className   = 'feedback correct-fb';
+      if (gameMode !== 'local') syncAnswer(player, true, bonus);
     } else {
       ansInput.className = 'answer-input wrong-input';
       document.getElementById('feedback').textContent = `❌ Wrong! The answer was ${currentAnswer}. You said ${given}`;
-      document.getElementById('feedback').className = 'feedback wrong-fb';
+      document.getElementById('feedback').className   = 'feedback wrong-fb';
+      if (gameMode !== 'local') syncAnswer(player, false, 0);
     }
 
     document.getElementById('btnNext').style.display = 'block';
+  }
+
+  // ── SYNC ANSWER TO SUPABASE (multiplayer) ──
+  async function syncAnswer(player, correct, points) {
+    if (!roomCode) return;
+    const { data } = await sb.from('game_rooms').select('state').eq('room_code', roomCode).single();
+    if (!data) return;
+    const newState = {
+      ...data.state,
+      lastAction: 'answer',
+      answeredBy: player,
+      scores: { ...scores },
+      currentRound: currentRound + 1
+    };
+    await sb.from('game_rooms').update({ state: newState }).eq('room_code', roomCode);
   }
 
   function nextRound() {
@@ -591,42 +818,68 @@
     loadRound();
   }
 
+  // ── RESULTS ──
   function showResults() {
     clearInterval(timerInterval);
-    const s1 = scores[p1], s2 = scores[p2];
+    if (roomChannel) {
+      // Mark room finished
+      sb.from('game_rooms').update({ status: 'finished', state: { scores, status: 'finished' } }).eq('room_code', roomCode);
+    }
 
+    const s1 = scores[p1], s2 = scores[p2];
     document.getElementById('resP1score').textContent = s1;
     document.getElementById('resP2score').textContent = s2;
     document.getElementById('resP1detail').textContent = `${stats[p1].correct}/${stats[p1].total} correct${stats[p1].fastest ? ' · fastest: ' + stats[p1].fastest + 's' : ''}`;
     document.getElementById('resP2detail').textContent = `${stats[p2].correct}/${stats[p2].total} correct${stats[p2].fastest ? ' · fastest: ' + stats[p2].fastest + 's' : ''}`;
 
     let winnerText, subText, winner;
-    if (s1 > s2) { winnerText = `🏆 ${p1} Wins!!`; subText = `${s1} - ${s2}. No calculator needed 😂`; winner = p1; }
-    else if (s2 > s1) { winnerText = `🏆 ${p2} Wins!!`; subText = `${s2} - ${s1}. No calculator needed 😂`; winner = p2; }
-    else { winnerText = '🤝 It\'s a Draw!!'; subText = `${s1} - ${s2}. Evenly matched!`; }
+    if (s1 > s2)      { winnerText=`🏆 ${p1} Wins!!`; subText=`${s1} - ${s2}. No calculator needed 😂`; winner=p1; }
+    else if (s2 > s1) { winnerText=`🏆 ${p2} Wins!!`; subText=`${s2} - ${s1}. No calculator needed 😂`; winner=p2; }
+    else              { winnerText="🤝 It's a Draw!!"; subText=`${s1} - ${s2}. Evenly matched!`; }
 
     document.getElementById('resultWinner').textContent = winnerText;
-    document.getElementById('resultSub').textContent = subText;
+    document.getElementById('resultSub').textContent    = subText;
 
     if (winner) saveScore(winner);
     showScreen('resultsScreen');
   }
 
-  function saveScore(winner) {
+  // ── SAVE SCORE TO SUPABASE ──
+  async function saveScore(winner) {
     try {
-      const sc = JSON.parse(localStorage.getItem('c17_scores') || '[]');
-      sc.push({ id: Date.now(), game: 'Math Duel', winner, players: [p1, p2], date: new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) });
-      localStorage.setItem('c17_scores', JSON.stringify(sc));
-    } catch(e) {}
+      await sb.from('scores').insert({
+        game: 'Math Duel',
+        winner,
+        players: [p1, p2],
+        score_p1: scores[p1],
+        score_p2: scores[p2],
+        date: new Date().toISOString().split('T')[0]
+      });
+    } catch(e) {
+      console.error('Score save error:', e);
+    }
   }
 
-  function playAgain() { showScreen('setupScreen'); }
+  function playAgain() {
+    roomCode = null; roomChannel = null; myRole = null; waitingForOpponent = false;
+    showScreen('setupScreen');
+  }
 
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
     window.scrollTo(0, 0);
   }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ── START ──
+  init();
 </script>
 
 </body>
