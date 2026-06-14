@@ -237,6 +237,7 @@
       padding: 12px 16px;
       border-bottom: 1px solid var(--gold-border);
       transition: background 0.2s;
+      cursor: pointer;
     }
     .room-item:hover {
       background: var(--gold-dim);
@@ -760,7 +761,7 @@
 </head>
 <body>
 
-<nav>
+<<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
   <ul class="nav-links">
     <li><a href="dashboard.html">Dashboard</a></li>
@@ -871,7 +872,7 @@
 
     <!-- CENTER: Board -->
     <div class="board-container">
-      <div class="turn-bar red-turn" id="turnBar">Waiting for players...</div>
+      <div class="turn-bar" id="turnBar">Waiting for players...</div>
       <div class="board-wrapper">
         <div class="board" id="board"></div>
       </div>
@@ -949,8 +950,8 @@ let playerRole = null;
 let gameState = null;
 let selectedPiece = null;
 let validMoves = [];
-let realtimeChannel = null;
-let chatChannel = null;
+let roomSubscription = null;
+let chatSubscription = null;
 
 // ═══════════════════════════════════════
 // INIT
@@ -959,7 +960,6 @@ async function init() {
   await loadMembers();
   setupLobbyListeners();
   loadActiveRooms();
-  // Auto-refresh rooms every 10 seconds
   setInterval(loadActiveRooms, 10000);
 }
 
@@ -1015,23 +1015,36 @@ async function createRoom() {
   const code = generateRoomCode();
   const roomId = 'checkers_' + code;
   
+  const roomData = {
+    id: roomId,
+    code: code,
+    status: 'waiting',
+    board: initializeBoard(),
+    turn: 'red',
+    move_history: [],
+    created_by: currentUser || 'Anonymous',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  
+  console.log('Creating room:', roomData);
+  
   try {
-    const { error } = await sb.from('checkers_rooms').insert({
-      id: roomId,
-      code: code,
-      status: 'waiting',
-      created_by: currentUser || 'Anonymous',
-      created_at: new Date().toISOString()
-    });
+    const { data, error } = await sb.from('checkers_rooms').insert(roomData);
     
-    if (error) throw error;
+    if (error) {
+      console.error('SUPABASE ERROR:', error);
+      showToast('Error: ' + error.message);
+      return;
+    }
     
+    console.log('Room created:', data);
     document.getElementById('newRoomCode').textContent = code;
     document.getElementById('createdRoom').style.display = 'block';
     showToast('Room created! Code: ' + code);
   } catch (e) {
-    console.error('Create room failed:', e);
-    showToast('Failed to create room');
+    console.error('EXCEPTION:', e);
+    showToast('Failed: ' + e.message);
   }
 }
 
@@ -1075,15 +1088,15 @@ async function goToRoom(code) {
     showScreen('gameScreen');
     document.getElementById('currentRoomCode').textContent = code;
     populateMemberSelects();
-    await loadGame();
-    setupRealtime();
-    setupChat();
     
     // Check if current user was already in this room
     if (data.red_player === currentUser) playerRole = 'red';
     if (data.black_player === currentUser) playerRole = 'black';
     
-    updateUI();
+    await loadGame();
+    setupRealtime();
+    setupChat();
+    
   } catch (e) {
     console.error('Join room failed:', e);
     showToast('Failed to join room');
@@ -1091,24 +1104,80 @@ async function goToRoom(code) {
 }
 
 // ═══════════════════════════════════════
-// LEAVE ROOM
+// LEAVE ROOM - FIXED: Properly resets everything
 // ═══════════════════════════════════════
 async function leaveRoom() {
-  if (realtimeChannel) {
-    await realtimeChannel.unsubscribe();
-    realtimeChannel = null;
+  // Unsubscribe from realtime
+  if (roomSubscription) {
+    await roomSubscription.unsubscribe();
+    roomSubscription = null;
   }
-  if (chatChannel) {
-    await chatChannel.unsubscribe();
-    chatChannel = null;
+  if (chatSubscription) {
+    await chatSubscription.unsubscribe();
+    chatSubscription = null;
   }
   
+  // Reset all state
   currentRoomId = null;
   playerRole = null;
   gameState = null;
+  selectedPiece = null;
+  validMoves = [];
   
+  // Reset UI completely
+  resetGameUI();
+  
+  // Go back to lobby
   showScreen('lobbyScreen');
   loadActiveRooms();
+}
+
+// ═══════════════════════════════════════
+// RESET GAME UI - NEW: Clears all game state from UI
+// ═══════════════════════════════════════
+function resetGameUI() {
+  // Reset player panels
+  document.getElementById('p1Name').textContent = 'Waiting...';
+  document.getElementById('p1Avatar').textContent = '?';
+  document.getElementById('p1Status').textContent = 'Waiting';
+  document.getElementById('p1Status').className = 'status-badge waiting';
+  document.getElementById('p1Captured').innerHTML = '';
+  document.getElementById('p1JoinArea').style.display = 'block';
+  document.getElementById('memberSelect1').disabled = false;
+  document.getElementById('inviteBtn1').disabled = true;
+  
+  document.getElementById('p2Name').textContent = 'Waiting...';
+  document.getElementById('p2Avatar').textContent = '?';
+  document.getElementById('p2Status').textContent = 'Waiting';
+  document.getElementById('p2Status').className = 'status-badge waiting';
+  document.getElementById('p2Captured').innerHTML = '';
+  document.getElementById('p2JoinArea').style.display = 'block';
+  document.getElementById('memberSelect2').disabled = false;
+  document.getElementById('inviteBtn2').disabled = true;
+  
+  // Reset board
+  document.getElementById('board').innerHTML = '';
+  document.getElementById('turnBar').textContent = 'Waiting for players...';
+  document.getElementById('turnBar').className = 'turn-bar';
+  
+  // Reset chat
+  document.getElementById('chatMessages').innerHTML = `
+    <div class="chat-msg system">
+      <span class="msg-name">SYSTEM</span>
+      <span class="msg-text">Welcome! Select a side to join the game.</span>
+    </div>
+  `;
+  document.getElementById('chatInput').value = '';
+  
+  // Reset move history
+  document.getElementById('moveHistory').style.display = 'none';
+  document.getElementById('moveList').innerHTML = '';
+  
+  // Hide modal
+  document.getElementById('gameOverModal').classList.remove('active');
+  
+  // Reset room code
+  document.getElementById('currentRoomCode').textContent = '---';
 }
 
 // ═══════════════════════════════════════
@@ -1136,7 +1205,7 @@ async function loadActiveRooms() {
       const statusText = room.status === 'waiting' ? `${playerCount}/2 Players` : 'In Game';
       
       return `
-        <div class="room-item" onclick="goToRoom('${room.code}')" style="cursor:pointer">
+        <div class="room-item" onclick="goToRoom('${room.code}')">
           <div class="room-info">
             <span class="room-code">${room.code}</span>
             <span class="room-players">
@@ -1378,7 +1447,6 @@ async function executeMove(from, to, boardParam) {
   
   const newTurn = gameState.turn === 'red' ? 'black' : 'red';
   
-  // Check win condition
   const redCount = board.flat().filter(p => p && p.color === 'red').length;
   const blackCount = board.flat().filter(p => p && p.color === 'black').length;
   let newStatus = gameState.status;
@@ -1480,55 +1548,79 @@ function updateUI() {
 }
 
 // ═══════════════════════════════════════
-// REALTIME
+// REALTIME - FIXED: Proper channel setup
 // ═══════════════════════════════════════
 function setupRealtime() {
-  if (realtimeChannel) realtimeChannel.unsubscribe();
+  if (roomSubscription) {
+    roomSubscription.unsubscribe();
+    roomSubscription = null;
+  }
   
-  realtimeChannel = sb
-    .channel('room_' + currentRoomId)
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'checkers_rooms', filter: `id=eq.${currentRoomId}` },
-      (payload) => {
-        const newState = payload.new;
-        if (typeof newState.board === 'string') {
-          try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
-        }
-        gameState = newState;
-        updateUI();
-        renderBoard();
-        
-        if (newState.status === 'playing' && newState.turn !== playerRole) {
-          addChatMessage('SYSTEM', `${newState.turn === 'red' ? 'Red' : 'Black'}'s turn!`, true);
-        }
-        
-        if (newState.status === 'finished' && newState.winner) {
-          showGameOver(newState.winner);
-        }
+  roomSubscription = sb
+    .channel('checkers_room_' + currentRoomId)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'checkers_rooms',
+      filter: `id=eq.${currentRoomId}`
+    }, (payload) => {
+      console.log('Realtime update:', payload);
+      
+      const newState = payload.new;
+      if (!newState) return;
+      
+      if (typeof newState.board === 'string') {
+        try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
       }
-    )
-    .subscribe();
+      
+      gameState = newState;
+      updateUI();
+      renderBoard();
+      
+      if (newState.status === 'playing' && newState.turn !== playerRole) {
+        addChatMessage('SYSTEM', `${newState.turn === 'red' ? 'Red' : 'Black'}'s turn!`, true);
+      }
+      
+      if (newState.status === 'finished' && newState.winner) {
+        showGameOver(newState.winner);
+      }
+    })
+    .subscribe((status) => {
+      console.log('Room realtime status:', status);
+    });
 }
 
 // ═══════════════════════════════════════
-// CHAT
+// CHAT - FIXED: Proper async/await syntax
 // ═══════════════════════════════════════
-function sendChat() {
+async function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if (!text || !currentRoomId) return;
   
   const name = currentUser || 'Spectator';
+  
+  // Add to UI immediately
   addChatMessage(name, text, false);
   
-  sb.from('checkers_chat').insert({
-    room_id: currentRoomId,
-    player: name,
-    message: text,
-    created_at: new Date().toISOString()
-  }).catch(e => console.error('Chat sync failed:', e));
-  
+  // Clear input immediately - FIXED
   input.value = '';
+  
+  // Sync to database
+  try {
+    const { error } = await sb.from('checkers_chat').insert({
+      room_id: currentRoomId,
+      player: name,
+      message: text,
+      created_at: new Date().toISOString()
+    });
+    
+    if (error) {
+      console.error('Chat sync error:', error);
+    }
+  } catch (e) {
+    console.error('Chat sync failed:', e);
+  }
 }
 
 function addChatMessage(name, text, isSystem) {
@@ -1543,20 +1635,27 @@ function addChatMessage(name, text, isSystem) {
 }
 
 function setupChat() {
-  if (chatChannel) chatChannel.unsubscribe();
+  if (chatSubscription) {
+    chatSubscription.unsubscribe();
+    chatSubscription = null;
+  }
   
-  chatChannel = sb
-    .channel('chat_' + currentRoomId)
-    .on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'checkers_chat', filter: `room_id=eq.${currentRoomId}` },
-      (payload) => {
-        const msg = payload.new;
-        if (msg.player !== currentUser) {
-          addChatMessage(msg.player, msg.message, false);
-        }
+  chatSubscription = sb
+    .channel('checkers_chat_' + currentRoomId)
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'checkers_chat',
+      filter: `room_id=eq.${currentRoomId}`
+    }, (payload) => {
+      const msg = payload.new;
+      if (msg && msg.player !== currentUser) {
+        addChatMessage(msg.player, msg.message, false);
       }
-    )
-    .subscribe();
+    })
+    .subscribe((status) => {
+      console.log('Chat realtime status:', status);
+    });
 }
 
 // ═══════════════════════════════════════
@@ -1565,8 +1664,6 @@ function setupChat() {
 function showGameOver(winner) {
   document.getElementById('modalWinner').textContent = `${winner} Wins! 🏆`;
   document.getElementById('gameOverModal').classList.add('active');
-  
-  // Auto-save to scoreboard
   saveToScoreboard(winner);
 }
 
@@ -1575,12 +1672,14 @@ async function saveToScoreboard(winner) {
   if (!winner || !loser) return;
   
   try {
-    await sb.from('scores').insert({
+    const { error } = await sb.from('scores').insert({
       game: 'Checkers',
       winner: winner,
       players: JSON.stringify([winner, loser]),
       created_at: new Date().toISOString()
     });
+    
+    if (error) console.error('Save score error:', error);
   } catch (e) {
     console.error('Save score failed:', e);
   }
@@ -1593,7 +1692,7 @@ function playAgain() {
 
 async function resetBoard() {
   try {
-    await sb.from('checkers_rooms')
+    const { error } = await sb.from('checkers_rooms')
       .update({
         board: initializeBoard(),
         turn: 'red',
@@ -1603,6 +1702,8 @@ async function resetBoard() {
         updated_at: new Date().toISOString()
       })
       .eq('id', currentRoomId);
+    
+    if (error) console.error('Reset error:', error);
   } catch (e) {
     console.error('Reset failed:', e);
   }
