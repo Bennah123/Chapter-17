@@ -576,6 +576,91 @@
       letter-spacing: 1px;
     }
 
+    /* ── NEW: Game Over Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(8,8,6,0.9);
+      backdrop-filter: blur(10px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+      animation: fadeUp 0.5s ease;
+    }
+    .modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .modal-winner {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      color: var(--gold-bright);
+      margin-bottom: 24px;
+    }
+    .modal-btn {
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      padding: 12px 32px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      cursor: pointer;
+      border-radius: 3px;
+      margin: 0 8px;
+    }
+
+    /* ── NEW: Move History ── */
+    .move-history {
+      background: var(--bg2);
+      border: 1px solid var(--gold-border);
+      border-radius: 4px;
+      padding: 16px;
+      margin-top: 16px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .move-history h4 {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 3px;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+    .move-item {
+      font-size: 0.7rem;
+      color: var(--muted);
+      padding: 4px 0;
+      border-bottom: 1px solid var(--gold-border);
+    }
+
+    /* ── NEW: Spectator Mode ── */
+    .spectator-badge {
+      position: absolute;
+      top: 80px;
+      right: 24px;
+      background: var(--gold-dim);
+      border: 1px solid var(--gold-border);
+      padding: 8px 16px;
+      border-radius: 2px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      color: var(--gold);
+    }
+
     /* ── FOOTER ── */
     footer {
       border-top: 1px solid var(--gold-border);
@@ -619,7 +704,7 @@
 <body>
 
 <!-- NAVBAR -->
-<nav>
+<<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
   <ul class="nav-links">
     <li><a href="dashboard.html">Dashboard</a></li>
@@ -629,6 +714,9 @@
     <span></span><span></span><span></span>
   </button>
 </nav>
+
+<!-- NEW: Spectator Badge -->
+<div class="spectator-badge" id="spectatorBadge" style="display:none">👁 Spectator Mode</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -659,6 +747,12 @@
     <div style="margin-top: 16px;">
       <div style="font-size:0.65rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Captured</div>
       <div class="player-pieces" id="p1Captured"></div>
+    </div>
+
+    <!-- NEW: Move History -->
+    <div class="move-history" id="moveHistory" style="display:none">
+      <h4>Move Log</h4>
+      <div id="moveList"></div>
     </div>
   </div>
 
@@ -716,8 +810,18 @@
 
 </div>
 
+<!-- NEW: Game Over Modal -->
+<div class="modal-overlay" id="gameOverModal">
+  <div class="modal-content">
+    <div class="modal-title">🏆 Game Over</div>
+    <div class="modal-winner" id="modalWinner">Winner Name</div>
+    <button class="modal-btn" onclick="resetGame()">New Game</button>
+    <button class="modal-btn" onclick="saveToScoreboard()" style="background:var(--bg);border:1px solid var(--gold);color:var(--gold)">Save to Scoreboard</button>
+  </div>
+</div>
+
 <!-- FOOTER -->
-<footer>
+<<footer>
   <span class="logo">Chapter 17</span>
   <p>"The board is a battlefield. Mind your kings."</p>
 </footer>
@@ -730,25 +834,32 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ── MEMBERS LIST (From your website) ──
-const chapterMembers = [
-  { name: 'Ghost', initials: 'G' },
-  { name: 'Mrs Ghost', initials: 'G' },
-  { name: 'Macharia', initials: 'M' },
-  { name: 'Thee Ori', initials: 'O' },
-  { name: 'Mrs Ori', initials: 'O' },
-  { name: 'Mustapha', initials: 'M' },
-  { name: 'Okoth', initials: 'O' },
-  { name: 'Mrs Okoth', initials: 'O' },
-  { name: 'Mrs Edwardo', initials: 'S' },
-  { name: 'Kinoti', initials: 'K' },
-  { name: 'Mrs Kinoti', initials: 'K' }
-];
+// ── SHARED MEMBER SYSTEM ──
+let chapterMembers = [];
+const currentUser = localStorage.getItem('loggedInUser') || '';
+
+async function loadMembers() {
+  try {
+    const { data, error } = await supabaseClient.from('members').select('name').order('name');
+    if (error) { console.error('Members load error:', error); return; }
+    chapterMembers = data || [];
+    populateMemberSelects();
+  } catch (e) {
+    console.error('Load members failed:', e);
+    // Fallback: use hardcoded list if Supabase fails
+    chapterMembers = [
+      { name: 'Ghost' }, { name: 'Mrs Ghost' }, { name: 'Macharia' },
+      { name: 'Thee Ori' }, { name: 'Mrs Ori' }, { name: 'Mustapha' },
+      { name: 'Okoth' }, { name: 'Mrs Okoth' }, { name: 'Mrs Edwardo' },
+      { name: 'Kinoti' }, { name: 'Mrs Kinoti' }
+    ];
+    populateMemberSelects();
+  }
+}
 
 // ── GAME STATE ──
-let currentUser = sessionStorage.getItem('c17_name') || localStorage.getItem('c17_name') || '';
 let gameId = 'checkers_room_1';
-let playerRole = null; // 'red' or 'black'
+let playerRole = null;
 let gameState = {
   board: [],
   turn: 'red',
@@ -757,7 +868,8 @@ let gameState = {
   redCaptured: [],
   blackCaptured: [],
   status: 'waiting',
-  winner: null
+  winner: null,
+  moveHistory: [] // NEW: Track moves
 };
 
 let selectedPiece = null;
@@ -765,10 +877,11 @@ let validMoves = [];
 
 // ── INIT ──
 async function init() {
-  populateMemberSelects();
+  await loadMembers();
   setupEventListeners();
   setupChatRealtime();
   setupGameRealtime();
+  checkSpectatorMode();
   await loadGame();
 }
 
@@ -777,7 +890,6 @@ function populateMemberSelects() {
   const s1 = document.getElementById('memberSelect1');
   const s2 = document.getElementById('memberSelect2');
   
-  // FIX #1: Clear and rebuild properly, avoid += on <select> which duplicates in some browsers
   const baseOptions = '<option value="">Select a member...</option>';
   let memberOptions = '';
   
@@ -793,6 +905,17 @@ function populateMemberSelects() {
   
   s1.innerHTML = baseOptions + memberOptions;
   s2.innerHTML = baseOptions + memberOptions;
+}
+
+// ── SPECTATOR MODE ──
+function checkSpectatorMode() {
+  if (!currentUser) {
+    document.getElementById('spectatorBadge').style.display = 'block';
+    document.getElementById('memberSelect1').disabled = true;
+    document.getElementById('memberSelect2').disabled = true;
+    document.getElementById('inviteBtn1').disabled = true;
+    document.getElementById('inviteBtn2').disabled = true;
+  }
 }
 
 // ── EVENT LISTENERS ──
@@ -822,7 +945,6 @@ async function joinGame(role) {
   
   playerRole = role;
   
-  // FIX #2: Build full game state for upsert, not just partial update
   const newBoard = gameState.board && gameState.board.length === 8 ? gameState.board : initializeBoard();
   const newStatus = role === 'red' 
     ? (gameState.blackPlayer ? 'playing' : 'waiting')
@@ -837,6 +959,8 @@ async function joinGame(role) {
     redCaptured: gameState.redCaptured || [],
     blackCaptured: gameState.blackCaptured || [],
     status: newStatus,
+    winner: gameState.winner,
+    moveHistory: gameState.moveHistory || [],
     updated_at: new Date().toISOString()
   };
   
@@ -847,7 +971,6 @@ async function joinGame(role) {
     
     if (error) throw error;
     
-    // Update local state immediately
     gameState = { ...gameState, ...update };
     updateUI();
     addChatMessage('SYSTEM', `${playerName} joined as ${role}!`, true);
@@ -880,10 +1003,8 @@ function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   
-  // FIX #3: Safer board validation with JSON parse fallback
   let board = gameState.board;
   if (!board || !Array.isArray(board) || board.length !== 8) {
-    // Try parsing if it's a string
     if (typeof board === 'string') {
       try { board = JSON.parse(board); } catch(e) { board = null; }
     }
@@ -907,7 +1028,6 @@ function renderBoard() {
         square.classList.add('selected');
       }
       
-      // FIX #4: Extra safety for board[row] being undefined
       const piece = (board[row] && board[row][col]) ? board[row][col] : null;
       if (piece && piece.color) {
         const pieceEl = document.createElement('div');
@@ -927,13 +1047,11 @@ function renderBoard() {
 function handleSquareClick(row, col) {
   if (gameState.status !== 'playing' || gameState.turn !== playerRole) return;
   
-  // FIX #5: Parse board if stored as string
   let board = gameState.board;
   if (typeof board === 'string') {
     try { board = JSON.parse(board); } catch(e) { return; }
   }
   
-  // Select piece
   if (board[row] && board[row][col] && board[row][col].color === playerRole) {
     selectedPiece = { row, col };
     validMoves = calculateValidMoves(row, col, board);
@@ -941,7 +1059,6 @@ function handleSquareClick(row, col) {
     return;
   }
   
-  // Move piece
   if (selectedPiece && validMoves.some(m => m.row === row && m.col === col)) {
     const move = validMoves.find(m => m.row === row && m.col === col);
     makeMove(selectedPiece, move, board);
@@ -951,7 +1068,6 @@ function handleSquareClick(row, col) {
 }
 
 // ── CALCULATE MOVES ──
-// FIX #6: Accept board as parameter instead of reading from global
 function calculateValidMoves(row, col, boardParam) {
   let board = boardParam || gameState.board;
   if (typeof board === 'string') {
@@ -992,37 +1108,30 @@ function calculateValidMoves(row, col, boardParam) {
 }
 
 // ── MAKE MOVE ──
-// FIX #7: Accept board parameter, handle string boards, and fix capture logic
 async function makeMove(from, to, boardParam) {
   let board = boardParam || gameState.board;
   if (typeof board === 'string') {
     try { board = JSON.parse(board); } catch(e) { board = initializeBoard(); }
   }
   
-  // Deep clone
   board = JSON.parse(JSON.stringify(board));
   const piece = board[from.row] && board[from.row][from.col] ? board[from.row][from.col] : null;
   if (!piece) return;
   
-  // Move piece
   board[to.row][to.col] = piece;
   board[from.row][from.col] = null;
   
-  // Capture
   let captured = null;
   if (to.capture) {
     captured = board[to.capture.row][to.capture.col];
     board[to.capture.row][to.capture.col] = null;
   }
   
-  // King me
   if (piece.color === 'red' && to.row === 0) piece.king = true;
   if (piece.color === 'black' && to.row === 7) piece.king = true;
   
-  // Update game state
   const newTurn = gameState.turn === 'red' ? 'black' : 'red';
   
-  // FIX #8: Parse existing captured arrays if they're strings
   let redCaptured = gameState.redCaptured || [];
   let blackCaptured = gameState.blackCaptured || [];
   if (typeof redCaptured === 'string') {
@@ -1040,11 +1149,22 @@ async function makeMove(from, to, boardParam) {
     }
   }
   
+  // NEW: Track move history
+  const moveRecord = {
+    player: gameState.turn,
+    from: `${String.fromCharCode(97 + from.col)}${8 - from.row}`,
+    to: `${String.fromCharCode(97 + to.col)}${8 - to.row}`,
+    capture: captured ? true : false,
+    timestamp: new Date().toISOString()
+  };
+  const moveHistory = [...(gameState.moveHistory || []), moveRecord];
+  
   const update = {
     board: board,
     turn: newTurn,
     redCaptured: redCaptured,
     blackCaptured: blackCaptured,
+    moveHistory: moveHistory,
     updated_at: new Date().toISOString()
   };
   
@@ -1056,15 +1176,110 @@ async function makeMove(from, to, boardParam) {
     
     if (error) throw error;
     
-    // Update local state immediately for responsiveness
     gameState = { ...gameState, ...update };
     updateUI();
     renderBoard();
+    addMoveToHistory(moveRecord);
     addChatMessage('SYSTEM', `${currentUser} moved!`, true);
+    
+    // NEW: Check for win condition
+    checkWinCondition(board);
   } catch (e) {
     console.error('Move failed:', e);
     addChatMessage('SYSTEM', 'Move failed. Try again.', true);
   }
+}
+
+// ── NEW: CHECK WIN CONDITION ──
+function checkWinCondition(board) {
+  const redPieces = board.flat().filter(p => p && p.color === 'red').length;
+  const blackPieces = board.flat().filter(p => p && p.color === 'black').length;
+  
+  if (redPieces === 0) {
+    endGame('black');
+  } else if (blackPieces === 0) {
+    endGame('red');
+  }
+}
+
+// ── NEW: END GAME ──
+function endGame(winner) {
+  gameState.winner = winner;
+  gameState.status = 'finished';
+  
+  const winnerName = winner === 'red' ? gameState.redPlayer : gameState.blackPlayer;
+  
+  document.getElementById('modalWinner').textContent = `${winnerName} wins! 🏆`;
+  document.getElementById('gameOverModal').classList.add('active');
+  
+  addChatMessage('SYSTEM', `Game Over! ${winnerName} wins! 🎉`, true);
+}
+
+// ── NEW: RESET GAME ──
+async function resetGame() {
+  document.getElementById('gameOverModal').classList.remove('active');
+  
+  gameState = {
+    id: gameId,
+    board: initializeBoard(),
+    turn: 'red',
+    redPlayer: null,
+    blackPlayer: null,
+    redCaptured: [],
+    blackCaptured: [],
+    status: 'waiting',
+    winner: null,
+    moveHistory: []
+  };
+  
+  try {
+    await supabaseClient.from('checkers_games').upsert({
+      ...gameState,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+  } catch (e) {
+    console.error('Reset failed:', e);
+  }
+  
+  updateUI();
+  renderBoard();
+  document.getElementById('moveHistory').style.display = 'none';
+  document.getElementById('moveList').innerHTML = '';
+}
+
+// ── NEW: SAVE TO SCOREBOARD ──
+async function saveToScoreboard() {
+  if (!gameState.winner) return;
+  
+  const winner = gameState.winner === 'red' ? gameState.redPlayer : gameState.blackPlayer;
+  const loser = gameState.winner === 'red' ? gameState.blackPlayer : gameState.redPlayer;
+  
+  try {
+    await supabaseClient.from('scores').insert({
+      game: 'Checkers',
+      winner: winner,
+      players: [winner, loser],
+      created_at: new Date().toISOString()
+    });
+    
+    addChatMessage('SYSTEM', 'Score saved to scoreboard! 🏆', true);
+    document.getElementById('gameOverModal').classList.remove('active');
+  } catch (e) {
+    console.error('Save score failed:', e);
+    addChatMessage('SYSTEM', 'Failed to save score.', true);
+  }
+}
+
+// ── NEW: ADD MOVE TO HISTORY ──
+function addMoveToHistory(move) {
+  const historyEl = document.getElementById('moveHistory');
+  const listEl = document.getElementById('moveList');
+  historyEl.style.display = 'block';
+  
+  const item = document.createElement('div');
+  item.className = 'move-item';
+  item.textContent = `${move.player}: ${move.from} → ${move.to}${move.capture ? ' ⚔️' : ''}`;
+  listEl.prepend(item);
 }
 
 // ── LOAD GAME ──
@@ -1077,14 +1292,12 @@ async function loadGame() {
       .maybeSingle();
     
     if (error) {
-      console.log('No game found, creating new...');
       await createNewGame();
       return;
     }
     
     if (data) {
       gameState = data;
-      // FIX #9: Parse string fields from database
       if (typeof gameState.board === 'string') {
         try { gameState.board = JSON.parse(gameState.board); } catch(e) { gameState.board = initializeBoard(); }
       }
@@ -1094,19 +1307,28 @@ async function loadGame() {
       if (typeof gameState.blackCaptured === 'string') {
         try { gameState.blackCaptured = JSON.parse(gameState.blackCaptured); } catch(e) { gameState.blackCaptured = []; }
       }
+      if (typeof gameState.moveHistory === 'string') {
+        try { gameState.moveHistory = JSON.parse(gameState.moveHistory); } catch(e) { gameState.moveHistory = []; }
+      }
     } else {
       await createNewGame();
     }
     
     updateUI();
     renderBoard();
+    
+    // Render move history
+    if (gameState.moveHistory && gameState.moveHistory.length > 0) {
+      document.getElementById('moveHistory').style.display = 'block';
+      document.getElementById('moveList').innerHTML = '';
+      gameState.moveHistory.forEach(move => addMoveToHistory(move));
+    }
   } catch (e) {
     console.error('Load game failed:', e);
     await createNewGame();
   }
 }
 
-// FIX #10: Extract game creation to reusable function
 async function createNewGame() {
   gameState = {
     id: gameId,
@@ -1117,7 +1339,8 @@ async function createNewGame() {
     redCaptured: [],
     blackCaptured: [],
     status: 'waiting',
-    winner: null
+    winner: null,
+    moveHistory: []
   };
   
   try {
@@ -1141,7 +1364,6 @@ function updateUI() {
   document.getElementById('p1Status').textContent = p1 ? 'Ready' : 'Waiting';
   document.getElementById('p1Status').className = `status-badge ${p1 ? 'ready' : 'waiting'}`;
   
-  // FIX #11: Parse captured arrays for display
   let redCap = gameState.redCaptured || [];
   let blackCap = gameState.blackCaptured || [];
   if (typeof redCap === 'string') { try { redCap = JSON.parse(redCap); } catch(e) { redCap = []; } }
@@ -1183,7 +1405,6 @@ function setupGameRealtime() {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'checkers_games', filter: `id=eq.${gameId}` },
         (payload) => {
-          // FIX #12: Parse all string fields from realtime payload
           const newState = payload.new;
           if (typeof newState.board === 'string') {
             try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
@@ -1194,6 +1415,9 @@ function setupGameRealtime() {
           if (typeof newState.blackCaptured === 'string') {
             try { newState.blackCaptured = JSON.parse(newState.blackCaptured); } catch(e) { newState.blackCaptured = []; }
           }
+          if (typeof newState.moveHistory === 'string') {
+            try { newState.moveHistory = JSON.parse(newState.moveHistory); } catch(e) { newState.moveHistory = []; }
+          }
           
           gameState = newState;
           updateUI();
@@ -1201,6 +1425,11 @@ function setupGameRealtime() {
           
           if (gameState.status === 'playing' && gameState.turn !== playerRole) {
             addChatMessage('SYSTEM', `${gameState.turn === 'red' ? 'Red' : 'Black'}'s turn!`, true);
+          }
+          
+          // NEW: Check if game ended
+          if (gameState.winner) {
+            endGame(gameState.winner);
           }
         }
       )
@@ -1230,7 +1459,6 @@ function addChatMessage(name, text, isSystem) {
   const div = document.createElement('div');
   div.className = `chat-msg ${name === currentUser ? 'own' : ''} ${isSystem ? 'system' : ''}`;
   
-  // FIX #13: Escape HTML to prevent XSS
   const safeName = name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const safeText = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   
