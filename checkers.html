@@ -12,9 +12,8 @@
       --bg: #080806; --bg2: #0f0f0c; --gold: #C9A84C; --gold-bright: #FFD700;
       --gold-dim: rgba(201,168,76,0.12); --gold-border: rgba(201,168,76,0.25);
       --white: #f5f0e8; --muted: rgba(245,240,232,0.45); --red: #c94c4c;
-      --red-dark: #8b2e2e; --red-glow: rgba(201,76,76,0.3); --green: #4cc96e;
-      --green-dim: rgba(76,201,110,0.15); --board-light: #d4a574; --board-dark: #6b4423;
-      --board-dark-hover: #7a5230;
+      --red-dark: #8b2e2e; --green: #4cc96e; --green-dim: rgba(76,201,110,0.15);
+      --board-light: #d4a574; --board-dark: #6b4423; --board-dark-hover: #7a5230;
     }
     html { scroll-behavior: smooth; }
     body {
@@ -149,10 +148,6 @@
     .piece.black { background: radial-gradient(circle at 30% 30%, #555, #222); border: 2px solid #111; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
     .piece.king::after { content: '👑'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
     .piece:hover { transform: scale(1.1); }
-    .piece.capturing { animation: captureJump 0.4s ease; }
-    @keyframes captureJump { 0% { transform: scale(1); } 50% { transform: scale(1.3) translateY(-10px); } 100% { transform: scale(1); } }
-    .piece.promoting { animation: promoteGlow 0.6s ease; }
-    @keyframes promoteGlow { 0% { box-shadow: 0 0 0 0 rgba(255,215,0,0); } 50% { box-shadow: 0 0 30px 10px rgba(255,215,0,0.6); } 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); } }
     .turn-bar { width: 100%; padding: 12px; text-align: center; font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 16px; border-radius: 4px; transition: all 0.3s ease; }
     .turn-bar.red-turn { background: rgba(201,76,76,0.15); color: var(--red); border: 1px solid rgba(201,76,76,0.3); }
     .turn-bar.black-turn { background: rgba(0,0,0,0.3); color: var(--muted); border: 1px solid rgba(255,255,255,0.1); }
@@ -376,11 +371,12 @@ let chatSubscription = null;
 let lobbySubscription = null;
 let mustContinueJumping = false;
 let lastMove = null;
-let boardHistory = [];
 let isOnline = true;
 let turnTimer = null;
 let turnTimeLeft = 60;
 const TURN_TIME_LIMIT = 60;
+let isProcessingMove = false;
+let pendingUIUpdate = false;
 
 const sessionId = localStorage.getItem('checkersSessionId') || generateSessionId();
 if (!localStorage.getItem('checkersSessionId')) {
@@ -397,11 +393,6 @@ async function init() {
   loadActiveRooms();
   setupLobbyRealtime();
   setupOnlineDetection();
-  setInterval(() => {
-    if (document.getElementById('lobbyScreen').classList.contains('active')) {
-      loadActiveRooms();
-    }
-  }, 15000);
 }
 
 function setupOnlineDetection() {
@@ -424,7 +415,6 @@ async function loadMembers() {
     if (error) throw error;
     chapterMembers = data || [];
   } catch (e) {
-    console.error('Load members failed:', e);
     chapterMembers = [
       { name: 'Ghost' }, { name: 'Mrs Ghost' }, { name: 'Macharia' },
       { name: 'Thee Ori' }, { name: 'Mrs Ori' }, { name: 'Mustapha' },
@@ -440,7 +430,7 @@ function populateMemberSelects() {
   const base = '<option value="">Select your name...</option>';
   let opts = '';
   chapterMembers.forEach(m => {
-    opts += `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}${m.name === currentUser ? ' (You)' : ''}</option>`;
+    opts += '<option value="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + (m.name === currentUser ? ' (You)' : '') + '</option>';
   });
   s1.innerHTML = base + opts;
   s2.innerHTML = base + opts;
@@ -485,7 +475,6 @@ async function createRoom() {
   try {
     const { error } = await sb.from('checkers_rooms').insert(roomData);
     if (error) {
-      console.error('SUPABASE ERROR:', error);
       showToast('Error: ' + error.message, 'error');
       return;
     }
@@ -494,7 +483,6 @@ async function createRoom() {
     showToast('Room created! Code: ' + code, 'success');
     loadActiveRooms();
   } catch (e) {
-    console.error('EXCEPTION:', e);
     showToast('Failed: ' + e.message, 'error');
   }
 }
@@ -533,7 +521,7 @@ async function joinRoom() {
   const validChars = /^[A-HJ-NP-Z2-9]{6}$/;
   if (!validChars.test(code)) {
     input.classList.add('error');
-    showToast('Enter a valid 6-character room code (letters A-Z, numbers 2-9)', 'error');
+    showToast('Enter a valid 6-character room code', 'error');
     setTimeout(() => input.classList.remove('error'), 2000);
     return;
   }
@@ -562,7 +550,6 @@ async function goToRoom(code) {
     setupRealtime();
     setupChat();
   } catch (e) {
-    console.error('Join room failed:', e);
     showToast('Failed to join room', 'error');
   }
 }
@@ -573,12 +560,13 @@ async function leaveRoom() {
       if (gameState.status === 'waiting' || gameState.status === 'playing') {
         await sb.from('checkers_rooms').update({ status: 'abandoned', updated_at: new Date().toISOString() }).eq('id', currentRoomId);
       }
-    } catch (e) { console.error('Mark abandoned failed:', e); }
+    } catch (e) {}
   }
   cleanupSubscriptions();
+  clearInterval(turnTimer);
   currentRoomId = null; playerRole = null; gameState = null;
   selectedPiece = null; validMoves = []; mustContinueJumping = false;
-  lastMove = null; boardHistory = []; clearInterval(turnTimer);
+  lastMove = null; isProcessingMove = false; pendingUIUpdate = false;
   resetGameUI();
   showScreen('lobbyScreen');
   loadActiveRooms();
@@ -615,7 +603,7 @@ function resetGameUI() {
   document.getElementById('turnBar').style.background = '';
   document.getElementById('turnBar').style.color = '';
   document.getElementById('forceCaptureNotice').textContent = '';
-  document.getElementById('chatMessages').innerHTML = `<div class="chat-msg system"><span class="msg-name">SYSTEM</span><span class="msg-text">Welcome! Select a side to join the game.</span></div>`;
+  document.getElementById('chatMessages').innerHTML = '<div class="chat-msg system"><span class="msg-name">SYSTEM</span><span class="msg-text">Welcome! Select a side to join the game.</span></div>';
   document.getElementById('chatInput').value = '';
   document.getElementById('moveList').innerHTML = '';
   document.getElementById('gameOverModal').classList.remove('active');
@@ -636,14 +624,24 @@ async function loadActiveRooms() {
       list.innerHTML = '<p style="text-align:center;color:var(--muted);font-style:italic;padding:20px">No active rooms. Create one!</p>';
       return;
     }
-    list.innerHTML = data.map(room => {
+    let html = '';
+    for (let i = 0; i < data.length; i++) {
+      const room = data[i];
       const playerCount = (room.red_player ? 1 : 0) + (room.black_player ? 1 : 0);
       const statusClass = room.status === 'waiting' ? 'status-waiting' : 'status-playing';
-      const statusText = room.status === 'waiting' ? `${playerCount}/2 Players` : 'In Game';
-      const redName = room.red_player || '<span style="opacity:0.5">Waiting...</span>';
-      const blackName = room.black_player || '<span style="opacity:0.5">Waiting...</span>';
-      return `<div class="room-item" onclick="goToRoom('${escapeHtml(room.code)}')"><div class="room-info"><span class="room-code">${escapeHtml(room.code)}</span><span class="room-players">${redName} vs ${blackName}${room.created_by ? ' · Created by ' + escapeHtml(room.created_by) : ''}</span></div><span class="room-status ${statusClass}">${statusText}</span></div>`;
-    }).join('');
+      const statusText = room.status === 'waiting' ? playerCount + '/2 Players' : 'In Game';
+      const redName = room.red_player ? escapeHtml(room.red_player) : '<span style="opacity:0.5">Waiting...</span>';
+      const blackName = room.black_player ? escapeHtml(room.black_player) : '<span style="opacity:0.5">Waiting...</span>';
+      html += '<div class="room-item" onclick="goToRoom(\'' + escapeHtml(room.code) + '\')">';
+      html += '<div class="room-info">';
+      html += '<span class="room-code">' + escapeHtml(room.code) + '</span>';
+      html += '<span class="room-players">' + redName + ' vs ' + blackName;
+      if (room.created_by) html += ' · Created by ' + escapeHtml(room.created_by);
+      html += '</span></div>';
+      html += '<span class="room-status ' + statusClass + '">' + statusText + '</span>';
+      html += '</div>';
+    }
+    list.innerHTML = html;
   } catch (e) { console.error('Load rooms failed:', e); }
 }
 
@@ -651,7 +649,7 @@ function setupLobbyRealtime() {
   if (lobbySubscription) lobbySubscription.unsubscribe();
   lobbySubscription = sb.channel('lobby_rooms').on('postgres_changes', { event: '*', schema: 'public', table: 'checkers_rooms' }, () => {
     if (document.getElementById('lobbyScreen').classList.contains('active')) loadActiveRooms();
-  }).subscribe((status) => { console.log('Lobby realtime status:', status); });
+  }).subscribe();
 }
 
 function setupLobbyListeners() {
@@ -680,10 +678,10 @@ async function joinSide(role) {
     }
   }
   if (role === 'red' && gameState.red_player && gameState.red_player !== playerName) {
-    showToast('Red side is already taken by ' + escapeHtml(gameState.red_player), 'error'); return;
+    showToast('Red side is already taken by ' + gameState.red_player, 'error'); return;
   }
   if (role === 'black' && gameState.black_player && gameState.black_player !== playerName) {
-    showToast('Black side is already taken by ' + escapeHtml(gameState.black_player), 'error'); return;
+    showToast('Black side is already taken by ' + gameState.black_player, 'error'); return;
   }
   playerRole = role;
   const otherPlayer = role === 'red' ? gameState.black_player : gameState.red_player;
@@ -697,12 +695,11 @@ async function joinSide(role) {
   try {
     const { error } = await sb.from('checkers_rooms').update(update).eq('id', currentRoomId);
     if (error) throw error;
-    addChatMessage('SYSTEM', escapeHtml(playerName) + ' joined as ' + role + '!', true);
+    addChatMessage('SYSTEM', playerName + ' joined as ' + role + '!', true);
     if (newStatus === 'playing') {
       addChatMessage('SYSTEM', '🎮 Game started! Red moves first.', true);
     }
   } catch (e) {
-    console.error('Join side failed:', e);
     showToast('Failed to join side', 'error');
   }
 }
@@ -753,53 +750,57 @@ async function loadGame() {
       renderMoveHistory();
     }
   } catch (e) {
-    console.error('Load game failed:', e);
     showToast('Failed to load game', 'error');
   }
 }
 
 function renderBoard() {
   const boardEl = document.getElementById('board');
-  boardEl.innerHTML = '';
+  // Only clear if structure changed - otherwise update in place for performance
   const board = getBoard();
   const isBlackPerspective = playerRole === 'black';
+
+  // Build HTML string once instead of DOM manipulation
+  let html = '';
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const displayRow = isBlackPerspective ? 7 - row : row;
       const displayCol = isBlackPerspective ? 7 - col : col;
-      const square = document.createElement('div');
-      square.className = `square ${(displayRow + displayCol) % 2 === 0 ? 'light' : 'dark'}`;
-      square.dataset.row = displayRow;
-      square.dataset.col = displayCol;
+      const isLight = (displayRow + displayCol) % 2 === 0;
+      let classes = 'square ' + (isLight ? 'light' : 'dark');
+
       if (gameState && gameState.last_move) {
         const last = gameState.last_move;
-        if ((last.to_row === displayRow && last.to_col === displayCol) || (last.from_row === displayRow && last.from_col === displayCol)) {
-          square.classList.add('last-move');
+        if ((last.to_row === displayRow && last.to_col === displayCol) ||
+            (last.from_row === displayRow && last.from_col === displayCol)) {
+          classes += ' last-move';
         }
       }
+
       const moveMatch = validMoves.find(m => m.row === displayRow && m.col === displayCol);
       if (moveMatch) {
-        square.classList.add(moveMatch.capture ? 'valid-capture' : 'valid-move');
+        classes += moveMatch.capture ? ' valid-capture' : ' valid-move';
       }
       if (selectedPiece && selectedPiece.row === displayRow && selectedPiece.col === displayCol) {
-        square.classList.add('selected');
+        classes += ' selected';
       }
+
       const piece = board[displayRow] && board[displayRow][displayCol] ? board[displayRow][displayCol] : null;
+      let pieceHtml = '';
       if (piece && piece.color) {
-        const pieceEl = document.createElement('div');
-        pieceEl.className = `piece ${piece.color} ${piece.king ? 'king' : ''}`;
-        square.appendChild(pieceEl);
+        pieceHtml = '<div class="piece ' + piece.color + (piece.king ? ' king' : '') + '"></div>';
       }
-      if ((displayRow + displayCol) % 2 === 1 && gameState && gameState.status === 'playing') {
-        square.addEventListener('click', () => handleSquareClick(displayRow, displayCol));
-      }
-      boardEl.appendChild(square);
+
+      const clickable = !isLight && gameState && gameState.status === 'playing' ? ' onclick="handleSquareClick(' + displayRow + ',' + displayCol + ')"' : '';
+      html += '<div class="' + classes + '"' + clickable + '>' + pieceHtml + '</div>';
     }
   }
+  boardEl.innerHTML = html;
 }
 
 function handleSquareClick(row, col) {
   if (!gameState || gameState.status !== 'playing' || gameState.turn !== playerRole) return;
+  if (isProcessingMove) return; // Prevent double-clicks
   if (mustContinueJumping && selectedPiece && (selectedPiece.row !== row || selectedPiece.col !== col)) {
     showToast('You must continue jumping with the same piece!', 'error');
     return;
@@ -832,7 +833,7 @@ function getAllValidMovesForColor(color, board) {
   return moves;
 }
 
-function calculateValidMoves(row, col, boardParam, onlyJumps = false) {
+function calculateValidMoves(row, col, boardParam, onlyJumps) {
   const board = boardParam || getBoard();
   if (!board[row]) return [];
   const piece = board[row][col];
@@ -841,7 +842,8 @@ function calculateValidMoves(row, col, boardParam, onlyJumps = false) {
   const directions = piece.king 
     ? [[-1,-1], [-1,1], [1,-1], [1,1]]
     : piece.color === 'red' ? [[-1,-1], [-1,1]] : [[1,-1], [1,1]];
-  for (const [dr, dc] of directions) {
+  for (let i = 0; i < directions.length; i++) {
+    const dr = directions[i][0], dc = directions[i][1];
     const newRow = row + dr;
     const newCol = col + dc;
     if (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
@@ -862,40 +864,58 @@ function calculateValidMoves(row, col, boardParam, onlyJumps = false) {
 }
 
 async function executeMove(from, to, boardParam) {
+  if (isProcessingMove) return;
+  isProcessingMove = true;
+
   let board = boardParam || getBoard();
   board = JSON.parse(JSON.stringify(board));
   const piece = board[from.row] && board[from.row][from.col] ? board[from.row][from.col] : null;
-  if (!piece) return;
+  if (!piece) { isProcessingMove = false; return; }
+
   board[to.row][to.col] = piece;
   board[from.row][from.col] = null;
+
   let captured = null;
   if (to.capture) {
     captured = board[to.capture.row][to.capture.col];
     board[to.capture.row][to.capture.col] = null;
   }
+
   let becameKing = false;
   if (piece.color === 'red' && to.row === 0) { if (!piece.king) becameKing = true; piece.king = true; }
   if (piece.color === 'black' && to.row === 7) { if (!piece.king) becameKing = true; piece.king = true; }
+
   const furtherJumps = calculateValidMoves(to.row, to.col, board, true);
   const hasFurtherJumps = furtherJumps.some(m => m.capture);
+
   let newTurn = gameState.turn;
-  let newMustContinue = false;
   if (to.capture && hasFurtherJumps) {
-    newMustContinue = true;
     mustContinueJumping = true;
     selectedPiece = { row: to.row, col: to.col };
     validMoves = furtherJumps.filter(m => m.capture);
     renderBoard();
     showToast('You must continue jumping!', 'success');
+    isProcessingMove = false;
+    return;
   } else {
     newTurn = gameState.turn === 'red' ? 'black' : 'red';
     mustContinueJumping = false;
   }
-  const redCount = board.flat().filter(p => p && p.color === 'red').length;
-  const blackCount = board.flat().filter(p => p && p.color === 'black').length;
+
+  let redCount = 0, blackCount = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r] && board[r][c]) {
+        if (board[r][c].color === 'red') redCount++;
+        else if (board[r][c].color === 'black') blackCount++;
+      }
+    }
+  }
+
   let newStatus = gameState.status;
   let winner = gameState.winner;
   let endReason = '';
+
   if (redCount === 0) { newStatus = 'finished'; winner = gameState.black_player; endReason = 'All red pieces captured'; }
   else if (blackCount === 0) { newStatus = 'finished'; winner = gameState.red_player; endReason = 'All black pieces captured'; }
   else {
@@ -906,10 +926,12 @@ async function executeMove(from, to, boardParam) {
       endReason = (newTurn === 'red' ? 'Red' : 'Black') + ' has no valid moves';
     }
   }
+
   const boardHash = hashBoard(board);
   const newBoardHistory = [...(gameState.board_history || []), boardHash];
   const repetitions = newBoardHistory.filter(h => h === boardHash).length;
   if (repetitions >= 3) { newStatus = 'finished'; winner = 'draw'; endReason = 'Draw by repetition (3-fold)'; }
+
   const moveRecord = {
     player: gameState.turn,
     from: String.fromCharCode(97 + from.col) + (8 - from.row),
@@ -918,8 +940,10 @@ async function executeMove(from, to, boardParam) {
     becameKing: becameKing,
     timestamp: new Date().toISOString()
   };
+
   const moveHistory = [...(gameState.move_history || []), moveRecord];
   lastMove = { from_row: from.row, from_col: from.col, to_row: to.row, to_col: to.col };
+
   try {
     const { error } = await sb.from('checkers_rooms').update({
       board: board, turn: newTurn, status: newStatus, winner: winner,
@@ -930,13 +954,22 @@ async function executeMove(from, to, boardParam) {
     if (becameKing) showToast('👑 King me!', 'success');
     if (newStatus === 'finished') showGameOver(winner, endReason);
   } catch (e) {
-    console.error('Move failed:', e);
     showToast('Move failed', 'error');
+  } finally {
+    isProcessingMove = false;
   }
 }
 
 function hashBoard(board) {
-  return board.map(row => row.map(p => p ? (p.color[0] + (p.king ? 'K' : '')) : '-').join('')).join('|');
+  let hash = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = board[r] && board[r][c];
+      hash += p ? (p.color[0] + (p.king ? 'K' : '')) : '-';
+    }
+    hash += '|';
+  }
+  return hash;
 }
 
 function resignGame() {
@@ -954,9 +987,8 @@ async function confirmResign() {
   const winner = playerRole === 'red' ? gameState.black_player : gameState.red_player;
   try {
     await sb.from('checkers_rooms').update({ status: 'finished', winner: winner, updated_at: new Date().toISOString() }).eq('id', currentRoomId);
-    addChatMessage('SYSTEM', escapeHtml(currentUser || 'Player') + ' resigned. ' + escapeHtml(winner) + ' wins!', true);
+    addChatMessage('SYSTEM', (currentUser || 'Player') + ' resigned. ' + winner + ' wins!', true);
   } catch (e) {
-    console.error('Resign failed:', e);
     showToast('Failed to resign', 'error');
   }
 }
@@ -971,7 +1003,6 @@ async function requestUndo() {
     }).eq('id', currentRoomId);
     showToast('Undo requested. Waiting for opponent...', 'success');
   } catch (e) {
-    console.error('Undo request failed:', e);
     showToast('Failed to request undo', 'error');
   }
 }
@@ -989,7 +1020,6 @@ async function confirmUndo() {
     }).eq('id', currentRoomId);
     addChatMessage('SYSTEM', 'Undo accepted. Move reverted.', true);
   } catch (e) {
-    console.error('Undo confirm failed:', e);
     showToast('Failed to undo', 'error');
   }
 }
@@ -1002,12 +1032,20 @@ function denyUndo() {
 }
 
 function updateUI() {
-  if (!gameState) return;
+  if (!gameState || pendingUIUpdate) return;
+  pendingUIUpdate = true;
+  requestAnimationFrame(() => {
+    _doUpdateUI();
+    pendingUIUpdate = false;
+  });
+}
+
+function _doUpdateUI() {
   const p1 = gameState.red_player;
   document.getElementById('p1Name').textContent = p1 || 'Waiting...';
   document.getElementById('p1Avatar').textContent = p1 ? p1[0] : '?';
   document.getElementById('p1Status').textContent = p1 ? 'Ready' : 'Waiting';
-  document.getElementById('p1Status').className = `status-badge ${p1 ? 'ready' : 'waiting'}`;
+  document.getElementById('p1Status').className = 'status-badge ' + (p1 ? 'ready' : 'waiting');
   const p1JoinArea = document.getElementById('p1JoinArea');
   if (p1) { p1JoinArea.style.display = 'none'; }
   else {
@@ -1022,7 +1060,7 @@ function updateUI() {
   document.getElementById('p2Name').textContent = p2 || 'Waiting...';
   document.getElementById('p2Avatar').textContent = p2 ? p2[0] : '?';
   document.getElementById('p2Status').textContent = p2 ? 'Ready' : 'Waiting';
-  document.getElementById('p2Status').className = `status-badge ${p2 ? 'ready' : 'waiting'}`;
+  document.getElementById('p2Status').className = 'status-badge ' + (p2 ? 'ready' : 'waiting');
   const p2JoinArea = document.getElementById('p2JoinArea');
   if (p2) { p2JoinArea.style.display = 'none'; }
   else {
@@ -1044,7 +1082,7 @@ function updateUI() {
   } else if (gameState.status === 'playing') {
     const turnText = gameState.turn === 'red' ? "Red's Turn" : "Black's Turn";
     turnBar.textContent = mustContinueJumping ? turnText + ' — Continue Jumping!' : turnText;
-    turnBar.className = `turn-bar ${gameState.turn}-turn`;
+    turnBar.className = 'turn-bar ' + gameState.turn + '-turn';
   } else if (gameState.status === 'finished') {
     if (gameState.winner === 'draw') {
       turnBar.textContent = 'Game Over — Draw!';
@@ -1079,31 +1117,28 @@ function updateUI() {
   }
   if (gameState.status === 'playing') { startTurnTimer(); }
   else { clearInterval(turnTimer); document.getElementById('timerDisplay').style.display = 'none'; }
-  if (gameState.status === 'playing' && gameState.turn === playerRole && document.hidden) {
-    showNotification("It's your turn!", 'Your move in room ' + gameState.code);
-  }
 }
 
 function updateCapturedPieces() {
   const board = getBoard();
-  const redPieces = board.flat().filter(p => p && p.color === 'red').length;
-  const blackPieces = board.flat().filter(p => p && p.color === 'black').length;
-  const redCaptured = 12 - redPieces;
-  const blackCaptured = 12 - blackPieces;
+  let redCount = 0, blackCount = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r] && board[r][c]) {
+        if (board[r][c].color === 'red') redCount++;
+        else if (board[r][c].color === 'black') blackCount++;
+      }
+    }
+  }
+  const redCaptured = 12 - redCount;
+  const blackCaptured = 12 - blackCount;
   const p1Captured = document.getElementById('p1Captured');
   const p2Captured = document.getElementById('p2Captured');
-  p1Captured.innerHTML = '';
-  p2Captured.innerHTML = '';
-  for (let i = 0; i < blackCaptured; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'captured-piece black';
-    p1Captured.appendChild(piece);
-  }
-  for (let i = 0; i < redCaptured; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'captured-piece red';
-    p2Captured.appendChild(piece);
-  }
+  let p1Html = '', p2Html = '';
+  for (let i = 0; i < blackCaptured; i++) p1Html += '<div class="captured-piece black"></div>';
+  for (let i = 0; i < redCaptured; i++) p2Html += '<div class="captured-piece red"></div>';
+  p1Captured.innerHTML = p1Html;
+  p2Captured.innerHTML = p2Html;
 }
 
 function renderMoveHistory() {
@@ -1112,13 +1147,16 @@ function renderMoveHistory() {
     moveList.innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:0.7rem">No moves yet</div>';
     return;
   }
-  moveList.innerHTML = gameState.move_history.map((move, i) => {
+  let html = '';
+  for (let i = 0; i < gameState.move_history.length; i++) {
+    const move = gameState.move_history[i];
     const moveNum = Math.floor(i / 2) + 1;
     const prefix = move.player === 'red' ? moveNum + '.' : '';
     const captureIcon = move.capture ? ' ✕' : '';
     const kingIcon = move.becameKing ? ' 👑' : '';
-    return `<div class="move-item"><span class="move-number">${prefix}</span><span class="move-notation">${move.from}→${move.to}${captureIcon}${kingIcon}</span></div>`;
-  }).join('');
+    html += '<div class="move-item"><span class="move-number">' + prefix + '</span><span class="move-notation">' + move.from + '→' + move.to + captureIcon + kingIcon + '</span></div>';
+  }
+  moveList.innerHTML = html;
   moveList.scrollTop = moveList.scrollHeight;
 }
 
@@ -1143,15 +1181,14 @@ function startTurnTimer() {
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return m + ':' + s.toString().padStart(2, '0');
+  return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
 function setupRealtime() {
   if (roomSubscription) { roomSubscription.unsubscribe(); roomSubscription = null; }
   roomSubscription = sb.channel('checkers_room_' + currentRoomId).on('postgres_changes', {
-    event: '*', schema: 'public', table: 'checkers_rooms', filter: `id=eq.${currentRoomId}`
+    event: '*', schema: 'public', table: 'checkers_rooms', filter: 'id=eq.' + currentRoomId
   }, (payload) => {
-    console.log('Realtime update:', payload);
     const newState = payload.new;
     if (!newState) return;
     if (typeof newState.board === 'string') {
@@ -1168,39 +1205,28 @@ function setupRealtime() {
       const reason = newState.winner === 'draw' ? 'Draw!' : newState.winner + ' wins!';
       showGameOver(newState.winner, reason);
     }
-  }).subscribe((status) => { console.log('Room realtime status:', status); });
+  }).subscribe();
 }
 
 async function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if (!text || !currentRoomId) return;
-  const filtered = filterProfanity(text);
   const name = currentUser || 'Spectator';
-  addChatMessage(name, filtered, false);
+  addChatMessage(name, text, false);
   input.value = '';
   try {
     const { error } = await sb.from('checkers_chat').insert({
-      room_id: currentRoomId, player: name, message: filtered, created_at: new Date().toISOString()
+      room_id: currentRoomId, player: name, message: text, created_at: new Date().toISOString()
     });
     if (error) console.error('Chat sync error:', error);
   } catch (e) { console.error('Chat sync failed:', e); }
 }
 
-function filterProfanity(text) {
-  const badWords = ['badword1', 'badword2'];
-  let result = text;
-  badWords.forEach(word => {
-    const regex = new RegExp(word, 'gi');
-    result = result.replace(regex, '*'.repeat(word.length));
-  });
-  return result;
-}
-
 function addChatMessage(name, text, isSystem) {
   const container = document.getElementById('chatMessages');
   const div = document.createElement('div');
-  div.className = `chat-msg ${name === currentUser ? 'own' : ''} ${isSystem ? 'system' : ''}`;
+  div.className = 'chat-msg ' + (name === currentUser ? 'own ' : '') + (isSystem ? 'system' : '');
   const safeName = document.createElement('span');
   safeName.className = 'msg-name';
   safeName.textContent = name;
@@ -1216,13 +1242,13 @@ function addChatMessage(name, text, isSystem) {
 function setupChat() {
   if (chatSubscription) { chatSubscription.unsubscribe(); chatSubscription = null; }
   chatSubscription = sb.channel('checkers_chat_' + currentRoomId).on('postgres_changes', {
-    event: 'INSERT', schema: 'public', table: 'checkers_chat', filter: `room_id=eq.${currentRoomId}`
+    event: 'INSERT', schema: 'public', table: 'checkers_chat', filter: 'room_id=eq.' + currentRoomId
   }, (payload) => {
     const msg = payload.new;
     if (msg && msg.player !== currentUser) {
       addChatMessage(msg.player, msg.message, false);
     }
-  }).subscribe((status) => { console.log('Chat realtime status:', status); });
+  }).subscribe();
 }
 
 function showGameOver(winner, reason) {
@@ -1269,7 +1295,6 @@ async function resetBoard() {
     selectedPiece = null;
     validMoves = [];
     lastMove = null;
-    boardHistory = [];
   } catch (e) { console.error('Reset failed:', e); }
 }
 
@@ -1281,10 +1306,10 @@ function backToLobby() {
 function showNotification(title, body) {
   if (!('Notification' in window)) return;
   if (Notification.permission === 'granted') {
-    new Notification(title, { body, icon: '♟️' });
+    new Notification(title, { body });
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then(permission => {
-      if (permission === 'granted') new Notification(title, { body, icon: '♟️' });
+      if (permission === 'granted') new Notification(title, { body });
     });
   }
 }
@@ -1326,5 +1351,4 @@ window.addEventListener('beforeunload', () => {
 init();
 </script>
 </body>
-</html>
 </html>
