@@ -755,11 +755,16 @@ async function loadGame() {
 
 function renderBoard() {
   const boardEl = document.getElementById('board');
-  // Only clear if structure changed - otherwise update in place for performance
   const board = getBoard();
   const isBlackPerspective = playerRole === 'black';
-
-  // Build HTML string once instead of DOM manipulation
+  
+  // If it's not our turn, clear selection (opponent just moved)
+  if (gameState && gameState.status === 'playing' && gameState.turn !== playerRole) {
+    selectedPiece = null;
+    validMoves = [];
+    mustContinueJumping = false;
+  }
+  
   let html = '';
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
@@ -767,7 +772,7 @@ function renderBoard() {
       const displayCol = isBlackPerspective ? 7 - col : col;
       const isLight = (displayRow + displayCol) % 2 === 0;
       let classes = 'square ' + (isLight ? 'light' : 'dark');
-
+      
       if (gameState && gameState.last_move) {
         const last = gameState.last_move;
         if ((last.to_row === displayRow && last.to_col === displayCol) ||
@@ -775,7 +780,7 @@ function renderBoard() {
           classes += ' last-move';
         }
       }
-
+      
       const moveMatch = validMoves.find(m => m.row === displayRow && m.col === displayCol);
       if (moveMatch) {
         classes += moveMatch.capture ? ' valid-capture' : ' valid-move';
@@ -783,14 +788,14 @@ function renderBoard() {
       if (selectedPiece && selectedPiece.row === displayRow && selectedPiece.col === displayCol) {
         classes += ' selected';
       }
-
+      
       const piece = board[displayRow] && board[displayRow][displayCol] ? board[displayRow][displayCol] : null;
       let pieceHtml = '';
       if (piece && piece.color) {
         pieceHtml = '<div class="piece ' + piece.color + (piece.king ? ' king' : '') + '"></div>';
       }
-
-      const clickable = !isLight && gameState && gameState.status === 'playing' ? ' onclick="handleSquareClick(' + displayRow + ',' + displayCol + ')"' : '';
+      
+      const clickable = !isLight && gameState && gameState.status === 'playing' && gameState.turn === playerRole ? ' onclick="handleSquareClick(' + displayRow + ',' + displayCol + ')"' : '';
       html += '<div class="' + classes + '"' + clickable + '>' + pieceHtml + '</div>';
     }
   }
@@ -1185,28 +1190,84 @@ function formatTime(seconds) {
 
 function setupRealtime() {
   if (roomSubscription) { roomSubscription.unsubscribe(); roomSubscription = null; }
+  
   roomSubscription = sb.channel('checkers_room_' + currentRoomId).on('postgres_changes', {
     event: '*', schema: 'public', table: 'checkers_rooms', filter: 'id=eq.' + currentRoomId
   }, (payload) => {
     const newState = payload.new;
     if (!newState) return;
+    
+    // Parse board safely
     if (typeof newState.board === 'string') {
       try { newState.board = JSON.parse(newState.board); } catch(e) { newState.board = initializeBoard(); }
     }
     if (newState.board_history && typeof newState.board_history === 'string') {
       try { newState.board_history = JSON.parse(newState.board_history); } catch(e) { newState.board_history = []; }
     }
+    
+    // Check if it's actually our turn now (opponent just moved)
+    const wasMyTurn = gameState && gameState.turn === playerRole;
+    const isMyTurnNow = newState.turn === playerRole;
+    const opponentJustMoved = gameState && gameState.turn !== newState.turn && !wasMyTurn;
+    
     gameState = newState;
-    updateUI();
-    renderBoard();
-    renderMoveHistory();
+    
+    // Only re-render board if state actually changed
+    // Don't re-render if we're in the middle of a multi-jump
+    if (!mustContinueJumping) {
+      updateUI();
+      renderBoard();
+      renderMoveHistory();
+    } else {
+      // Just update UI elements without touching the board
+      updateTurnBarOnly();
+      updateCapturedPiecesOnly();
+    }
+    
     if (newState.status === 'finished') {
       const reason = newState.winner === 'draw' ? 'Draw!' : newState.winner + ' wins!';
       showGameOver(newState.winner, reason);
     }
+    
+    // Notify if it's now our turn
+    if (opponentJustMoved && isMyTurnNow && document.hidden) {
+      showNotification("It's your turn!", 'Your move in room ' + newState.code);
+    }
   }).subscribe();
 }
-
+function updateTurnBarOnly() {
+  const turnBar = document.getElementById('turnBar');
+  if (!gameState) return;
+  if (gameState.status === 'waiting') {
+    turnBar.textContent = 'Waiting for players...';
+    turnBar.className = 'turn-bar waiting';
+  } else if (gameState.status === 'playing') {
+    const turnText = gameState.turn === 'red' ? "Red's Turn" : "Black's Turn";
+    turnBar.textContent = mustContinueJumping ? turnText + ' — Continue Jumping!' : turnText;
+    turnBar.className = 'turn-bar ' + gameState.turn + '-turn';
+  }
+}
+function updateCapturedPiecesOnly() {
+  const board = getBoard();
+  let redCount = 0, blackCount = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (board[r] && board[r][c]) {
+        if (board[r][c].color === 'red') redCount++;
+        else if (board[r][c].color === 'black') blackCount++;
+      }
+    }
+  }
+  const redCaptured = 12 - redCount;
+  const blackCaptured = 12 - blackCount;
+  const p1Captured = document.getElementById('p1Captured');
+  const p2Captured = document.getElementById('p2Captured');
+  let p1Html = '', p2Html = '';
+  for (let i = 0; i < blackCaptured; i++) p1Html += '<div class="captured-piece black"></div>';
+  for (let i = 0; i < redCaptured; i++) p2Html += '<div class="captured-piece red"></div>';
+  p1Captured.innerHTML = p1Html;
+  p2Captured.innerHTML = p2Html;
+}
 async function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
@@ -1267,14 +1328,37 @@ function showGameOver(winner, reason) {
 
 async function saveToScoreboard(winner) {
   if (winner === 'draw') return;
+  
+  // Wait a tick to ensure gameState is fully updated from realtime
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  if (!gameState) return;
+  
   const loser = winner === gameState.red_player ? gameState.black_player : gameState.red_player;
-  if (!winner || !loser) return;
+  if (!winner || !loser) {
+    console.warn('Cannot save score: missing winner or loser', { winner, loser, gameState });
+    return;
+  }
+  
   try {
-    const { error } = await sb.from('scores').insert({
-      game: 'Checkers', winner: winner, players: JSON.stringify([winner, loser]), created_at: new Date().toISOString()
+    const { data, error } = await sb.from('scores').insert({
+      game: 'Checkers',
+      winner: winner,
+      players: JSON.stringify([winner, loser]),
+      created_at: new Date().toISOString()
     });
-    if (error) console.error('Save score error:', error);
-  } catch (e) { console.error('Save score failed:', e); }
+    
+    if (error) {
+      console.error('Save score error:', error);
+      showToast('Failed to save score: ' + error.message, 'error');
+    } else {
+      console.log('Score saved:', data);
+      showToast('Score saved to scoreboard!', 'success');
+    }
+  } catch (e) {
+    console.error('Save score failed:', e);
+    showToast('Failed to save score', 'error');
+  }
 }
 
 function playAgain() {
