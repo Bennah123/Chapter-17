@@ -761,7 +761,7 @@
 </head>
 <body>
 
-<<nav>
+<nav>
   <a class="nav-logo" href="dashboard.html">← Chapter 17</a>
   <ul class="nav-links">
     <li><a href="dashboard.html">Dashboard</a></li>
@@ -852,6 +852,7 @@
       <div class="player-name" id="p1Name">Waiting...</div>
       <span class="status-badge waiting" id="p1Status">Waiting</span>
       
+      <!-- FIXED: Only show join area if not already assigned -->
       <div style="margin-top: 16px;" id="p1JoinArea">
         <select class="member-select" id="memberSelect1">
           <option value="">Select your name...</option>
@@ -886,6 +887,7 @@
         <div class="player-name" id="p2Name">Waiting...</div>
         <span class="status-badge waiting" id="p2Status">Waiting</span>
         
+        <!-- FIXED: Only show join area if not already assigned -->
         <div style="margin-top: 16px;" id="p2JoinArea">
           <select class="member-select" id="memberSelect2">
             <option value="">Select your name...</option>
@@ -1042,6 +1044,7 @@ async function createRoom() {
     document.getElementById('newRoomCode').textContent = code;
     document.getElementById('createdRoom').style.display = 'block';
     showToast('Room created! Code: ' + code);
+    loadActiveRooms(); // Refresh list immediately
   } catch (e) {
     console.error('EXCEPTION:', e);
     showToast('Failed: ' + e.message);
@@ -1079,8 +1082,15 @@ async function goToRoom(code) {
       return;
     }
     
-    if (data.status === 'finished') {
-      showToast('This game has ended');
+    // FIXED: Don't allow joining finished rooms
+    if (data.status === 'finished' || data.status === 'abandoned') {
+      showToast('This game has ended or was abandoned');
+      return;
+    }
+    
+    // FIXED: Don't allow joining full rooms
+    if (data.red_player && data.black_player) {
+      showToast('Room is full!');
       return;
     }
     
@@ -1104,9 +1114,26 @@ async function goToRoom(code) {
 }
 
 // ═══════════════════════════════════════
-// LEAVE ROOM - FIXED: Properly resets everything
+// LEAVE ROOM - FIXED: Marks room as abandoned
 // ═══════════════════════════════════════
 async function leaveRoom() {
+  // Mark room as abandoned if you're a player
+  if (currentRoomId && playerRole && gameState) {
+    try {
+      // If game hasn't started or just started, mark as abandoned
+      if (gameState.status === 'waiting' || gameState.status === 'playing') {
+        await sb.from('checkers_rooms')
+          .update({ 
+            status: 'abandoned',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentRoomId);
+      }
+    } catch (e) {
+      console.error('Mark abandoned failed:', e);
+    }
+  }
+  
   // Unsubscribe from realtime
   if (roomSubscription) {
     await roomSubscription.unsubscribe();
@@ -1133,7 +1160,7 @@ async function leaveRoom() {
 }
 
 // ═══════════════════════════════════════
-// RESET GAME UI - NEW: Clears all game state from UI
+// RESET GAME UI
 // ═══════════════════════════════════════
 function resetGameUI() {
   // Reset player panels
@@ -1181,7 +1208,7 @@ function resetGameUI() {
 }
 
 // ═══════════════════════════════════════
-// LOAD ACTIVE ROOMS
+// LOAD ACTIVE ROOMS - FIXED: Only shows waiting/playing
 // ═══════════════════════════════════════
 async function loadActiveRooms() {
   try {
@@ -1224,7 +1251,7 @@ async function loadActiveRooms() {
 }
 
 // ═══════════════════════════════════════
-// JOIN GAME (Select Side)
+// JOIN GAME - FIXED: Auto-assign opponent color
 // ═══════════════════════════════════════
 function setupLobbyListeners() {
   document.getElementById('memberSelect1').addEventListener('change', (e) => {
@@ -1246,23 +1273,26 @@ async function joinSide(role) {
   const playerName = select.value;
   if (!playerName) return;
   
-  // Check if slot is taken
+  // Check if slot is taken by someone else
   if (role === 'red' && gameState.red_player && gameState.red_player !== playerName) {
-    showToast('Red side is already taken!');
+    showToast('Red side is already taken by ' + gameState.red_player);
     return;
   }
   if (role === 'black' && gameState.black_player && gameState.black_player !== playerName) {
-    showToast('Black side is already taken!');
+    showToast('Black side is already taken by ' + gameState.black_player);
     return;
   }
   
   playerRole = role;
   
+  // Determine new status
+  const otherPlayer = role === 'red' ? gameState.black_player : gameState.red_player;
+  const newStatus = otherPlayer ? 'playing' : 'waiting';
+  
   const update = {
     [role === 'red' ? 'red_player' : 'black_player']: playerName,
-    status: (gameState.red_player && role === 'black') || (gameState.black_player && role === 'red') 
-      ? 'playing' 
-      : 'waiting'
+    status: newStatus,
+    updated_at: new Date().toISOString()
   };
   
   try {
@@ -1273,6 +1303,11 @@ async function joinSide(role) {
     if (error) throw error;
     
     addChatMessage('SYSTEM', `${playerName} joined as ${role}!`, true);
+    
+    // If both players are now in, announce game start
+    if (newStatus === 'playing') {
+      addChatMessage('SYSTEM', '🎮 Game started! Red moves first.', true);
+    }
   } catch (e) {
     console.error('Join side failed:', e);
     showToast('Failed to join side');
@@ -1494,7 +1529,7 @@ async function executeMove(from, to, boardParam) {
 }
 
 // ═══════════════════════════════════════
-// UPDATE UI
+// UPDATE UI - FIXED: Properly shows/hides join areas
 // ═══════════════════════════════════════
 function updateUI() {
   if (!gameState) return;
@@ -1505,13 +1540,18 @@ function updateUI() {
   document.getElementById('p1Status').textContent = p1 ? 'Ready' : 'Waiting';
   document.getElementById('p1Status').className = `status-badge ${p1 ? 'ready' : 'waiting'}`;
   
+  // FIXED: Only show join area if slot is empty AND user hasn't picked a side
   const p1JoinArea = document.getElementById('p1JoinArea');
   if (p1) {
     p1JoinArea.style.display = 'none';
   } else {
-    p1JoinArea.style.display = 'block';
-    document.getElementById('memberSelect1').disabled = !!gameState.red_player;
-    document.getElementById('inviteBtn1').disabled = !document.getElementById('memberSelect1').value;
+    // Only show if current user hasn't joined any side
+    const alreadyJoined = gameState.red_player === currentUser || gameState.black_player === currentUser;
+    p1JoinArea.style.display = alreadyJoined ? 'none' : 'block';
+    if (!alreadyJoined) {
+      document.getElementById('memberSelect1').disabled = false;
+      document.getElementById('inviteBtn1').disabled = !document.getElementById('memberSelect1').value;
+    }
   }
   
   const p2 = gameState.black_player;
@@ -1524,9 +1564,12 @@ function updateUI() {
   if (p2) {
     p2JoinArea.style.display = 'none';
   } else {
-    p2JoinArea.style.display = 'block';
-    document.getElementById('memberSelect2').disabled = !!gameState.black_player;
-    document.getElementById('inviteBtn2').disabled = !document.getElementById('memberSelect2').value;
+    const alreadyJoined = gameState.red_player === currentUser || gameState.black_player === currentUser;
+    p2JoinArea.style.display = alreadyJoined ? 'none' : 'block';
+    if (!alreadyJoined) {
+      document.getElementById('memberSelect2').disabled = false;
+      document.getElementById('inviteBtn2').disabled = !document.getElementById('memberSelect2').value;
+    }
   }
   
   const turnBar = document.getElementById('turnBar');
@@ -1548,7 +1591,7 @@ function updateUI() {
 }
 
 // ═══════════════════════════════════════
-// REALTIME - FIXED: Proper channel setup
+// REALTIME
 // ═══════════════════════════════════════
 function setupRealtime() {
   if (roomSubscription) {
@@ -1591,7 +1634,7 @@ function setupRealtime() {
 }
 
 // ═══════════════════════════════════════
-// CHAT - FIXED: Proper async/await syntax
+// CHAT
 // ═══════════════════════════════════════
 async function sendChat() {
   const input = document.getElementById('chatInput');
@@ -1600,13 +1643,9 @@ async function sendChat() {
   
   const name = currentUser || 'Spectator';
   
-  // Add to UI immediately
   addChatMessage(name, text, false);
-  
-  // Clear input immediately - FIXED
   input.value = '';
   
-  // Sync to database
   try {
     const { error } = await sb.from('checkers_chat').insert({
       room_id: currentRoomId,
@@ -1615,9 +1654,7 @@ async function sendChat() {
       created_at: new Date().toISOString()
     });
     
-    if (error) {
-      console.error('Chat sync error:', error);
-    }
+    if (error) console.error('Chat sync error:', error);
   } catch (e) {
     console.error('Chat sync failed:', e);
   }
