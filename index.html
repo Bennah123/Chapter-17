@@ -312,22 +312,15 @@
 </main>
 
 <script>
-  // ============================================
-  // PARTICLE SYSTEM (FIXED: Retina + bounds)
-  // ============================================
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
   let W, H, particles = [];
   const dpr = window.devicePixelRatio || 1;
-  
-  // Check for reduced motion preference
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const particleCount = prefersReducedMotion ? 0 : 80;
 
   function resize() {
     W = window.innerWidth;
     H = window.innerHeight;
-    // FIXED: Scale canvas for Retina displays
     canvas.width = W * dpr;
     canvas.height = H * dpr;
     canvas.style.width = W + 'px';
@@ -346,16 +339,12 @@
       this.speed = Math.random() * 0.4 + 0.1;
       this.opacity = Math.random() * 0.5 + 0.1;
       this.drift = (Math.random() - 0.5) * 0.3;
-      this.baseX = this.x; // Track original x for drift bounds
     }
     update() {
       this.y -= this.speed;
       this.x += this.drift;
-      
-      // FIXED: Wrap horizontal drift so particles don't wander off forever
       if (this.x < -20) this.x = W + 20;
       if (this.x > W + 20) this.x = -20;
-      
       if (this.y < -10) this.reset(false);
     }
     draw() {
@@ -367,59 +356,29 @@
   }
 
   if (!prefersReducedMotion) {
-    for (let i = 0; i < particleCount; i++) particles.push(new Particle());
+    for (let i = 0; i < 80; i++) particles.push(new Particle());
+    function loop() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(loop);
+    }
+    loop();
   }
 
-  function loop() {
-    if (prefersReducedMotion) return;
-    ctx.clearRect(0, 0, W, H);
-    particles.forEach(p => { p.update(); p.draw(); });
-    requestAnimationFrame(loop);
-  }
-  loop();
-
-  // ============================================
-  // MOUSE PARALLAX ON GLOW (NEW)
-  // ============================================
+  // Mouse parallax on glow
   const glow = document.getElementById('glow');
-  let mouseX = 0, mouseY = 0;
-  let targetX = 0, targetY = 0;
-
+  let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
   document.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / W - 0.5) * 2; // -1 to 1
+    mouseX = (e.clientX / W - 0.5) * 2;
     mouseY = (e.clientY / H - 0.5) * 2;
   });
-
   function animateGlow() {
-    // Smooth interpolation
     targetX += (mouseX * 30 - targetX) * 0.05;
     targetY += (mouseY * 30 - targetY) * 0.05;
     glow.style.transform = `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px))`;
     requestAnimationFrame(animateGlow);
   }
   animateGlow();
-
-  // ============================================
-  // SESSION-AWARE CTA (NEW)
-  // ============================================
-  // Check if user is already logged in and swap CTA
-  async function updateCTA() {
-    try {
-      // We can't import Supabase here without adding the script tag,
-      // but we can check localStorage as a lightweight fallback
-      const loggedInUser = localStorage.getItem('loggedInUser');
-      if (loggedInUser) {
-        const ctaLink = document.getElementById('ctaLink');
-        const ctaText = document.getElementById('ctaText');
-        ctaLink.href = 'dashboard.html';
-        ctaText.textContent = 'Return to Dashboard';
-        ctaLink.classList.remove('cta-pulse'); // Remove pulse for returning users
-      }
-    } catch (err) {
-      // Silently fail — default CTA is fine
-    }
-  }
-  updateCTA();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
