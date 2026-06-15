@@ -359,20 +359,6 @@
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
   );
 
-  // ============================================
-  // AUTO-REDIRECT IF ALREADY LOGGED IN
-  // ============================================
-  async function checkExistingSession() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-      // User already has valid session — redirect to dashboard
-      document.body.classList.add('fade-out');
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 300);
-    }
-  }
-  checkExistingSession();
 
   // ============================================
   // LOAD MEMBER NAMES
