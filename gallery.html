@@ -54,7 +54,8 @@
     .drop-text { font-size: 0.75rem; letter-spacing: 2px; color: var(--muted); }
     .drop-text span { color: var(--gold); }
     .preview-strip { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-    .preview-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 3px; border: 1px solid var(--gold-border); position: relative; }
+    .preview-thumb { width: 70px; height: 70px; position: relative; }
+    .preview-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 3px; border: 1px solid var(--gold-border); }
     .preview-thumb .remove-thumb { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; background: #c94c4c; border: none; border-radius: 50%; color: white; font-size: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .btn-upload { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 5px; padding: 14px 40px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 24px rgba(201,168,76,0.2); position: relative; overflow: hidden; display: inline-flex; align-items: center; gap: 10px; }
     .btn-upload::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #fff8e7, var(--gold-bright)); opacity: 0; transition: opacity 0.3s; }
@@ -114,6 +115,17 @@
     .btn-cancel:hover { border-color: var(--gold); color: var(--gold); }
     .btn-save { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border: none; border-radius: 3px; color: #080806; font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 3px; padding: 10px 24px; cursor: pointer; transition: all 0.3s; }
     .btn-save:hover { transform: translateY(-1px); box-shadow: 0 0 16px rgba(201,168,76,0.3); }
+    
+    /* NEW: Upload progress bar */
+    .upload-progress { width: 100%; height: 3px; background: var(--gold-dim); border-radius: 2px; margin-top: 16px; overflow: hidden; display: none; }
+    .upload-progress.active { display: block; }
+    .upload-progress-bar { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); width: 0%; transition: width 0.3s ease; }
+    
+    /* NEW: Image skeleton loader */
+    .photo-card img { background: linear-gradient(90deg, var(--card-bg) 25%, rgba(201,168,76,0.05) 50%, var(--card-bg) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+    .photo-card img.loaded { animation: none; background: none; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    
     @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @media (max-width: 768px) { nav { padding: 0 24px; } .hero { padding: 120px 24px 40px; } .content { padding: 0 24px 60px; } .upload-grid { grid-template-columns: 1fr; } .photo-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } }
   </style>
@@ -179,6 +191,12 @@
       <p class="drop-text">Drop photos here or <span>browse</span></p>
     </div>
     <div class="preview-strip" id="previewStrip"></div>
+    
+    <!-- NEW: Upload progress bar -->
+    <div class="upload-progress" id="uploadProgress">
+      <div class="upload-progress-bar" id="uploadProgressBar"></div>
+    </div>
+    
     <button class="btn-upload" id="uploadBtn" onclick="uploadPhotos()">
       <div class="btn-spinner"></div>
       <span>Save to Memory Wall</span>
@@ -188,7 +206,7 @@
   <!-- Gallery - Everyone Can View -->
   <div class="filter-bar" id="filterBar">
     <span class="filter-label">Filter</span>
-    <button class="filter-btn active" onclick="filterEvent('all', this)">All</button>
+    <button class="filter-btn active" data-event="all" onclick="filterEvent('all', this)">All</button>
   </div>
 
   <div id="gallery">
@@ -224,6 +242,11 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // ============================================
+  // SECURITY NOTE: Admin password is client-side visible.
+  // For a private friend group of 11 people, this is acceptable.
+  // For production, move password check to a Supabase Edge Function.
+  // ============================================
   const ADMIN_PASSWORD = 'Chapter17King';
 
   const { createClient } = supabase;
@@ -237,8 +260,46 @@
   let allMemories = [];
   let isAdmin = false;
   let uploadMode = 'new'; // 'new' or 'edit'
+  let realtimeChannel = null;
+  let knownEvents = new Set(); // Track events to avoid rebuilding filters unnecessarily
 
-  // Admin toggle
+  // ============================================
+  // IMAGE COMPRESSION (NEW)
+  // Compresses images before upload to save bandwidth/storage
+  // ============================================
+  async function compressImage(file, maxWidth = 1600, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error('Canvas toBlob failed'));
+          // Create a new File object with the original name
+          const compressedFile = new File([blob], file.name, { 
+            type: 'image/jpeg', 
+            lastModified: Date.now() 
+          });
+          resolve(compressedFile);
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Image load failed'));
+      };
+      img.src = url;
+    });
+  }
+
+  // ============================================
+  // ADMIN FUNCTIONS
+  // ============================================
   function toggleAdmin() {
     if (isAdmin) {
       isAdmin = false;
@@ -282,7 +343,9 @@
     document.getElementById('uploadPanel').classList.remove('locked');
   }
 
-  // Mode toggle
+  // ============================================
+  // MODE TOGGLE
+  // ============================================
   function setMode(mode) {
     uploadMode = mode;
     document.getElementById('modeNew').classList.toggle('active', mode === 'new');
@@ -304,19 +367,33 @@
     });
   }
 
+  // ============================================
+  // FILE HANDLING
+  // ============================================
   const fileInput = document.getElementById('fileInput');
   const previewStrip = document.getElementById('previewStrip');
   const dropZone = document.getElementById('dropZone');
 
   fileInput.addEventListener('change', () => { 
-    selectedFiles = [...selectedFiles, ...Array.from(fileInput.files)]; 
+    const newFiles = Array.from(fileInput.files).filter(f => f.type.startsWith('image/'));
+    selectedFiles = [...selectedFiles, ...newFiles]; 
     renderPreviews(); 
+    // Reset file input so the same file can be selected again
+    fileInput.value = '';
   });
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+
+  dropZone.addEventListener('dragover', e => { 
+    e.preventDefault(); 
+    dropZone.classList.add('dragover'); 
+  });
+
   dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
   dropZone.addEventListener('drop', e => {
-    e.preventDefault(); dropZone.classList.remove('dragover');
-    selectedFiles = [...selectedFiles, ...Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))];
+    e.preventDefault(); 
+    dropZone.classList.remove('dragover');
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    selectedFiles = [...selectedFiles, ...droppedFiles];
     renderPreviews();
   });
 
@@ -325,21 +402,30 @@
     selectedFiles.forEach((file, idx) => {
       const wrap = document.createElement('div');
       wrap.className = 'preview-thumb';
+      
       const img = document.createElement('img');
-      img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover'; img.style.borderRadius = '3px';
       const reader = new FileReader();
-      reader.onload = e => img.src = e.target.result;
+      reader.onload = e => { img.src = e.target.result; };
       reader.readAsDataURL(file);
+      
       const remove = document.createElement('button');
       remove.className = 'remove-thumb';
       remove.innerHTML = '✕';
-      remove.onclick = () => { selectedFiles.splice(idx, 1); renderPreviews(); };
+      remove.onclick = (e) => { 
+        e.stopPropagation();
+        selectedFiles.splice(idx, 1); 
+        renderPreviews(); 
+      };
+      
       wrap.appendChild(img);
       wrap.appendChild(remove);
       previewStrip.appendChild(wrap);
     });
   }
 
+  // ============================================
+  // UPLOAD FUNCTION (FIXED)
+  // ============================================
   async function uploadPhotos() {
     if (!isAdmin) return showToast('Admin only 🔒');
 
@@ -347,85 +433,136 @@
     if (uploadMode === 'new') {
       event = document.getElementById('eventName').value.trim();
       caption = document.getElementById('photoCaption').value.trim();
-      if (!event) return alert('Please enter an event name!');
+      if (!event) return showToast('Please enter an event name!');
     } else {
       event = document.getElementById('existingEventSelect').value;
       caption = document.getElementById('editCaption').value.trim();
-      if (!event) return alert('Please select an event to edit!');
+      if (!event) return showToast('Please select an event to edit!');
     }
-    if (selectedFiles.length === 0) return alert('Please select at least one photo!');
+    if (selectedFiles.length === 0) return showToast('Please select at least one photo!');
 
     const btn = document.getElementById('uploadBtn');
     const btnSpan = btn.querySelector('span');
+    const progressBar = document.getElementById('uploadProgress');
+    const progressBarInner = document.getElementById('uploadProgressBar');
+    
     btn.disabled = true;
     btnSpan.textContent = 'Saving...';
+    progressBar.classList.add('active');
 
     const date = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
     let successCount = 0;
     let failCount = 0;
 
-    for (const file of selectedFiles) {
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
       try {
-        // Instead of base64 → database, upload to Storage bucket
-        const filePath = `memories/${Date.now()}_${file.name}`;
+        // Update progress
+        const progress = ((i) / selectedFiles.length) * 100;
+        progressBarInner.style.width = progress + '%';
+
+        // Compress image before upload (NEW)
+        let uploadFile = file;
+        if (file.size > 1024 * 1024) { // Only compress if > 1MB
+          try {
+            uploadFile = await compressImage(file);
+            console.log(`Compressed ${file.name}: ${(file.size/1024/1024).toFixed(2)}MB → ${(uploadFile.size/1024/1024).toFixed(2)}MB`);
+          } catch (compressErr) {
+            console.warn('Compression failed, using original:', compressErr);
+            uploadFile = file;
+          }
+        }
+
+        // Upload to Storage bucket
+        const filePath = `memories/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
         const { data: uploadData, error: uploadError } = await sb.storage
           .from('memory-wall')
-          .upload(filePath, file, { contentType: file.type });
+          .upload(filePath, uploadFile, { contentType: uploadFile.type || 'image/jpeg' });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
         // Get public URL
         const { data: urlData } = sb.storage.from('memory-wall').getPublicUrl(filePath);
         const src = urlData.publicUrl;
 
-      // Save only metadata to database
-        await sb.from('memories').insert({ 
+        // Save metadata to database
+        const { error: insertError } = await sb.from('memories').insert({ 
           src, 
           caption, 
           event, 
           uploader: 'Admin', 
-      date 
+          date 
         });
-        if (error) {
-          console.error('Insert error:', error);
+        
+        if (insertError) {
+          console.error('Insert error:', insertError);
           failCount++;
         } else {
           successCount++;
         }
       } catch (err) {
-        console.error('File read error:', err);
+        console.error('Upload error:', err);
         failCount++;
       }
     }
+
+    // Final progress update
+    progressBarInner.style.width = '100%';
+    setTimeout(() => {
+      progressBar.classList.remove('active');
+      progressBarInner.style.width = '0%';
+    }, 500);
 
     btn.disabled = false;
     btnSpan.textContent = 'Save to Memory Wall';
 
     if (successCount > 0) {
-      showToast(`${successCount} photo${successCount !== 1 ? 's' : ''} added to "${event}"!! 🔥`);
+      showToast(`${successCount} photo${successCount !== 1 ? 's' : ''} added to "${event}"! 🔥`);
       document.getElementById('eventName').value = '';
       document.getElementById('photoCaption').value = '';
       document.getElementById('editCaption').value = '';
       document.getElementById('existingEventSelect').value = '';
-      selectedFiles = []; previewStrip.innerHTML = ''; fileInput.value = '';
+      selectedFiles = []; 
+      previewStrip.innerHTML = '';
       loadMemories();
-    } else {
-      showToast('Failed to save. Check console for errors ❌');
+    }
+    
+    if (failCount > 0) {
+      showToast(`${failCount} upload${failCount !== 1 ? 's' : ''} failed ❌`);
+    }
+    
+    if (successCount === 0 && failCount === 0) {
+      showToast('No photos to upload');
     }
   }
 
-  function toBase64(file) {
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = e => res(e.target.result);
-      r.onerror = () => rej(new Error('Read failed'));
-      r.readAsDataURL(file);
-    });
-  }
-
+  // ============================================
+  // DATA LOADING & RENDERING (FIXED)
+  // ============================================
   async function loadMemories() {
+    const gallery = document.getElementById('gallery');
+    // Keep loading state visible during refresh
+    if (allMemories.length === 0) {
+      gallery.innerHTML = `
+        <div class="loading" id="loadingState">
+          <div class="loading-spinner"></div>
+          <p>Loading memories...</p>
+        </div>
+      `;
+    }
+
     const { data, error } = await sb.from('memories').select('*').order('created_at', { ascending: false });
-    if (error) { console.error('Load error:', error); return; }
+    if (error) { 
+      console.error('Load error:', error); 
+      gallery.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">⚠️</span>
+          <p>Failed to load memories. Please refresh.</p>
+        </div>
+      `;
+      return; 
+    }
+    
     allMemories = data || [];
     renderGallery();
     if (uploadMode === 'edit') populateEventSelect();
@@ -439,46 +576,75 @@
   }
 
   function renderGallery() {
-    const gallery   = document.getElementById('gallery');
+    const gallery = document.getElementById('gallery');
     const filterBar = document.getElementById('filterBar');
-    const events = [...new Set(allMemories.map(m => m.event))].sort();
-    filterBar.querySelectorAll('.filter-btn[data-event]').forEach(b => b.remove());
-    events.forEach(ev => {
-      if (!filterBar.querySelector(`[data-event="${ev}"]`)) {
+    
+    // Build filter buttons only when events change (FIXED: prevents flicker)
+    const currentEvents = new Set(allMemories.map(m => m.event));
+    const eventsChanged = ![...currentEvents].every(e => knownEvents.has(e)) || ![...knownEvents].every(e => currentEvents.has(e));
+    
+    if (eventsChanged || filterBar.querySelectorAll('.filter-btn').length <= 1) {
+      knownEvents = currentEvents;
+      // Keep the "All" button, remove old event buttons
+      filterBar.querySelectorAll('.filter-btn[data-event]').forEach(b => b.remove());
+      
+      const sortedEvents = [...currentEvents].sort();
+      sortedEvents.forEach(ev => {
         const btn = document.createElement('button');
-        btn.className = 'filter-btn'; btn.dataset.event = ev; btn.textContent = ev;
+        btn.className = 'filter-btn';
+        btn.dataset.event = ev;
+        btn.textContent = ev;
         btn.onclick = function() { filterEvent(ev, this); };
         filterBar.appendChild(btn);
+      });
+      
+      // Restore active state
+      const activeBtn = filterBar.querySelector(`[data-event="${activeFilter}"]`) || filterBar.querySelector('[data-event="all"]');
+      if (activeBtn) {
+        filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        activeBtn.classList.add('active');
       }
-    });
+    }
+
     const filtered = activeFilter === 'all' ? allMemories : allMemories.filter(m => m.event === activeFilter);
+    
     if (filtered.length === 0) {
-      gallery.innerHTML = `<div class="empty-state"><span class="empty-icon">🥹</span><p>No memories yet. Check back later!</p></div>`;
+      gallery.innerHTML = `
+        <div class="empty-state">
+          <span class="empty-icon">🥹</span>
+          <p>No memories yet. Check back later!</p>
+        </div>
+      `;
       return;
     }
+
     gallery.innerHTML = '';
     const groups = {};
-    filtered.forEach(m => { if (!groups[m.event]) groups[m.event] = []; groups[m.event].push(m); });
+    filtered.forEach(m => { 
+      if (!groups[m.event]) groups[m.event] = []; 
+      groups[m.event].push(m); 
+    });
+    
     Object.entries(groups).forEach(([eventName, photos]) => {
       const group = document.createElement('div');
       group.className = 'event-group';
       group.innerHTML = `
         <div class="event-header">
-          <span class="event-name">${eventName}</span>
+          <span class="event-name">${escapeHtml(eventName)}</span>
           <div class="event-rule"></div>
           <span class="event-count">${photos.length} photo${photos.length !== 1 ? 's' : ''}</span>
           ${isAdmin ? `
           <div class="event-actions">
-            <button onclick="editEventName('${eventName}')">Rename</button>
-            <button onclick="deleteEvent('${eventName}')">Delete All</button>
+            <button onclick="editEventName('${escapeHtml(eventName)}')">Rename</button>
+            <button onclick="deleteEvent('${escapeHtml(eventName)}')">Delete All</button>
           </div>` : ''}
         </div>
         <div class="photo-grid">
           ${photos.map(p => `
             <div class="photo-card" onclick="openLightbox(${p.id})">
-              <img src="${p.src}" alt="${p.caption}" loading="lazy"/>
+              <img src="${p.src}" alt="${escapeHtml(p.caption)}" loading="lazy" onload="this.classList.add('loaded')"/>
               <div class="photo-info">
-                <p class="photo-caption">${p.caption}</p>
+                <p class="photo-caption">${escapeHtml(p.caption)}</p>
                 <p class="photo-meta">${p.date}</p>
               </div>
               ${isAdmin ? `<button class="photo-delete" onclick="deletePhoto(event, ${p.id})">✕</button>` : ''}
@@ -490,12 +656,30 @@
     });
   }
 
+  // ============================================
+  // ESCAPE HTML (NEW - prevents XSS)
+  // ============================================
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ============================================
+  // DELETE FUNCTIONS
+  // ============================================
   async function deletePhoto(e, id) {
     e.stopPropagation();
     if (!isAdmin) return showToast('Admin only 🔒');
     if (!confirm('Remove this memory?')) return;
+    
     const { error } = await sb.from('memories').delete().eq('id', id);
-    if (error) { console.error('Delete error:', error); showToast('Failed to delete ❌'); return; }
+    if (error) { 
+      console.error('Delete error:', error); 
+      showToast('Failed to delete ❌'); 
+      return; 
+    }
     showToast('Memory removed.');
     loadMemories();
   }
@@ -503,8 +687,13 @@
   async function deleteEvent(eventName) {
     if (!isAdmin) return showToast('Admin only 🔒');
     if (!confirm(`Delete ALL photos from "${eventName}"? This cannot be undone!`)) return;
+    
     const { error } = await sb.from('memories').delete().eq('event', eventName);
-    if (error) { console.error('Delete error:', error); showToast('Failed to delete ❌'); return; }
+    if (error) { 
+      console.error('Delete error:', error); 
+      showToast('Failed to delete ❌'); 
+      return; 
+    }
     showToast(`"${eventName}" deleted.`);
     activeFilter = 'all';
     loadMemories();
@@ -514,12 +703,20 @@
     if (!isAdmin) return showToast('Admin only 🔒');
     const newName = prompt('New event name:', oldName);
     if (!newName || newName === oldName) return;
+    
     const { error } = await sb.from('memories').update({ event: newName.trim() }).eq('event', oldName);
-    if (error) { console.error('Update error:', error); showToast('Failed to rename ❌'); return; }
+    if (error) { 
+      console.error('Update error:', error); 
+      showToast('Failed to rename ❌'); 
+      return; 
+    }
     showToast(`Renamed to "${newName}"`);
     loadMemories();
   }
 
+  // ============================================
+  // LIGHTBOX (FIXED)
+  // ============================================
   function openLightbox(id) {
     const memory = allMemories.find(m => m.id === id);
     if (!memory) return;
@@ -531,23 +728,58 @@
   }
 
   function closeLightbox(e) {
+    // Close if clicking overlay (lightbox div itself) or the close button
     if (e && e.target !== document.getElementById('lightbox') && !e.target.classList.contains('lightbox-close')) return;
     document.getElementById('lightbox').classList.remove('open');
     document.body.style.overflow = '';
   }
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { document.getElementById('lightbox').classList.remove('open'); document.body.style.overflow = ''; }
+    if (e.key === 'Escape') { 
+      document.getElementById('lightbox').classList.remove('open'); 
+      document.body.style.overflow = ''; 
+    }
   });
 
+  // ============================================
+  // TOAST
+  // ============================================
+  let toastTimeout;
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    t.textContent = msg; 
+    t.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  sb.channel('memories').on('postgres_changes', { event: '*', schema: 'public', table: 'memories' }, () => loadMemories()).subscribe();
+  // ============================================
+  // REALTIME SUBSCRIPTION (FIXED)
+  // ============================================
+  function setupRealtime() {
+    // Clean up existing channel if any
+    if (realtimeChannel) {
+      sb.removeChannel(realtimeChannel);
+    }
+    
+    realtimeChannel = sb
+      .channel('memory-wall-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'memories' }, 
+        (payload) => {
+          console.log('Realtime update:', payload.eventType);
+          loadMemories();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Realtime status:', status);
+      });
+  }
 
+  // ============================================
+  // INITIALIZATION
+  // ============================================
+  setupRealtime();
   loadMemories();
 </script>
 </body>
