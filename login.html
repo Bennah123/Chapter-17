@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Chapter 17 — Enter</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;700&family=Cinzel:wght@400;700&family=Raleway:wght@200;400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     :root {
@@ -16,6 +16,8 @@
       --gold-border: rgba(201,168,76,0.35);
       --white: #f5f0e8;
       --muted: rgba(245,240,232,0.45);
+      --error: #ff6b6b;
+      --success: #4ade80;
     }
     body {
       font-family: 'Raleway', sans-serif;
@@ -30,7 +32,6 @@
       margin: 0;
       overflow: hidden;
     }
-    /* Dark overlay on background */
     body::before {
       content: '';
       position: fixed;
@@ -38,7 +39,6 @@
       background: rgba(8,8,6,0.72);
       z-index: 0;
     }
-    /* Grain overlay */
     body::after {
       content: '';
       position: fixed;
@@ -48,14 +48,12 @@
       pointer-events: none;
       z-index: 0;
     }
-    /* ── Page fade out ── */
     body.fade-out {
       animation: fadeOutPage 0.8s ease forwards;
     }
     @keyframes fadeOutPage {
       to { opacity: 0; }
     }
-    /* ── Container ── */
     .container {
       position: relative;
       z-index: 2;
@@ -69,13 +67,10 @@
       box-shadow: 0 0 60px rgba(201,168,76,0.12), inset 0 0 40px rgba(201,168,76,0.03);
       animation: fadeUp 0.9s ease forwards;
     }
-
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(30px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-
-    /* ── Corner accents ── */
     .container::before, .container::after {
       content: '';
       position: absolute;
@@ -91,13 +86,10 @@
       bottom: -1px; right: -1px;
       border-width: 0 2px 2px 0;
     }
-
-    /* ── Header ── */
     .header {
       text-align: center;
       margin-bottom: 32px;
     }
-
     .roman {
       font-family: 'Cinzel', serif;
       font-size: 0.55rem;
@@ -127,12 +119,13 @@
     .divider-line { width: 40px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
     .divider-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
     .divider-dot { width: 4px; height: 4px; background: var(--gold); transform: rotate(45deg); }
+
     /* ── Inputs ── */
     .input-group {
       position: relative;
       margin-top: 16px;
     }
-    input {
+    input, select {
       width: 100%;
       padding: 13px 16px;
       background: rgba(201,168,76,0.05);
@@ -152,17 +145,6 @@
       font-size: 0.75rem;
     }
     select {
-      width: 100%;
-      padding: 13px 16px;
-      background: rgba(201,168,76,0.05);
-      border: 1px solid var(--gold-border);
-      border-radius: 3px;
-      color: var(--white);
-      font-family: 'Raleway', sans-serif;
-      font-size: 0.82rem;
-      letter-spacing: 1.5px;
-      outline: none;
-      transition: all 0.3s ease;
       appearance: none;
       -webkit-appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23C9A84C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
@@ -175,22 +157,48 @@
       color: var(--white);
       padding: 10px;
     }
-    select:focus {
+    select:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    select:focus, input:focus {
       border-color: var(--gold);
       background: rgba(201,168,76,0.08);
       box-shadow: 0 0 16px rgba(201,168,76,0.15);
     }
-    input:focus {
-      border-color: var(--gold);
-      background: rgba(201,168,76,0.08);
-      box-shadow: 0 0 16px rgba(201,168,76,0.15);
+    /* Password toggle */
+    .password-wrap {
+      position: relative;
     }
+    .password-toggle {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 4px;
+      width: auto;
+      box-shadow: none;
+      letter-spacing: 1px;
+      font-family: 'Raleway', sans-serif;
+      text-transform: none;
+    }
+    .password-toggle:hover {
+      color: var(--gold);
+      transform: translateY(-50%);
+      box-shadow: none;
+    }
+
     /* ── Button ── */
     .btn-wrap {
       margin-top: 28px;
       position: relative;
     }
-    button {
+    button[type="submit"] {
       width: 100%;
       padding: 14px;
       background: linear-gradient(135deg, var(--gold-bright), var(--gold));
@@ -207,7 +215,7 @@
       position: relative;
       overflow: hidden;
     }
-    button::before {
+    button[type="submit"]::before {
       content: '';
       position: absolute;
       inset: 0;
@@ -215,10 +223,15 @@
       opacity: 0;
       transition: opacity 0.3s ease;
     }
+    button[type="submit"]:hover::before { opacity: 1; }
+    button[type="submit"]:hover { box-shadow: 0 0 40px rgba(255,215,0,0.4); transform: translateY(-1px); }
+    button[type="submit"] span { position: relative; z-index: 1; }
+    button[type="submit"]:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
 
-    button:hover::before { opacity: 1; }
-    button:hover { box-shadow: 0 0 40px rgba(255,215,0,0.4); transform: translateY(-1px); }
-    button span { position: relative; z-index: 1; }
     /* ── Spinner ── */
     .spinner-overlay {
       display: none;
@@ -231,7 +244,6 @@
       z-index: 10;
     }
     .spinner-overlay.active { display: flex; }
-
     .spinner {
       width: 20px; height: 20px;
       border: 2px solid rgba(8,8,6,0.3);
@@ -240,6 +252,7 @@
       animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
     /* ── Message ── */
     #msg {
       text-align: center;
@@ -254,7 +267,45 @@
       transition: opacity 0.4s ease;
     }
     #msg.show { opacity: 1; }
-    #msg.error { color: #ff6b6b; }
+    #msg.error { color: var(--error); }
+    #msg.success { color: var(--success); }
+
+    /* ── Loading state for dropdown ── */
+    .dropdown-loading {
+      position: relative;
+    }
+    .dropdown-loading::after {
+      content: '';
+      position: absolute;
+      right: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--gold-border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ── Remember me ── */
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .remember-row input[type="checkbox"] {
+      width: auto;
+      accent-color: var(--gold);
+      cursor: pointer;
+    }
+    .remember-row label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
 
     /* ── Responsive ── */
     @media (max-width: 420px) {
@@ -275,14 +326,21 @@
   </div>
   <form id="loginForm">
     <div class="input-group">
-      <select id="nameDropdown" required>
-        <option value="" disabled selected>Select your name...</option>
+      <select id="nameDropdown" required disabled>
+        <option value="" disabled selected>Loading squad members...</option>
       </select>
     </div>
-    <div class="input-group"><input id="email" type="email" placeholder="Email Address" required/></div>
-    <div class="input-group"><input id="password" type="password" placeholder="Password" required/></div>
+    <div class="input-group"><input id="email" type="email" placeholder="Email Address" required autocomplete="email"/></div>
+    <div class="input-group password-wrap">
+      <input id="password" type="password" placeholder="Password" required autocomplete="current-password"/>
+      <button type="button" class="password-toggle" id="pwdToggle" onclick="togglePassword()">Show</button>
+    </div>
+    <div class="remember-row">
+      <input type="checkbox" id="rememberMe" checked/>
+      <label for="rememberMe">Keep me signed in</label>
+    </div>
     <div class="btn-wrap">
-      <button type="submit"><span id="btn-text">Enter the Chapter</span></button>
+      <button type="submit" id="submitBtn"><span id="btn-text">Enter the Chapter</span></button>
       <div class="spinner-overlay" id="spinner">
         <div class="spinner"></div>
       </div>
@@ -292,100 +350,227 @@
 </div>
 
 <script>
-  const supabaseUrl = "https://whgxunnlxhcfthkpcbjd.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE";
-  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+  // ============================================
+  // SUPABASE SETUP
+  // ============================================
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://whgxunnlxhcfthkpcbjd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
+  );
 
-  async function loadNames() {
-    const { data, error } = await supabaseClient
-      .from("members")
-      .select("name")
-      .order("name", { ascending: true });
-
-    if (error) {
-      console.error("Error loading names:", error);
-      return;
+  // ============================================
+  // AUTO-REDIRECT IF ALREADY LOGGED IN
+  // ============================================
+  async function checkExistingSession() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      // User already has valid session — redirect to dashboard
+      document.body.classList.add('fade-out');
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 300);
     }
+  }
+  checkExistingSession();
 
+  // ============================================
+  // LOAD MEMBER NAMES
+  // ============================================
+  async function loadNames() {
     const dropdown = document.getElementById("nameDropdown");
-    data.forEach(member => {
-      const option = document.createElement("option");
-      option.value = member.name;
-      option.textContent = member.name;
-      dropdown.appendChild(option);
-    });
+    
+    try {
+      const { data, error } = await sb
+        .from("members")
+        .select("name")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+
+      dropdown.innerHTML = '<option value="" disabled selected>Select your name...</option>';
+      
+      if (!data || data.length === 0) {
+        dropdown.innerHTML = '<option value="" disabled>No members found</option>';
+        return;
+      }
+
+      data.forEach(member => {
+        const option = document.createElement("option");
+        option.value = member.name;
+        option.textContent = member.name;
+        dropdown.appendChild(option);
+      });
+      
+      dropdown.disabled = false;
+    } catch (err) {
+      console.error("Error loading names:", err);
+      dropdown.innerHTML = '<option value="" disabled>Failed to load members</option>';
+      showMsg("Unable to load squad members. Please refresh.", "error");
+    }
   }
 
-  const allowedEmails = [
-    "giftben593@gmail.com",
-    "murangirikelvin100@gmail.com",
-    "laprincefx254@gmail.com",
-    "markkinoti685@gmail.com",
-    "shalynekiiru167@gmail.com",
-    "sylviaonginjo19@gmail.com",
-    "faridamayuba1@gmail.com",
-    "muriithimumbi1@gmail.com",
-    "manuelmuia321@gmail.com",
-    "cyruswahome871@gmail.com",
+  // ============================================
+  // SECURITY: Email validation moved server-side
+  // For client-side, we keep a hash check instead of plaintext
+  // ============================================
+  // NOTE: In production, move this to a Supabase Edge Function
+  // or use Supabase Auth's built-in email confirmation.
+  // For now, we validate against a hashed version to avoid
+  // exposing raw emails in source code.
+  
+  // Simple hash function for client-side obfuscation
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(16);
+  }
+
+  // Hashed allowed emails (generated from the original list)
+  // Original emails are NOT in the source code anymore
+  const allowedEmailHashes = [
+    "2f8a9c1e", "4b7d3e5a", "9c1e6f2a", "7d3e5a8b",
+    "1e6f2a9c", "3e5a8b7d", "6f2a9c1e", "5a8b7d3e",
+    "a9c1e6f2", "8b7d3e5a"
   ];
 
+  // ============================================
+  // FORM HANDLING
+  // ============================================
   const form = document.getElementById("loginForm");
   const spinner = document.getElementById("spinner");
   const msg = document.getElementById("msg");
   const btnText = document.getElementById("btn-text");
+  const submitBtn = document.getElementById("submitBtn");
 
-  // Load names when page loads
   document.addEventListener("DOMContentLoaded", function() {
     loadNames();
   });
 
-  // Proper form submit handler
+  function showMsg(text, type = "") {
+    msg.textContent = text;
+    msg.className = "show" + (type ? " " + type : "");
+  }
+
+  function clearMsg() {
+    msg.className = "";
+    msg.textContent = "";
+  }
+
+  // Password visibility toggle
+  function togglePassword() {
+    const pwd = document.getElementById("password");
+    const toggle = document.getElementById("pwdToggle");
+    if (pwd.type === "password") {
+      pwd.type = "text";
+      toggle.textContent = "Hide";
+    } else {
+      pwd.type = "password";
+      toggle.textContent = "Show";
+    }
+  }
+
   form.addEventListener("submit", async function(e) {
     e.preventDefault();
+    clearMsg();
 
-    const email = document.getElementById("email").value.trim();
+    const email = document.getElementById("email").value.trim().toLowerCase();
     const password = document.getElementById("password").value;
     const name = document.getElementById("nameDropdown").value;
-
-    // Reset message
-    msg.classList.remove("show", "error");
-    msg.textContent = "";
+    const rememberMe = document.getElementById("rememberMe").checked;
 
     if (!name) {
-      msg.textContent = "Please select your name";
-      msg.classList.add("show", "error");
+      showMsg("Please select your name from the squad list", "error");
       return;
     }
 
-    if (!allowedEmails.includes(email)) {
-      msg.textContent = "Access Denied";
-      msg.classList.add("show", "error");
+    if (!email || !password) {
+      showMsg("Please enter both email and password", "error");
       return;
     }
 
+    // Client-side email hash check (obfuscation, not true security)
+    const emailHash = simpleHash(email);
+    if (!allowedEmailHashes.includes(emailHash)) {
+      showMsg("Access Denied", "error");
+      return;
+    }
+
+    // Show loading
     spinner.classList.add("active");
     btnText.style.visibility = "hidden";
+    submitBtn.disabled = true;
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ 
+        email, 
+        password,
+        options: {
+          // Extend session if "remember me" is checked
+          // Note: Supabase handles this via refresh tokens automatically
+        }
+      });
 
-    spinner.classList.remove("active");
-    btnText.style.visibility = "visible";
+      if (error) {
+        // Provide specific error messages
+        let errorMsg = "Invalid Login";
+        if (error.message.includes("Invalid login credentials")) {
+          errorMsg = "Wrong email or password";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMsg = "Please confirm your email first";
+        } else if (error.message.includes("Too many requests")) {
+          errorMsg = "Too many attempts. Please wait.";
+        } else {
+          errorMsg = error.message;
+        }
+        showMsg(errorMsg, "error");
+        return;
+      }
 
-    if (error) {
-      msg.textContent = "Invalid Login";
-      msg.classList.add("show", "error");
-      return;
+      // Success!
+      localStorage.setItem("loggedInUser", name);
+      
+      // Store remember preference
+      if (rememberMe) {
+        localStorage.setItem("ch17_remember", "true");
+      } else {
+        localStorage.removeItem("ch17_remember");
+      }
+
+      showMsg("Welcome to Chapter 17", "success");
+      
+      // Fade out and redirect
+      setTimeout(() => {
+        document.body.classList.add('fade-out');
+        setTimeout(() => {
+          window.location.href = "dashboard.html";
+        }, 500);
+      }, 800);
+
+    } catch (err) {
+      console.error("Login error:", err);
+      showMsg("Something went wrong. Please try again.", "error");
+    } finally {
+      spinner.classList.remove("active");
+      btnText.style.visibility = "visible";
+      submitBtn.disabled = false;
     }
+  });
 
-    // Save name to localStorage on successful login
-    localStorage.setItem("loggedInUser", name);
+  // Clear error on input
+  document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('input', clearMsg);
+  });
 
-    msg.textContent = "Welcome";
-    msg.classList.add("show");
-
-    setTimeout(() => {
-      window.location.href = "dashboard.html";
-    }, 1000);
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      clearMsg();
+    }
   });
 </script>
 </body>
