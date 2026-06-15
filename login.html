@@ -120,7 +120,6 @@
     .divider-line.r { background: linear-gradient(90deg, var(--gold), transparent); }
     .divider-dot { width: 4px; height: 4px; background: var(--gold); transform: rotate(45deg); }
 
-    /* ── Inputs ── */
     .input-group {
       position: relative;
       margin-top: 16px;
@@ -166,7 +165,6 @@
       background: rgba(201,168,76,0.08);
       box-shadow: 0 0 16px rgba(201,168,76,0.15);
     }
-    /* Password toggle */
     .password-wrap {
       position: relative;
     }
@@ -193,7 +191,6 @@
       box-shadow: none;
     }
 
-    /* ── Button ── */
     .btn-wrap {
       margin-top: 28px;
       position: relative;
@@ -232,7 +229,6 @@
       transform: none;
     }
 
-    /* ── Spinner ── */
     .spinner-overlay {
       display: none;
       position: absolute;
@@ -253,7 +249,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Message ── */
     #msg {
       text-align: center;
       margin-top: 18px;
@@ -270,25 +265,6 @@
     #msg.error { color: var(--error); }
     #msg.success { color: var(--success); }
 
-    /* ── Loading state for dropdown ── */
-    .dropdown-loading {
-      position: relative;
-    }
-    .dropdown-loading::after {
-      content: '';
-      position: absolute;
-      right: 40px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 14px;
-      height: 14px;
-      border: 1px solid var(--gold-border);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-
-    /* ── Remember me ── */
     .remember-row {
       display: flex;
       align-items: center;
@@ -307,7 +283,6 @@
       cursor: pointer;
     }
 
-    /* ── Responsive ── */
     @media (max-width: 420px) {
       .container { width: 92vw; padding: 36px 24px; }
     }
@@ -350,15 +325,27 @@
 </div>
 
 <script>
-  // ============================================
-  // SUPABASE SETUP
-  // ============================================
   const { createClient } = supabase;
   const sb = createClient(
     'https://whgxunnlxhcfthkpcbjd.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndoZ3h1bm5seGhjZnRoa3BjYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3Njg4NzUsImV4cCI6MjA5NjM0NDg3NX0.FLqHavCjkXesCimVw7WvRA7a4zV7_cUPTi1jNWrq6mE'
   );
 
+  // ============================================
+  // ALLOWED EMAILS (Your Original List)
+  // ============================================
+  const allowedEmails = [
+    "giftben593@gmail.com",
+    "murangirikelvin100@gmail.com",
+    "laprincefx254@gmail.com",
+    "markkinoti685@gmail.com",
+    "shalynekiiru167@gmail.com",
+    "sylviaonginjo19@gmail.com",
+    "faridamayuba1@gmail.com",
+    "muriithimumbi1@gmail.com",
+    "manuelmuia321@gmail.com",
+    "cyruswahome871@gmail.com",
+  ];
 
   // ============================================
   // LOAD MEMBER NAMES
@@ -397,33 +384,6 @@
   }
 
   // ============================================
-  // SECURITY: Email validation moved server-side
-  // For client-side, we keep a hash check instead of plaintext
-  // ============================================
-  // NOTE: In production, move this to a Supabase Edge Function
-  // or use Supabase Auth's built-in email confirmation.
-  // For now, we validate against a hashed version to avoid
-  // exposing raw emails in source code.
-  
-  // Simple hash function for client-side obfuscation
-  function simpleHash(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return hash.toString(16);
-  }
-
-  // Hashed allowed emails (generated from the original list)
-  const allowedEmailHashes = [
-    "457581d7", "3ebf043b", "3d2fc74e", "fb7d5dd",
-    "3e0b6545", "3edaae23", "131e1abc", "61f7e661",
-    "60dc861", "51ad6fe0"
-  ];
-
-  // ============================================
   // FORM HANDLING
   // ============================================
   const form = document.getElementById("loginForm");
@@ -446,7 +406,6 @@
     msg.textContent = "";
   }
 
-  // Password visibility toggle
   function togglePassword() {
     const pwd = document.getElementById("password");
     const toggle = document.getElementById("pwdToggle");
@@ -478,14 +437,12 @@
       return;
     }
 
-    // Client-side email hash check (obfuscation, not true security)
-    const emailHash = simpleHash(email);
-    if (!allowedEmailHashes.includes(emailHash)) {
+    // Check against plain email list (restored from your original)
+    if (!allowedEmails.includes(email)) {
       showMsg("Access Denied", "error");
       return;
     }
 
-    // Show loading
     spinner.classList.add("active");
     btnText.style.visibility = "hidden";
     submitBtn.disabled = true;
@@ -493,15 +450,10 @@
     try {
       const { data, error } = await sb.auth.signInWithPassword({ 
         email, 
-        password,
-        options: {
-          // Extend session if "remember me" is checked
-          // Note: Supabase handles this via refresh tokens automatically
-        }
+        password
       });
 
       if (error) {
-        // Provide specific error messages
         let errorMsg = "Invalid Login";
         if (error.message.includes("Invalid login credentials")) {
           errorMsg = "Wrong email or password";
@@ -519,7 +471,6 @@
       // Success!
       localStorage.setItem("loggedInUser", name);
       
-      // Store remember preference
       if (rememberMe) {
         localStorage.setItem("ch17_remember", "true");
       } else {
@@ -528,7 +479,6 @@
 
       showMsg("Welcome to Chapter 17", "success");
       
-      // Fade out and redirect
       setTimeout(() => {
         document.body.classList.add('fade-out');
         setTimeout(() => {
@@ -546,12 +496,10 @@
     }
   });
 
-  // Clear error on input
   document.querySelectorAll('input, select').forEach(el => {
     el.addEventListener('input', clearMsg);
   });
 
-  // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       clearMsg();
